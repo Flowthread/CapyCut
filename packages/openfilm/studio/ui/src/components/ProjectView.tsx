@@ -8,7 +8,8 @@
  */
 import * as React from 'react';
 import { GalleryVerticalEnd, Layers, LibraryBig, MessageSquarePlus, MonitorDown, Settings2, TriangleAlert } from 'lucide-react';
-import { api, ApiError, projectEvents, type Clip, type Film, type Listing, type Op, type ProjectFilm, type ProjectSettings } from '@/api';
+import { applyOps } from '../../../server/ops.mjs';
+import { api, ApiError, PREFS_EVENT, projectEvents, type Clip, type Film, type Listing, type Op, type ProjectFilm, type ProjectSettings } from '@/api';
 import { useT } from '@/i18n';
 import { useFilm, type Step } from '@/editor/use-film';
 import { Player } from '@/editor/player';
@@ -24,11 +25,11 @@ import { placeMedia, type SourceRange } from '@/lib/media-place';
 import { apartOnTracks, type ClipEdit } from '@/lib/film-clip-edits';
 import { mediaFetch } from '@/lib/media-queue';
 import { clipboardItemsOf, clipboardNow, pasteEdit, type TimelineClipboardItem } from '@/lib/timeline-clipboard';
-import { editModelOf, freshLink, linkedIds, planMove, planRippleTrim, planRoom, planSpeed, soundTrackFor, type EditMode } from '@/lib/timeline-edit';
-import { readTimelinePrefs } from '@/lib/timeline-prefs';
+import { editModelOf, freshLink, linkedIds, magnetOn, mainTrackOf, planMove, planRippleTrim, planRoom, planSpeed, soundTrackFor, type EditMode } from '@/lib/timeline-edit';
+import { followOf, readTimelinePrefs } from '@/lib/timeline-prefs';
 import { fadeMsOf, type FadeMs } from '@/lib/clip-fade';
 import {
-  findTransitions, planRemoveTransition, planResizeTransition, planTransition, TRANSITION_MS, WHITE_PAGE,
+  findTransitions, planRemoveTransition, planResizeTransition, planTransition, TRANSITION_MS,
   type ClipFacts, type TransitionAsk, type TransitionPlan,
 } from '@/lib/transitions';
 import { frameMs } from '@/lib/timecode';
@@ -41,7 +42,7 @@ import { useLoadedThumbs } from '@/lib/use-loaded-thumbs';
 import { droppedOverrides, overrideTarget, undoneFields, type DroppedEdits, type PersonEdit } from '@/lib/dropped-overrides';
 import { filmFrameBox, type FilmFrameId } from '@/lib/film-frame';
 import { canvasFor, fitToCanvas } from '@/lib/canvas-fit';
-import { factsOfProbe, mediaListingOf, resourceKindOf, srcHitsAsset, warmProjectMedia, type MediaListing, type MediaResult, type MediaSources, type WorkspaceResource } from '@/lib/workspace-resources';
+import { factsOfProbe, mediaListingOf, resourceKindOf, srcHitsAsset, warmProjectMedia, type MediaListing, type MediaProxy, type MediaResult, type MediaSources, type WorkspaceResource } from '@/lib/workspace-resources';
 import { BrandLoadingScreen } from './BrandLoadingScreen';
 import { BrandLogo } from './BrandLogo';
 import { SettingsModal, type SettingsSection } from './settings/SettingsModal';
@@ -61,7 +62,7 @@ import { DEFAULT_INSPECTOR, DOCK_GAP, DockPaneDivider, MIN_DOCK_H, MIN_INSPECTOR
 import { PANE_BAR, PANE_BTN_ON, PANE_TOGGLE, PANE_TOGGLE_ICON } from './dock-pane-bar';
 import { Tooltip } from './Tooltip';
 import { UpdateButton } from './UpdateButton';
-import { MediaPool } from './MediaPool';
+import { MediaPool, type ImportProgress } from './MediaPool';
 import type { SubtitleRowSpec } from './SubtitleRow';
 import { LayersPanel } from './LayersPanel';
 import type { LayerRow } from '@/lib/layers-tree';
@@ -92,6 +93,7 @@ import { stageMenu, stageRecoveryMenu, type StageArrangeResult, type StageMenuCo
 import type { StageEditFailure, StageTextEdit } from './FilmInspector';
 import { layerTarget, pageClipOf, recoverLayer } from '@/lib/stage-layers';
 import type { MaskSession } from '@/lib/stage-mask';
+import type { MaskShape } from '@/lib/clip-mask';
 import { nextOverrides, overrideOf, type OverrideGeometry } from '@/lib/film-overrides';
 import { compactScale, type MgTransform, type NodeOverride, type OverridePivot, type StageElement, type StageElementStyle, type StageGeometry } from '@/lib/stage-types';
 import { isTypingTarget } from './typing-target';
@@ -247,14 +249,16 @@ export function ProjectView({ projectId, onProject, onLeave }: {
   filmRef.current = film.film;
   React.useEffect(() => { if (film.error) toast.showError(film.error); }, [film.error, toast]);
 
-  /* media facts (length, size, sound) of the project's video and sound files and its web pages, probed once each: a
-     page without a duration has no end, and is dropped on the timeline with a length of its own */
+  /* media facts (length, size, sound) of the project's videos, stills and sounds and its web pages, probed once each: a
+     page without a duration has no end, and is dropped on the timeline with a length of its own; a picture's size
+     gives its clip a box in its own shape */
   const probed = React.useRef(new Set<string>());
   React.useEffect(() => {
     if (!rawListing) return;
     const wanted = [
-      ...rawListing.files.filter((f) => f.kind === 'video' || f.kind === 'audio').map((f) => ({ f, page: false })),
-      ...rawListing.pages.map((f) => ({ f, page: true })),
+      ...rawListing.files.filter((f) => f.kind === 'video' || f.kind === 'image' || f.kind === 'audio').map((f) => ({ f, page: false })),
+      /* pages: the project's, and any put in a folder of the media pane */
+      ...[...rawListing.pages, ...rawListing.files.filter((f) => f.kind === 'page')].map((f) => ({ f, page: true })),
     ];
     for (const { f, page } of wanted) {
       const key = `${f.path}@${f.mtime}`;
@@ -264,7 +268,11 @@ export function ProjectView({ projectId, onProject, onLeave }: {
         .then((r) => (r.ok ? r.json() : null))
         .then((probe) => {
           if (!probe) return;
-          const facts = { ...factsOfProbe(probe), audio: Boolean(probe.audio), ...(page && !(probe.duration > 0) ? { endless: true } : {}) };
+          const facts = {
+            ...factsOfProbe(probe), audio: Boolean(probe.audio),
+            ...(page && !(probe.duration > 0) ? { endless: true } : {}),
+            ...(page && probe.reflows ? { reflows: true } : {}),
+          };
           setFacts((m) => new Map(m).set(f.path, facts));
         }, () => {});
     }
@@ -281,9 +289,41 @@ export function ProjectView({ projectId, onProject, onLeave }: {
       pageSurface: (f) => `${folder}${f.path.split('/').map(encodeURIComponent).join('/')}`,
     };
   }, [projectId, folder, filesTick]);
+  /*
+   * proxies (studio/server/proxies.mjs): asked for the project's heavy footage whenever its files change or the
+   * preferences do, followed while they are made. One ready for footage on the film, or other preferences, load the
+   * preview again behind the picture, so it plays what it should.
+   */
+  const [proxies, setProxies] = React.useState<Record<string, MediaProxy>>({});
+  const [prefsTick, setPrefsTick] = React.useState(0);
+  React.useEffect(() => {
+    const changed = () => setPrefsTick((n) => n + 1);
+    window.addEventListener(PREFS_EVENT, changed);
+    return () => window.removeEventListener(PREFS_EVENT, changed);
+  }, []);
+  React.useEffect(() => { if (prefsTick) preview.current?.reload?.(); }, [prefsTick]);
+  React.useEffect(() => {
+    if (!rawListing) return undefined;
+    let alive = true;
+    let timer = 0;
+    let before: Record<string, MediaProxy> = {};
+    const ask = async () => {
+      const answer = await fetch(`/api/projects/${encodeURIComponent(projectId)}/proxies`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })
+        .then((r) => (r.ok ? r.json() : null), () => null) as { states?: Record<string, MediaProxy> } | null;
+      if (!alive || !answer) return;
+      const states = answer.states ?? {};
+      setProxies(states);
+      const now = Object.keys(states).filter((path) => states[path]!.state === 'ready' && before[path] && before[path]!.state !== 'ready');
+      if (now.some((path) => blocksRef.current.some((b) => b.src && srcHitsAsset(b.src, path)))) preview.current?.reload?.();
+      before = states;
+      if (Object.values(states).some((s) => s.state === 'waiting' || s.state === 'making')) timer = window.setTimeout(() => { void ask(); }, 1500);
+    };
+    void ask();
+    return () => { alive = false; window.clearTimeout(timer); };
+  }, [rawListing, projectId, prefsTick]);
   const listing = React.useMemo<MediaListing | null>(
-    () => (rawListing ? mediaListingOf(rawListing, (path) => facts.get(path), (rawListing as { made?: string[] }).made) : null),
-    [rawListing, facts],
+    () => (rawListing ? mediaListingOf(rawListing, (path) => ({ ...facts.get(path), ...(proxies[path] ? { proxy: proxies[path] } : {}) }), (rawListing as { made?: string[] }).made) : null),
+    [rawListing, facts, proxies],
   );
   React.useEffect(() => { if (listing) warmProjectMedia(projectId, listing, mediaSources); }, [projectId, listing, mediaSources]);
   /* a file of the media pane as a reference: shown by its poster (a video, a page) or itself (a still, on Studio's
@@ -483,6 +523,8 @@ export function ProjectView({ projectId, onProject, onLeave }: {
   clipLinksRef.current = clipLinks;
   /** The timeline as an edit sees it now (lib/timeline-edit). */
   const editModel = React.useCallback(() => editModelOf(tracksRef.current, clipLinksRef.current), []);
+  /** The main track (the lowest picture track), where the magnet acts: the inspector asks. */
+  const mainTrack = React.useMemo(() => mainTrackOf(editModelOf(timelineTracks)), [timelineTracks]);
   const blocksRef = React.useRef<readonly TimelineBlock[]>([]);
   blocksRef.current = React.useMemo(() => timelineTracks.flatMap((tr) => tr.blocks), [timelineTracks]);
   /* the film's length: the preview's, unless it could not draw the film; that length is then of the film before
@@ -518,6 +560,8 @@ export function ProjectView({ projectId, onProject, onLeave }: {
 
   /* selection, by clip id: a block's own id is its place, and that changes when it moves */
   const [selectedKeys, setSelectedKeys] = React.useState<readonly string[]>([]);
+  const selectedKeysRef = React.useRef(selectedKeys);
+  selectedKeysRef.current = selectedKeys;
   const selectedBlocks = React.useMemo(() => {
     const keys = new Set(selectedKeys);
     return blocksRef.current.filter((b) => keys.has(b.clipId ?? b.id));
@@ -555,9 +599,9 @@ export function ProjectView({ projectId, onProject, onLeave }: {
   const [layersWidth, setLayersWidth] = React.useState(240);
   const layersPaneRef = React.useRef<HTMLDivElement | null>(null);
   const [timelineOpen, setTimelineOpen] = useKeptFlag('openfilm.project.timeline');
-  /* closed until it has something to show (a selection opens it), or the person opens it */
-  const [inspectorOpen, persistInspector, setInspectorOpen] = useKeptFlag('openfilm.project.inspector', true);
-  const closeInspector = React.useCallback(() => persistInspector(false), [persistInspector]);
+  /* open whenever the project opens (a reload too); closed, it stays closed until then or until a selection opens it */
+  const [inspectorOpen, setInspectorOpen] = React.useState(true);
+  const closeInspector = React.useCallback(() => setInspectorOpen(false), [setInspectorOpen]);
   const [rowWidth, setRowWidth] = React.useState(0);
   const [colHeight, setColHeight] = React.useState(0);
   React.useEffect(() => {
@@ -680,23 +724,19 @@ export function ProjectView({ projectId, onProject, onLeave }: {
   const pickedTr = filmTransitions.find((x) => x.key === pickedTransition) ?? null;
   /**
    * A transition put on a cut, made longer or shorter, or taken away (lib/transitions): planned on the timeline as it
-   * is, in the timeline's mode (the magnet, sync lock, linked clips), one write and one undo step. A dip to white first
-   * keeps its white page in the project (transitions/white.html).
+   * is, in the timeline's mode (the magnet, sync lock, linked clips), one write and one undo step. The menus put on
+   * fades only; other transitions are an agent's to write.
    */
   const askTransition = React.useCallback(async (ask: TransitionAsk): Promise<string | null> => {
     const prefs = readTimelinePrefs();
-    const opts = { ripple: prefs.magnet, sync: prefs.sync, linked: prefs.linked, whiteSrc: WHITE_SRC };
     const model = editModel();
+    /* the magnet acts on the main track: there a transition's overlap closes up what follows */
+    const cutClip = ask.kind === 'add' ? ask.cut.a : filmTransitions.find((x) => x.key === ask.key)?.a;
+    const cutTrack = model.find((tr) => tr.clips.some((c) => c.id === cutClip))?.index;
+    const opts = { ripple: magnetOn(model, cutTrack, prefs.magnet), ...followOf(prefs), linked: prefs.linked, whiteSrc: WHITE_SRC };
     let plan: TransitionPlan;
     let label: string;
     if (ask.kind === 'add') {
-      if (ask.type === 'dip-white') {
-        const made = await fetch(`/api/projects/${encodeURIComponent(projectId)}/transition-pages`, {
-          method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'white', html: WHITE_PAGE }),
-        }).catch(() => null);
-        if (!made?.ok) return t('transitions.failed').replace('{error}', made ? String(made.status) : 'offline');
-        await api.files(projectId).then(setRawListing, () => {});
-      }
       /* the default length, on the frame grid */
       const frame = frameMs(1);
       plan = planTransition(model, clipFacts, ask.type, ask.cut, Math.round(TRANSITION_MS / frame) * frame, opts);
@@ -709,7 +749,7 @@ export function ProjectView({ projectId, onProject, onLeave }: {
     }
     if ('error' in plan) return t(plan.error === 'locked' ? 'transitions.locked' : plan.error === 'short' ? 'transitions.short' : 'transitions.none');
     return plan.ops.length ? edit(plan.ops, label) : null;
-  }, [editModel, clipFacts, filmTransitions, edit, projectId, t]);
+  }, [editModel, clipFacts, filmTransitions, edit, t]);
   /**
    * The inspector's edits (its refusals it says beside its field). A new speed goes to the clips linked to the clip too; with the magnet on (the timeline's
    * switch) a speed or a length that makes the clip longer or shorter pushes or pulls what follows, as a ripple trim
@@ -720,8 +760,10 @@ export function ProjectView({ projectId, onProject, onLeave }: {
     const block = one && edits.length === 1 ? blocksRef.current.find((b) => b.loc === one.loc) : undefined;
     const prefs = readTimelinePrefs();
     if (block?.loc && lockedEdits(edits, filmRef.current).length) return Promise.resolve(t('timeline.trackLocked'));
-    if (!block?.clipId || (one!.prop !== 'speed' && one!.prop !== 'at' && !(one!.prop === 'end' && prefs.magnet))) return editBlocks(edits, true);
     const model = editModel();
+    /* the magnet acts on the main track alone */
+    const magnet = magnetOn(model, model.find((tr) => tr.clips.some((c) => c.id === block?.clipId))?.index, prefs.magnet);
+    if (!block?.clipId || (one!.prop !== 'speed' && one!.prop !== 'at' && !(one!.prop === 'end' && magnet))) return editBlocks(edits, true);
     const ids = prefs.linked ? [block.clipId, ...linkedIds(model, [block.clipId]).filter((id) => id !== block.clipId)] : [block.clipId];
     if (one!.prop === 'at') {
       /* a start typed in: the clip (and those linked to it) moves as a drag would, in the timeline's mode: with the
@@ -729,20 +771,20 @@ export function ProjectView({ projectId, onProject, onLeave }: {
          what is under it. Never onto a new track */
       const startMs = Number(one!.value) * 1000 + (block.anchor?.parentStartMs ?? 0);
       if (!Number.isFinite(startMs)) return Promise.resolve(t('timeline.editFail'));
-      const plan = planMove(model, { ids, deltaMs: startMs - block.startMs, pointerMs: startMs, mode: prefs.magnet ? 'insert' : 'overwrite', sync: prefs.sync });
+      const plan = planMove(model, { ids, deltaMs: startMs - block.startMs, pointerMs: startMs, mode: magnet ? 'insert' : 'overwrite', magnet: prefs.magnet, ...followOf(prefs) });
       if (!plan) return Promise.resolve(t('timeline.trackLocked'));
       return plan.ops.length ? edit(plan.ops, clipStep('history.stepMoved', [block.clipId]), true) : Promise.resolve(null);
     }
     if (one!.prop === 'speed') {
       const speed = typeof one!.value === 'number' ? one!.value : 1;
-      const plan = planSpeed(model, ids, speed, { ripple: prefs.magnet, sync: prefs.sync });
+      const plan = planSpeed(model, ids, speed, { ripple: magnet, ...followOf(prefs) });
       if (plan.slowest != null) return Promise.resolve(t('inspector.speedTooSlow').replace('{n}', String(plan.slowest)));
       return plan.ops.length ? edit(plan.ops, `history.stepSpeed|${block.clipId}`, true) : Promise.resolve(null);
     }
     /* a new length, with the magnet: a ripple trim of the tail by the difference (source seconds over the speed) */
     const k = block.anchor?.trimFrom != null && block.speed ? block.speed : 1;
     const deltaMs = ((Number(one!.value) - Number(one!.from ?? one!.value)) * 1000) / k;
-    const plan = planRippleTrim(model, ids, 'end', deltaMs, { sync: prefs.sync });
+    const plan = planRippleTrim(model, ids, 'end', deltaMs, followOf(prefs));
     return plan.ops.length ? edit(plan.ops, `history.stepRippleTrimmed|${block.clipId}`, true) : Promise.resolve(null);
   }, [editBlocks, editModel, edit, t]);
   const removeBlock = React.useCallback((block: TimelineBlock): Promise<string | null> => {
@@ -778,14 +820,29 @@ export function ProjectView({ projectId, onProject, onLeave }: {
       taken.add(made);
       rightLinks.set(link, made);
     }
+    /* a selected clip's selection goes to its right half, as CapCut's: named here so it can be selected once written */
+    const selected = new Set(selectedKeysRef.current);
+    const used = new Set(clips.map((c) => c.id));
+    const rightIds = new Map<string, string>();
+    for (const { block } of halves) {
+      if (!selected.has(block.clipId!)) continue;
+      let id = `${block.clipId}-b`;
+      for (let n = 2; used.has(id); n++) id = `${block.clipId}-b-${n}`;
+      used.add(id);
+      rightIds.set(block.clipId!, id);
+    }
     const ops: Op[] = halves.map(({ block, split, link }) => ({
       op: 'split',
       clip: block.clipId!,
       left: split.left,
       /* a half left alone with a link (its linked clip not under the cut) keeps none: it would pull the other along */
       right: { ...split.right, link: link ? rightLinks.get(link) ?? null : null },
+      ...(rightIds.has(block.clipId!) ? { rightId: rightIds.get(block.clipId!)! } : {}),
     }));
-    return edit(ops, clipStep('history.stepSplit', halves.slice(0, 2).map((h) => h.block.clipId!)));
+    return edit(ops, clipStep('history.stepSplit', halves.slice(0, 2).map((h) => h.block.clipId!))).then((err) => {
+      if (!err && rightIds.size) setSelectedKeys((keys) => keys.map((k) => rightIds.get(k) ?? k));
+      return err;
+    });
   }, [edit, editModel, t]);
   /**
    * A video's sound taken apart from its picture, as an editor unlinks them: the same file's sound alone, at the same
@@ -838,7 +895,7 @@ export function ProjectView({ projectId, onProject, onLeave }: {
     const all = [...items, ...cut].sort((a, b) => a.startMs - b.startMs);
     if (!all.length) return Promise.resolve(null);
     const prefs = readTimelinePrefs();
-    const ops = pasteEdit(all, timelineTracks, editModel(), atMs, lane, { mode: prefs.magnet ? 'insert' : 'overwrite', sync: prefs.sync });
+    const ops = pasteEdit(all, timelineTracks, editModel(), atMs, lane, { magnet: prefs.magnet, ...followOf(prefs) });
     if (!ops) return Promise.resolve(t('timeline.trackLocked'));
     const gone = new Set(cut.map((item) => item.clipId));
     const written = ops.map((op): Op => {
@@ -854,10 +911,10 @@ export function ProjectView({ projectId, onProject, onLeave }: {
   const roomFor = React.useCallback((spans: { track: number | { insert: number } | undefined; atSec: number; durMs: number }[], mode?: EditMode): Op[] => {
     const onTracks = spans.flatMap((s) => (typeof s.track === 'number' ? [{ track: s.track, startMs: Math.round(s.atSec * 1000), endMs: Math.round(s.atSec * 1000) + s.durMs }] : []));
     if (!mode || !onTracks.length) return [];
-    return planRoom(editModel(), onTracks, { mode, sync: readTimelinePrefs().sync }).ops;
+    return planRoom(editModel(), onTracks, { mode, ...followOf(readTimelinePrefs()) }).ops;
   }, [editModel]);
   const dropAsset = React.useCallback(async (file: ResourceDragItem, target: AssetDropTarget, atMs: number): Promise<string | null> => {
-    const plan = assetDropInsert(file, timelineTracks, target, atMs);
+    const plan = assetDropInsert(file, timelineTracks, target, atMs, stageRef.current);
     if ('error' in plan) return plan.error === 'locked' ? t('timeline.trackLocked') : t('timeline.dropNotClip');
     const pending = pendingDropOf(file, target, atMs);
     if (pending) setPendingDrops((all) => [...all, pending]);
@@ -879,7 +936,7 @@ export function ProjectView({ projectId, onProject, onLeave }: {
     const prefs = readTimelinePrefs();
     const target = timelineCommands.current?.target() ?? null;
     const at = how.atPlayhead || target != null ? snapToFrame(timeRef.current) : 'end';
-    const plan = placeMedia(editModel(), { file, range: how.range ?? null, target, at, mode: how.mode ?? (prefs.magnet ? 'insert' : 'overwrite'), sync: prefs.sync });
+    const plan = placeMedia(editModel(), { file, range: how.range ?? null, target, at, ...(how.mode ? { mode: how.mode } : {}), magnet: prefs.magnet, ...followOf(prefs), stage: stageRef.current });
     if ('error' in plan) { toast.show(plan.error === 'locked' ? t('timeline.trackLocked') : t('timeline.dropNotClip')); return; }
     const failed = await edit(plan.ops, 'history.stepDrop');
     if (failed) { toast.show(failed); return; }
@@ -987,6 +1044,10 @@ export function ProjectView({ projectId, onProject, onLeave }: {
       onNewFolder={onNewFolder}
       onDropClips={dropClipsForAssets}
       onReveal={reveal}
+      onPick={onPick}
+      onBring={onBring}
+      onRelink={onRelink}
+      onCollect={onCollect}
       onClose={onClose}
       {...(studioHost?.refer ? { fileRef: refOfFile, onRefer: studioHost.refer } : {})}
       reveal={revealMedia}
@@ -1268,6 +1329,8 @@ export function ProjectView({ projectId, onProject, onLeave }: {
     setStageSelectRequest((cur) => ({ loc, ...(clipLoc ? { clipLoc } : {}), seq: (cur?.seq ?? 0) + 1 }));
   }, []);
   const selectStageClip = React.useCallback((clipLoc: string) => { setStageElement(null); setSelectedLocs([clipLoc]); }, [setSelectedLocs]);
+  /* a marquee on the picture around several clips: the timeline selects them */
+  const selectStageClips = React.useCallback((locs: readonly string[]) => { setStageElement(null); setSelectedLocs([...locs]); }, [setSelectedLocs]);
   /* ── the Layers panel: its rows select on the picture, outline there, hide, lock and restack (overrides) ── */
   const [pointedLayer, setPointedLayer] = React.useState<{ clipId: string; loc: string } | null>(null);
   const askStage = React.useCallback(<T,>(op: string, args: object = {}): Promise<T | null> => (
@@ -1402,7 +1465,11 @@ export function ProjectView({ projectId, onProject, onLeave }: {
     for (const p of picks) { const ref = refOfStagePick(p); if (ref) refer(ref); }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   /* the bar's Mask: the inspector open on its Mask section (the shapes are picked there) */
-  const openMaskSection = React.useCallback(() => {
+  /* the picture's Mask menu: the shape goes to the clip's Mask section (put on, its handles shown), opened */
+  const [maskAsk, setMaskAsk] = React.useState<{ shape: MaskShape | 'none'; clipLoc: string; n: number } | null>(null);
+  const maskAsked = React.useCallback(() => setMaskAsk(null), []);
+  const openMaskSection = React.useCallback((shape: MaskShape | 'none', clipLoc: string) => {
+    setMaskAsk({ shape, clipLoc, n: Date.now() });
     openSection('mask');
     setInspectorContent('selection');
     setInspectorOpen(true);
@@ -1419,7 +1486,7 @@ export function ProjectView({ projectId, onProject, onLeave }: {
     if (!picked.length) return null;
     const prefs = readTimelinePrefs();
     const tracks = tracksRef.current;
-    const ops = pasteEdit(clipboardItemsOf(picked, tracks), tracks, editModel(), Math.max(...picked.map((b) => b.endMs)), null, { mode: prefs.magnet ? 'insert' : 'overwrite', sync: prefs.sync });
+    const ops = pasteEdit(clipboardItemsOf(picked, tracks), tracks, editModel(), Math.max(...picked.map((b) => b.endMs)), null, { magnet: prefs.magnet, ...followOf(prefs) });
     const failed = !ops ? t('timeline.trackLocked') : ops.length ? await edit(ops, picked.length <= 2 ? clipStep('history.stepDuplicated', picked.map((b) => b.clipId!)) : 'history.stepDuplicate') : null;
     if (failed) toast.show(failed);
     return failed;
@@ -1539,29 +1606,82 @@ export function ProjectView({ projectId, onProject, onLeave }: {
   /* ── media pane actions ── */
   const projectApi = `/api/projects/${encodeURIComponent(projectId)}`;
   const mediaResult = async (res: Response): Promise<MediaResult> => (res.ok ? 'ok' : res.status === 409 ? 'taken' : 'failed');
-  /* resolves with where each file landed (a taken name gets a number); one that is no readable media is said at once */
-  const onImport = React.useCallback(async (files: File[], into: string, onProgress: (ratio: number) => void): Promise<string[]> => {
-    let done = 0;
+  /* media kept on this computer (files.mjs bringIn): picked in the system's dialog (the app's own for a folder, when
+     it has one; 'no-dialog' where there is none), copied in (cloned where the disk can) or linked where it is kept (a
+     NAS). A link pointed elsewhere, or copied into the project in its place */
+  const postJson = React.useCallback(async (path: string, body: unknown) => {
+    const res = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    const answer = await res.json().catch(() => ({})) as Record<string, unknown>;
+    return { ok: res.ok, status: res.status, answer };
+  }, []);
+  const onPick = React.useCallback(async (title: string, folder: boolean): Promise<string[] | 'no-dialog'> => {
+    if (folder && studioHost?.folders?.pick) { const path = await studioHost.folders.pick({ title }); return path ? [path] : []; }
+    const { ok, status, answer } = await postJson(folder ? '/api/pick-folder' : '/api/pick-files', { title });
+    if (status === 501) return 'no-dialog';
+    if (!ok) return [];
+    return folder ? (typeof answer.path === 'string' ? [answer.path] : []) : Array.isArray(answer.paths) ? answer.paths.map(String) : [];
+  }, [postJson]);
+  const onBring = React.useCallback(async (paths: string[], into: string, mode: 'copy' | 'link'): Promise<string[]> => {
+    const { ok, answer } = await postJson(`${projectApi}/files/bring`, { paths, into, mode });
+    if (!ok) throw new Error(String(answer.error ?? t('assets.uploadFailed')));
+    return Array.isArray(answer.landed) ? answer.landed.map(String) : [];
+  }, [projectApi, postJson, t]);
+  const onRelink = React.useCallback(async (path: string, folder: boolean): Promise<MediaResult> => {
+    const to = (await onPick(t('media.pickRelink'), folder));
+    if (to === 'no-dialog' || !to.length) return 'ok';
+    return (await postJson(`${projectApi}/files/relink`, { path, to: to[0] })).ok ? 'ok' : 'failed';
+  }, [projectApi, postJson, onPick, t]);
+  const onCollect = React.useCallback(async (path: string): Promise<MediaResult> => (
+    (await postJson(`${projectApi}/files/collect`, { path })).ok ? 'ok' : 'failed'
+  ), [projectApi, postJson]);
+  /*
+   * resolves with where each file landed (a taken name gets a number); one that is no readable media is said at once.
+   * Each file's progress is its bytes sent (XMLHttpRequest: fetch cannot tell how much of a body has gone), then 1 and
+   * where it landed
+   */
+  const onImport = React.useCallback(async (files: File[], into: string, onProgress: ImportProgress): Promise<string[]> => {
     const landed: string[] = [];
-    for (const file of files) {
+    /* in the app a dropped file's path is known: copied on this computer (cloned where the disk can: at once, and no
+       more room taken), not sent through the page */
+    const paths = files.map((file) => studioHost?.folders?.pathOf(file) ?? '');
+    if (paths.length && paths.every(Boolean)) {
+      for (const [i, path] of paths.entries()) {
+        onProgress(i, -1);
+        // eslint-disable-next-line no-await-in-loop
+        const [at] = await onBring([path], into, 'copy');
+        if (at) landed.push(at);
+        onProgress(i, 1, at);
+      }
+      return landed;
+    }
+    for (const [i, file] of files.entries()) {
       // eslint-disable-next-line no-await-in-loop
-      const res = await fetch(`${projectApi}/files?path=${encodeURIComponent(`${into}/${file.name}`)}`, { method: 'PUT', body: file });
-      // eslint-disable-next-line no-await-in-loop
-      const body = await res.json().catch(() => ({})) as { path?: string; error?: string; unreadable?: string };
-      if (!res.ok) throw new Error(String(body.error ?? t('assets.uploadFailed')));
+      const { ok, body } = await new Promise<{ ok: boolean; body: { path?: string; error?: string; unreadable?: string } }>((done) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('PUT', `${projectApi}/files?path=${encodeURIComponent(`${into}/${file.name}`)}`);
+        xhr.upload.onprogress = (e) => { if (e.lengthComputable && e.total > 0) onProgress(i, Math.min(0.99, e.loaded / e.total)); };
+        xhr.onload = () => {
+          let body = {};
+          try { body = JSON.parse(xhr.responseText); } catch { /* no answer to read */ }
+          done({ ok: xhr.status >= 200 && xhr.status < 300, body });
+        };
+        xhr.onerror = () => done({ ok: false, body: {} });
+        xhr.send(file);
+      });
+      if (!ok) throw new Error(String(body.error ?? t('assets.uploadFailed')));
       if (body.path) landed.push(body.path);
       if (body.unreadable) toast.show(t('assets.unreadable').replace('{name}', file.name).replace('{why}', body.unreadable));
-      onProgress(++done / files.length);
+      onProgress(i, 1, body.path);
     }
     return landed;
-  }, [projectApi, t, toast]);
+  }, [projectApi, t, toast, onBring]);
 
   /* ── files dropped from the computer: imported into assets/ (the media pane's own import), then put on the film ── */
-  /** A file just imported, as the media pane would hand it to a drop: its kind from its name, its length probed. */
+  /** A file just imported, as the media pane would hand it to a drop: its kind from its name, its length and size probed. */
   const resourceOf = React.useCallback(async (path: string): Promise<ResourceDragItem> => {
     const kind = resourceKindOf(path);
     const base: ResourceDragItem = { path, name: path.slice(path.lastIndexOf('/') + 1), kind, dir: '', size: 0, mtimeMs: 0 };
-    if (kind !== 'video' && kind !== 'audio') return base;
+    if (kind !== 'video' && kind !== 'image' && kind !== 'audio') return base;
     const probe = await fetch(`${projectApi}/media?what=probe&path=${encodeURIComponent(path)}`).then((r) => (r.ok ? r.json() : null), () => null);
     return { ...base, ...factsOfProbe(probe) };
   }, [projectApi]);
@@ -1593,7 +1713,7 @@ export function ProjectView({ projectId, onProject, onLeave }: {
   }, [onImport, resourceOf, edit, roomFor, t]);
   /* on the timeline: where they were dropped, as a drag from the media pane lands */
   const dropFiles = React.useCallback((files: File[], hit: AssetLaneHit | null, atMs: number, mode?: EditMode) => (
-    importAndPlace(files, (items) => assetRunInsert(items, tracksRef.current, hit, atMs, mode), mode)
+    importAndPlace(files, (items) => assetRunInsert(items, tracksRef.current, hit, atMs, mode, stageRef.current), mode)
   ), [importAndPlace]);
   /* on the picture: at the playhead, pictures on a new track on top, sounds on a sound track */
   const dropFilesOnPicture = React.useCallback((files: File[]) => {
@@ -1603,7 +1723,7 @@ export function ProjectView({ projectId, onProject, onLeave }: {
       const pictures = items.filter((f) => f.kind !== 'audio');
       const tracks = tracksRef.current;
       const heard = sounds.length ? assetRunInsert(sounds, tracks, soundLaneHit(tracks, atMs, assetRunMs(sounds)), atMs) : { inserts: [] };
-      const seen = pictures.length ? assetRunInsert(pictures, tracks, { lane: -1, band: 'body' }, atMs) : { inserts: [] };
+      const seen = pictures.length ? assetRunInsert(pictures, tracks, { lane: -1, band: 'body' }, atMs, undefined, stageRef.current) : { inserts: [] };
       /* the sounds first: the pictures' new track goes in at the top and moves every track under it down one */
       const inserts = [...('inserts' in heard ? heard.inserts : []), ...('inserts' in seen ? seen.inserts : [])];
       if (inserts.length) return { inserts };
@@ -1684,16 +1804,14 @@ export function ProjectView({ projectId, onProject, onLeave }: {
   const onNewFolder = React.useCallback(async (path: string) => mediaResult(await fetch(`${projectApi}/folders`, {
     method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ path }),
   })), [projectApi]);
-  const reveal = React.useCallback((path: string) => {
-    void fetch(`${projectApi}/reveal`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ path }) });
+  const reveal = React.useCallback((path: string, original?: boolean) => {
+    void fetch(`${projectApi}/reveal`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ path, ...(original ? { original } : {}) }) });
   }, [projectApi]);
 
   /* ── picture: the delivery frame, fullscreen ── */
   const stage = film.film?.stage ?? { w: 1920, h: 1080 };
   stageRef.current = stage;
   const empty = !film.film?.tracks.some((tr) => tr.clips.length);
-  /* the picture is the canvas, nothing around it: another shape is another canvas (a delivery frame is the export's) */
-  const frameBox = React.useMemo(() => filmFrameBox(stage, 'native'), [stage]);
   /* the canvas (the stage in film.html), from the viewer's ratio button or the inspector, as CapCut's: another shape
      keeps the canvas's short side (canvasFor; a typed size is that size), and every picture on it is scaled by one
      factor into the new canvas, centered, in the same edit (one undo). Laying the film out again for the new canvas
@@ -1706,9 +1824,8 @@ export function ProjectView({ projectId, onProject, onLeave }: {
       .sort((a, b) => (a.at ?? 0) - (b.at ?? 0))[0];
     return first ? sized.get(first.id) ?? null : null;
   }, [spans, film.film]);
-  const changeCanvas = React.useCallback((next: FilmFrameId, given?: { w: number; h: number }) => {
-    const size = given ?? canvasFor(stage, next);
-    if (size.w === stage.w && size.h === stage.h) return;
+  /** The edit that makes the canvas `size`, the film fitted into it (see canvas-fit). */
+  const canvasOps = React.useCallback((size: { w: number; h: number }): Op[] => {
     const own = new Map(spans.map((span) => [span.id, span.w && span.h ? { w: span.w, h: span.h } : null]));
     const reflows = new Set(spans.filter((span) => span.reflows).map((span) => span.id));
     const clips = (film.film?.tracks ?? []).flatMap((track) => track.clips.map((clip) => ({
@@ -1719,14 +1836,37 @@ export function ProjectView({ projectId, onProject, onLeave }: {
       reflows: reflows.has(clip.id),
       size: clip.size ?? null,
     })));
-    void edit([
+    return [
       { op: 'stage', w: size.w, h: size.h },
       ...fitToCanvas(clips, stage, size).flatMap((fit) => [
         { op: 'set' as const, clip: fit.id, field: 'box', value: fit.box },
         ...(fit.size ? [{ op: 'set' as const, clip: fit.id, field: 'size', value: fit.size }] : []),
       ]),
-    ], 'history.stepEdit');
-  }, [edit, stage, spans, film.film]);
+    ];
+  }, [stage, spans, film.film]);
+  /* a canvas size shown on the picture while its width or height is dragged, not kept yet */
+  const [canvasDraft, setCanvasDraft] = React.useState<{ w: number; h: number } | null>(null);
+  const shownStage = canvasDraft ?? stage;
+  /* the picture is the canvas, nothing around it: another shape is another canvas (a delivery frame is the export's) */
+  const frameBox = React.useMemo(() => filmFrameBox(shownStage, 'native'), [shownStage]);
+  const previewCanvas = React.useCallback((size: { w: number; h: number } | null) => {
+    const value = film.film;
+    if (!value) return;
+    if (!size || (size.w === stage.w && size.h === stage.h)) {
+      setCanvasDraft((cur) => { if (cur) preview.current?.update(value); return null; });
+      return;
+    }
+    let shown: Film;
+    try { shown = applyOps(structuredClone(value), canvasOps(size)) as Film; } catch { return; }
+    setCanvasDraft(size);
+    preview.current?.update(shown);
+  }, [film.film, stage, canvasOps]);
+  const changeCanvas = React.useCallback((next: FilmFrameId, given?: { w: number; h: number }) => {
+    const size = given ?? canvasFor(stage, next);
+    setCanvasDraft(null);
+    if (size.w === stage.w && size.h === stage.h) { if (canvasDraft && film.film) preview.current?.update(film.film); return; }
+    void edit(canvasOps(size), 'history.stepEdit');
+  }, [edit, stage, canvasOps, canvasDraft, film.film]);
   const stageFullRef = React.useRef<HTMLDivElement>(null);
   const [fullscreen, setFullscreen] = React.useState(false);
   React.useEffect(() => {
@@ -2090,7 +2230,7 @@ export function ProjectView({ projectId, onProject, onLeave }: {
                 assets={hostAssets ? null : assetsPaneOpen} onAssets={setAssetsPaneOpen}
                 layers={layersPaneOpen} onLayers={setLayersPaneOpen}
                 timeline={timelineOpen} inspector={inspectorOpen}
-                onTimeline={setTimelineOpen} onInspector={persistInspector}
+                onTimeline={setTimelineOpen} onInspector={setInspectorOpen}
                 hostPanel={hostPanel ? { label: hostPanel.label, open: hostPanel.open, onChange: hostPanel.setOpen } : null} />
               <ProjectHistoryButton open={historyOpen} onClick={openHistory} className={TOP_BTN} />
               <ProjectMenu className={TOP_BTN}
@@ -2177,7 +2317,7 @@ export function ProjectView({ projectId, onProject, onLeave }: {
                   </Tooltip>
                   <span className="min-w-0 flex-1" />
                   <Tooltip label={t(inspectorOpen ? 'inspector.hide' : 'inspector.show')} side="bottom">
-                    <button type="button" onClick={() => persistInspector(!inspectorOpen)}
+                    <button type="button" onClick={() => setInspectorOpen(!inspectorOpen)}
                       aria-label={t(inspectorOpen ? 'inspector.hide' : 'inspector.show')}
                       className={`${PANE_TOGGLE} ${inspectorOpen ? PANE_BTN_ON : ''}`}>
                       <Settings2 size={PANE_TOGGLE_ICON} />
@@ -2228,12 +2368,12 @@ export function ProjectView({ projectId, onProject, onLeave }: {
                           width: `${(frameBox.inner.w / frameBox.w) * 100}%`,
                           height: `${(frameBox.inner.h / frameBox.h) * 100}%`,
                         }}>
-                          <Preview ref={preview} folder={folder} stage={stage} time={() => player.current.time()}
+                          <Preview ref={preview} folder={folder} stage={shownStage} time={() => player.current.time()}
                             onInfo={onInfo} onKey={previewKey} onError={setPreviewError}>
                             {!fullscreen ? (
                               <FilmStageSelect
                                 previewRef={preview}
-                                stage={stage}
+                                stage={shownStage}
                                 doc={value as unknown as FilmDoc}
                                 spans={spans}
                                 timeMs={timeMs}
@@ -2242,6 +2382,7 @@ export function ProjectView({ projectId, onProject, onLeave }: {
                                 onSelectElement={selectStageElement}
                                 onEditClip={editClipsFromStage}
                                 linkedLocs={selectedLocs}
+                                onSelectClips={selectStageClips}
                                 selectRequest={stageSelectRequest}
                                 clipPreviewRef={clipPreviewRef}
                                 lookPreviewRef={lookPreviewRef}
@@ -2344,6 +2485,7 @@ export function ProjectView({ projectId, onProject, onLeave }: {
                       store={geometryStore}
                       element={stageElement}
                       clips={selectedBlocks}
+                      mainTrack={mainTrack}
                       onEditClips={editClips}
                       width={inspectorShownWidth}
                       onClose={closeInspector}
@@ -2362,10 +2504,15 @@ export function ProjectView({ projectId, onProject, onLeave }: {
                       onPreviewLook={previewLook}
                       onStartCrop={startStageCrop}
                       onEditMask={editStageMask}
+                      maskAsk={maskAsk}
+                      onMaskAsked={maskAsked}
                       stage={stage}
                       film={filmSummary}
                       onCanvas={changeCanvas}
+                      onCanvasPreview={previewCanvas}
+                      canvasDraft={canvasDraft}
                       onEditLayers={editStageOverrides}
+                      onPlaceLayers={(to) => stageControl.current?.placeLayers(to)}
                       locked={inspectorLocked}
                       rate={frameRate}
                       fades={clipFades}

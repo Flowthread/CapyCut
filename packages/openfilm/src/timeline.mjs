@@ -9,11 +9,15 @@ const own = new URL(location.href);
 own.searchParams.set('film-host', '0');
 const ownText = await (await fetch(own, { cache: 'no-store' })).text();
 const read = readFilmFile(ownText);
-/* what the tracks are not (the stage, the styles): changed, the film is loaded again, not changed in place */
-const head = filmHead(ownText);
+/* what the tracks and the stage are not (the styles, the fonts): changed, the film is loaded again, not changed in
+   place. The stage is the viewport's size, and changes in place (see change) */
+const VIEWPORT = /<meta\b[^>]*\bname\s*=\s*["']?viewport\b[^>]*>/i;
+const styleOf = (text) => text.replace(VIEWPORT, '');
+const head = styleOf(filmHead(ownText));
 if (!read.doc) throw new Error(read.problems.length === 1 ? read.problems[0] : `film.html has ${read.problems.length} problems:\n  ${read.problems.join('\n  ')}`);
 let doc = read.doc;
-const stage = doc.stage;
+/* the stage, the same object while the film is shown: an edit of its size changes it in place (see reshape) */
+const stage = { ...doc.stage };
 Object.assign(document.body.style, { width: stage.w + 'px', height: stage.h + 'px', margin: '0', overflow: 'hidden', position: 'relative' });
 /* the clips' elements, in the order the file has them (the reading above checked that is all a track holds) */
 const CLIP_TAGS = new Set(['iframe', 'video', 'img', 'audio']);
@@ -33,7 +37,10 @@ async function limited(fn) {
   try { return await fn(); } finally { loadsBusy--; loadsWaiting.shift()?.(); }
 }
 
-/** Each media file's own length and picture size, read once (the clips of one recording share it); null: unreadable. */
+/**
+ * Each media file's own length and picture size, read once (the clips of one recording share it); null: unreadable.
+ * Asked as `?film-facts`: a host that plays a lighter copy in a file's place (a proxy) answers this with the file.
+ */
 const factsBySrc = new Map();
 function factsOf(src) {
   const href = url(src).href;
@@ -45,7 +52,9 @@ function factsOf(src) {
       const done = (facts) => { m.removeAttribute('src'); m.load(); ok(facts); };
       m.onloadedmetadata = () => done({ duration: m.duration, w: m.videoWidth, h: m.videoHeight });
       m.onerror = () => done(null);
-      m.src = href;
+      const facts = new URL(href);
+      facts.searchParams.set('film-facts', '1');
+      m.src = facts.href;
     })));
   }
   return factsBySrc.get(href);
@@ -151,14 +160,27 @@ function override(c, list = []) {
       }
       if (o.text != null) {
         const saved = (touch(el, 'translate'), c.touched.get(el));
-        const parts = [...el.childNodes].filter((n) => n.nodeType === 3 && n.data.trim());
-        saved.texts ??= el.childElementCount === 0 ? el.textContent : parts.map((n) => [n, n.data]);
-        /* a heading with inline parts (`Quiet<br><em>you</em>`): its own words change, the parts stay */
-        if (el.childElementCount === 0) { if (el.textContent !== o.text) el.textContent = o.text; }
-        else parts.forEach((n, k) => { n.data = k ? '' : o.text; });
+        if ([...el.children].every((ch) => ch.localName === 'br')) {
+          /* words alone, or lines between <br>s: all of them change, a <br> at each line break (SPEC §1) */
+          saved.nodes ??= [...el.childNodes];
+          if (linesOf(el) !== o.text) {
+            const doc = el.ownerDocument;
+            el.replaceChildren(...o.text.split('\n').flatMap((line, k) => (k ? [doc.createElement('br'), doc.createTextNode(line)] : [doc.createTextNode(line)])));
+          }
+        } else {
+          const parts = [...el.childNodes].filter((n) => n.nodeType === 3 && n.data.trim());
+          saved.texts ??= parts.map((n) => [n, n.data]);
+          /* a heading with other inline parts (`Quiet<br><em>you</em>`): its own words change, the parts stay */
+          parts.forEach((n, k) => { n.data = k ? '' : o.text; });
+        }
       }
     }
   }
+}
+
+/** An element's words with a line break for each <br>, as a `text` override writes them. */
+function linesOf(el) {
+  return [...el.childNodes].map((n) => (n.nodeType === 3 ? n.data : n.localName === 'br' ? '\n' : '')).join('');
 }
 
 /** Put back what a clip's tweaks changed (before a changed list is applied, or when it is taken away). */
@@ -167,7 +189,7 @@ function restore(c) {
     for (const [prop, [value, priority]] of saved.props) {
       if (value) el.style.setProperty(prop, value, priority); else el.style.removeProperty(prop);
     }
-    if (typeof saved.texts === 'string') el.textContent = saved.texts;
+    if (saved.nodes) el.replaceChildren(...saved.nodes);
     else if (saved.texts) for (const [node, data] of saved.texts) node.data = data;
   }
   c.touched = new Map();
@@ -175,6 +197,8 @@ function restore(c) {
 }
 
 const SAME_TIME = 1e-4; // s: a video's currentTime is kept to the microsecond, so a time set is read back a hair off
+const PRESENT_MS = 1000; // how long a sought frame may take to be on screen before the seek is made again
+const SEEK_TRIES = 3;
 
 /**
  * Put a video on the frame at `t` and wait until that frame is the one on screen. `seeked` fires when the decoder
@@ -198,22 +222,35 @@ async function showVideoAt(v, t, frame = null) {
      with a quarter frame to spare for footage whose frames are not all as long; without the frame's length, the old
      frame is the one nearer where the video was than where it is sought (a frame there would look the same) */
   const right = (m) => (frame ? m <= t + 0.002 && t + 0.001 - m < frame * 1.25 : sought || Math.abs(m - t) <= Math.abs(m - before));
-  const presented = typeof v.requestVideoFrameCallback === 'function'
-    ? new Promise((done) => {
-      const next = () => v.requestVideoFrameCallback((now, meta) => { if (right(meta.mediaTime)) done(); else next(); });
-      next();
-      setTimeout(done, 3000);
-    })
-    : null;
-  v.currentTime = t;
-  await new Promise((done) => {
-    if (!v.seeking && v.readyState >= 2) { done(); return; }
-    v.addEventListener('seeked', done, { once: true });
-    v.addEventListener('loadeddata', done, { once: true });
-    setTimeout(done, 10000);
-  });
-  sought = true;
-  if (presented) await presented;
+  const callback = typeof v.requestVideoFrameCallback === 'function';
+  /* a seek made just after the file loaded can decode its frame and never present it (Chromium): the picture stays on
+     the frame it had (the clip's first, where it was woken), however long it is waited for. Not presented in a
+     moment, the seek is made again; the last try waits as long as a slow machine may need */
+  for (let tries = 1; ; tries++) {
+    const last = tries === SEEK_TRIES || !callback;
+    let handle = 0;
+    let timer = 0;
+    const presented = callback
+      ? new Promise((done) => {
+        const next = () => { handle = v.requestVideoFrameCallback((now, meta) => { if (right(meta.mediaTime)) done(true); else next(); }); };
+        next();
+        timer = setTimeout(() => done(false), last ? 3000 : PRESENT_MS);
+      })
+      : null;
+    /* again, half a millisecond on (the same frame): a seek to where the element already is may be skipped */
+    v.currentTime = t + (tries - 1) * 0.0005;
+    await new Promise((done) => {
+      if (!v.seeking && v.readyState >= 2) { done(); return; }
+      v.addEventListener('seeked', done, { once: true });
+      v.addEventListener('loadeddata', done, { once: true });
+      setTimeout(done, 10000);
+    });
+    sought = true;
+    const shown = presented ? await presented : true;
+    clearTimeout(timer);
+    if (handle) v.cancelVideoFrameCallback?.(handle);
+    if (shown || last) return;
+  }
 }
 
 /**
@@ -664,12 +701,12 @@ function sectionOf(ti, track) {
 /**
  * The film after an edit, changed in place: clips kept (by id, with the same source) take their new fields, clips
  * added get elements and load (a video's file only once the playhead comes near), clips gone are taken out. False
- * when the film has to be loaded again: another stage or head, or a clip that cannot load (that says why).
+ * when the film has to be loaded again: another head (its styles), or a clip that cannot load (that says why). Another
+ * stage is changed in place too (reshape).
  */
 async function change(value, look) {
-  if (look != null && look !== head) return false;
+  if (look != null && styleOf(look) !== head) return false;
   const next = parseFilm(value);
-  if (next.stage.w !== stage.w || next.stage.h !== stage.h) return false;
   const rows = next.tracks.flatMap((track, ti) => track.clips.map((row) => ({ row, track, ti })));
   const byId = new Map(clips.map((c) => [c.id, c]));
   const kept = (row) => { const c = byId.get(row.id); return c && c.src === row.src && c.kind === kindOf(row) ? c : null; };
@@ -697,7 +734,7 @@ async function change(value, look) {
     await Promise.race([ready, late]);
     clearTimeout(timer);
   }
-  try { doc = next; rows.forEach(({ row, track, ti }, i) => settle(records[i], row, track, ti)); }
+  try { reshape(next.stage); doc = next; rows.forEach(({ row, track, ti }, i) => settle(records[i], row, track, ti)); }
   catch { return false; }
   /* what the change put on at the moment shown and made ready shows now, with the clips it took away going: the
      picture changes at once, not first without them until that moment is drawn again */
@@ -718,6 +755,18 @@ async function change(value, look) {
   hear();
   window.__filmEditor.stage.updated?.();
   return true;
+}
+/**
+ * The stage at another size, in place: the body, the viewport and what the film says of its size. Every clip is
+ * placed again after (settle): a picture without a box fills the new stage, a page without a size of its own is laid
+ * out at it, a boxed one stays where its box says.
+ */
+function reshape(next) {
+  if (next.w === stage.w && next.h === stage.h) return;
+  stage.w = next.w; stage.h = next.h;
+  Object.assign(document.body.style, { width: stage.w + 'px', height: stage.h + 'px' });
+  document.querySelector('meta[name="viewport"]')?.setAttribute('content', `width=${stage.w}, height=${stage.h}`);
+  window.film.width = stage.w; window.film.height = stage.h;
 }
 /* edits are changed in the order they came, each once the one before is done */
 let changing = Promise.resolve(true);

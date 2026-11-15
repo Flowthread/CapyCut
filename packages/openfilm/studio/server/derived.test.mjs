@@ -24,9 +24,19 @@ test('probe: length, picture size, frame rate and sound of a video; a sound has 
   assert.equal(video.fps, 25);
   assert.ok(Math.abs(video.duration - 2) < 0.1);
   assert.equal(video.audio, true);
+  assert.deepEqual([video.codec, video.pixfmt], ['h264', 'yuv420p']);
   const sound = await probe(root, 'assets/tone.wav');
   assert.equal(sound.width, undefined);
   assert.ok(Math.abs(sound.duration - 2) < 0.05);
+});
+
+test('probe: a still\'s size, and a video turned a quarter (a phone\'s portrait video) as it is shown', { skip: !hasFfmpeg && 'no ffmpeg' }, async () => {
+  execFileSync('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'testsrc=size=300x200', '-frames:v', '1', join(root, 'assets', 'still.png')]);
+  const still = await probe(root, 'assets/still.png');
+  assert.deepEqual([still.width, still.height, still.duration], [300, 200, undefined]);
+  execFileSync('ffmpeg', ['-v', 'error', '-display_rotation', '90', '-i', join(root, 'assets', 'clip.mp4'), '-c', 'copy', join(root, 'assets', 'turned.mp4')]);
+  const turned = await probe(root, 'assets/turned.mp4');
+  assert.deepEqual([turned.width, turned.height], [180, 320]);
 });
 
 test('poster and frames are JPEG, cached until the file changes', { skip: !hasFfmpeg && 'no ffmpeg' }, async () => {

@@ -1,6 +1,6 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -41,13 +41,13 @@ function collect(path, until) {
   });
 }
 
-test('the API needs the key; /open sets it as a cookie and goes where it was asked', async () => {
+test('the API needs the key; /open sets it as a cookie and goes where it was asked, the key kept in the address', async () => {
   assert.equal((await api('/api/projects', { key: null })).status, 401);
   assert.equal((await api('/api/health', { key: null })).status, 200);
   assert.equal((await api(`/open?key=wrong`, { key: null })).status, 403);
   const res = await api(`/open?key=${studio.key}&to=/projects/x`, { key: null });
   assert.equal(res.status, 302);
-  assert.equal(res.headers.get('location'), '/projects/x');
+  assert.equal(res.headers.get('location'), `/projects/x?key=${studio.key}`);
   const [cookie, framed] = res.headers.getSetCookie();
   assert.match(cookie, /SameSite=Strict/);
   /* its twin for a page inside another site's frame (an agent's preview): kept for that frame alone */
@@ -60,6 +60,21 @@ test('the API needs the key; /open sets it as a cookie and goes where it was ask
   /* a write with the cookie from any other origin is refused (a page elsewhere cannot drive Studio) */
   const write = await api('/api/projects', { method: 'POST', key: null, body: { name: 'x' }, headers: { cookie: framed.split(';')[0], origin: 'http://evil.test' } });
   assert.equal(write.status, 403);
+});
+
+test('a page\'s address with the key signs a browser in (a copied address opens anywhere); one signed in gets the key in its address', async () => {
+  const page = await api(`/projects/x?key=${studio.key}`, { key: null });
+  assert.equal(page.status, 200);
+  assert.equal(page.headers.get('referrer-policy'), 'no-referrer');
+  const [cookie] = page.headers.getSetCookie();
+  assert.equal((await api('/api/projects', { key: null, headers: { cookie: cookie.split(';')[0] } })).status, 200);
+  /* signed in, an address without the key (typed, or from before) is sent to the one with it */
+  const bare = await api('/projects/x?t=2', { key: null, headers: { cookie: cookie.split(';')[0] } });
+  assert.equal(bare.status, 302);
+  assert.equal(bare.headers.get('location'), `/projects/x?t=2&key=${studio.key}`);
+  /* not signed in and no key: the page, which says how to get in; a wrong key signs nothing in */
+  assert.equal((await api('/projects/x', { key: null })).status, 200);
+  assert.deepEqual((await api('/projects/x?key=wrong', { key: null })).headers.getSetCookie(), []);
 });
 
 test('openfilm open: with no editor page, the person\'s browser gets the address after the fallback', async () => {
@@ -178,6 +193,50 @@ test('rename renames the folder; delete moves it to the Trash and off the list',
   assert.equal((await api(`/api/projects/${project.id}`)).status, 404);
   assert.ok(!existsSync(renamed.project.path), 'the folder went to the Trash');
   assert.ok(readdirSync(process.env.OPENFILM_TRASH_DIR).some((n) => n.startsWith('Final')));
+});
+
+test('the preview plays heavy footage from its proxy once made; what the file is (film-facts), an export and proxies off read the original', { skip: !(() => { try { execFileSync('ffmpeg', ['-version'], { stdio: 'ignore' }); return true; } catch { return false; } })() && 'no ffmpeg' }, async () => {
+  const { project } = await (await api('/api/projects', { method: 'POST', body: { path: join(scratch, 'Proxied') } })).json();
+  mkdirSync(join(project.path, 'assets'), { recursive: true });
+  const big = join(project.path, 'assets', 'big.mp4');
+  execFileSync('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'testsrc=size=2560x1440:rate=25:duration=1', '-pix_fmt', 'yuv420p', big]);
+  assert.deepEqual(await (await api('/api/prefs')).json(), { proxies: { on: true, height: 720 } });
+  let answer;
+  for (const end = Date.now() + 30_000; answer?.states?.['assets/big.mp4']?.state !== 'ready' && Date.now() < end;) {
+    answer = await (await api(`/api/projects/${project.id}/proxies`, { method: 'POST', body: {} })).json();
+    if (answer.states['assets/big.mp4']?.state !== 'ready') await new Promise((r) => setTimeout(r, 150));
+  }
+  assert.deepEqual(answer, { on: true, height: 720, states: { 'assets/big.mp4': { state: 'ready' } } });
+  const { folder } = await (await api(`/api/projects/${project.id}`)).json();
+  const size = async (q = '') => (await (await fetch(`${folder}assets/big.mp4${q}`)).arrayBuffer()).byteLength;
+  const played = await size();
+  assert.ok(played > 0 && played !== statSync(big).size, 'the proxy');
+  assert.equal(await size('?film-facts=1'), statSync(big).size, 'what the file is: the file');
+  /* off: the original, and no proxy asked for */
+  assert.deepEqual(await (await api('/api/prefs', { method: 'PATCH', body: { proxies: { on: false } } })).json(), { proxies: { on: false, height: 720 } });
+  assert.equal(await size(), statSync(big).size);
+  assert.deepEqual((await (await api(`/api/projects/${project.id}/proxies`, { method: 'POST', body: {} })).json()).states, {});
+  await api('/api/prefs', { method: 'PATCH', body: { proxies: { on: true } } });
+});
+
+test('media linked in the media pane is served to the film; a link a project brings from elsewhere is not', { skip: process.platform === 'win32' && 'links need Developer Mode on Windows' }, async () => {
+  const { project } = await (await api('/api/projects', { method: 'POST', body: { path: join(scratch, 'Linked') } })).json();
+  const nas = mkdtempSync(join(tmpdir(), 'of-nas-'));
+  writeFileSync(join(nas, 'take.wav'), 'footage');
+  writeFileSync(join(nas, 'secret.wav'), 'theirs');
+  mkdirSync(join(project.path, 'assets'), { recursive: true });
+  symlinkSync(join(nas, 'secret.wav'), join(project.path, 'assets', 'secret.wav'));
+  const res = await api(`/api/projects/${project.id}/files/bring`, { method: 'POST', body: { into: 'assets', mode: 'link', paths: [join(nas, 'take.wav')] } });
+  assert.deepEqual((await res.json()).landed, ['assets/take.wav']);
+  const { folder } = await (await api(`/api/projects/${project.id}`)).json();
+  assert.equal(await (await fetch(`${folder}assets/take.wav`)).text(), 'footage');
+  assert.equal((await fetch(`${folder}assets/secret.wav`)).status, 404);
+  const listed = await (await api(`/api/projects/${project.id}/files`)).json();
+  assert.deepEqual(listed.links['assets/take.wav'], { to: join(realpathSync(nas), 'take.wav') });
+  assert.equal(listed.links['assets/secret.wav'].missing, true);
+  /* copied in its place: the project's own file */
+  await api(`/api/projects/${project.id}/files/collect`, { method: 'POST', body: { path: 'assets/take.wav' } });
+  assert.deepEqual((await (await api(`/api/projects/${project.id}/files`)).json()).links['assets/take.wav'], undefined);
 });
 
 test('the film origin serves a project\'s files, with ranges, never .film/, and pages get the film clock', async () => {

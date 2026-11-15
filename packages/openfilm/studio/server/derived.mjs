@@ -12,7 +12,7 @@ import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { mkdir, readFile, rename, rm, stat } from 'node:fs/promises';
 import { join } from 'node:path';
-import { inside } from './files.mjs';
+import { readable } from './files.mjs';
 import { TOOL_DIR } from './projects.mjs';
 import { writeAtomic } from './atomic.mjs';
 
@@ -51,7 +51,7 @@ async function tool(/** @type {'ffmpeg' | 'ffprobe'} */ name, /** @type {string[
 
 /** The file, and the cache key that changes when it does. */
 async function source(/** @type {string} */ root, /** @type {string} */ rel) {
-  const abs = inside(root, rel);
+  const abs = readable(root, rel);
   const info = await stat(abs).catch(() => null);
   if (!info?.isFile()) throw new MediaError(`${rel} is not there`, 404);
   const key = createHash('sha1').update(`${rel}\0${info.size}\0${Math.round(info.mtimeMs)}`).digest('hex').slice(0, 20);
@@ -70,21 +70,27 @@ async function cached(/** @type {string} */ root, /** @type {string} */ kind, /*
 }
 
 /**
- * Length and picture size of a media file: `{ duration (s), width, height, fps, audio }`; a still has no duration.
+ * Length and picture size of a media file: `{ duration (s), width, height, fps, audio, codec, pixfmt }`; a still has no
+ * duration. The size is the picture as it is shown: a video turned a quarter (a phone's portrait video) has its sides
+ * swapped. `codec` and `pixfmt` are its picture's (proxies.mjs tells heavy footage by them).
  * @param {string} root @param {string} rel
  */
 export async function probe(root, rel) {
   const { abs, key } = await source(root, rel);
-  const bytes = await cached(root, 'probe', `${key}.json`, async () => {
+  /* `.3`: since the size is as shown (an older answer has a turned video's sides as stored), with the codec */
+  const bytes = await cached(root, 'probe', `${key}.3.json`, async () => {
     const out = JSON.parse((await tool('ffprobe', ['-v', 'error', '-print_format', 'json', '-show_format', '-show_streams', abs])).toString());
     const video = out.streams?.find((/** @type {{ codec_type: string }} */ s) => s.codec_type === 'video');
     const audio = out.streams?.some((/** @type {{ codec_type: string }} */ s) => s.codec_type === 'audio');
     const [n, d] = String(video?.avg_frame_rate ?? '0/1').split('/').map(Number);
     const duration = Number(out.format?.duration);
+    const turn = Number(video?.side_data_list?.find((/** @type {{ rotation?: number }} */ s) => s.rotation != null)?.rotation ?? video?.tags?.rotate ?? 0);
+    const quarter = Math.abs(Math.round(turn / 90)) % 2 === 1;
     return Buffer.from(JSON.stringify({
       ...(Number.isFinite(duration) && duration > 0 && !/image|png|mjpeg/.test(String(out.format?.format_name)) ? { duration } : {}),
-      ...(video ? { width: video.width, height: video.height } : {}),
+      ...(video ? (quarter ? { width: video.height, height: video.width } : { width: video.width, height: video.height }) : {}),
       ...(d && n ? { fps: Math.round((n / d) * 100) / 100 } : {}),
+      ...(video?.codec_name ? { codec: String(video.codec_name), pixfmt: String(video.pix_fmt ?? '') } : {}),
       audio: Boolean(audio),
     }));
   });

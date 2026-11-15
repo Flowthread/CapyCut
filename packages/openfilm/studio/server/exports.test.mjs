@@ -194,10 +194,17 @@ test('a cancelled export stops and leaves no file, and a bad ask is refused befo
 });
 
 test('the delivery frame: the same box as the editor, the short side asked, never past 4096', () => {
-  assert.deepEqual(frameBox({ w: 1920, h: 1080 }, '9:16', 'contain'), { w: 1920, h: 3414, scale: 1 });
+  assert.deepEqual(frameBox({ w: 1920, h: 1080 }, '9:16', 'contain'), { w: 1920, h: 3414, ratio: 9 / 16, scale: 1 });
   assert.deepEqual(dimsForShortEdge(frameBox({ w: 1920, h: 1080 }, '9:16', 'contain'), 1080), { w: 1080, h: 1920 });
   assert.deepEqual(dimsForShortEdge({ w: 1920, h: 1080 }, 2160), { w: 3840, h: 2160 });
   assert.deepEqual(dimsForShortEdge({ w: 2520, h: 1080 }, 2160), { w: 4096, h: 1756 });
+  /* the frame's own shape, not its rounded pixels': 16:9 around a 2:1 film is 2160 × 1216, and comes out 1920 × 1080 */
+  const wide = frameBox({ w: 2160, h: 1080 }, '16:9', 'contain');
+  assert.deepEqual([wide.w, wide.h], [2160, 1216]);
+  assert.deepEqual(dimsForShortEdge(wide, 1080), { w: 1920, h: 1080 });
+  assert.deepEqual(dimsForShortEdge(wide, 2160), { w: 3840, h: 2160 });
+  /* a frame drawn as a page (subtitles over it) keeps that shape */
+  assert.deepEqual(dimsForShortEdge(frameBox(wide, 'native', 'contain'), 1080), { w: 1920, h: 1080 });
 });
 
 test('a film in another frame is fitted with bars, or fills it and is cropped', ffmpeg, async () => {
@@ -504,6 +511,42 @@ test('editing software: an xmeml folder; pages rendered with alpha, footage plac
   assert.ok(!xml.includes('<link>'), 'a stem is not linked to a picture');
 });
 
+test('剪映: the same timeline as a draft in 剪映\'s drafts folder, its media beside it, subtitles a text track', { ...ffmpeg, timeout: 240_000 }, async () => {
+  /* the Cut project the editing-software test made */
+  const cut = join(scratch, 'Cut');
+  const drafts = join(scratch, 'JianyingPro Drafts');
+  mkdirSync(drafts, { recursive: true });
+  const exports = createExports({ captions: subtitles, drafts: (app) => (app === 'jianying' ? drafts : null) });
+  const done = await ended(exports, exports.start(project('Cut', cut), { kind: 'nle', format: 'jianying', fps: 25 }));
+  assert.equal(done.status, 'done', done.error);
+  const folder = join(drafts, 'Cut');
+  assert.equal(done.out, join(folder, 'draft_info.json'));
+  assert.deepEqual(readdirSync(folder).sort(), ['draft_content.json', 'draft_info.json', 'draft_meta_info.json', 'media']);
+  assert.equal(readFileSync(join(folder, 'draft_content.json'), 'utf8'), readFileSync(join(folder, 'draft_info.json'), 'utf8'));
+  assert.deepEqual(readdirSync(drafts).filter((n) => n.startsWith('.')), [], 'no half-made draft');
+  const info = JSON.parse(readFileSync(done.out, 'utf8'));
+  const meta = JSON.parse(readFileSync(join(folder, 'draft_meta_info.json'), 'utf8'));
+  assert.deepEqual([meta.draft_name, meta.draft_fold_path, meta.draft_root_path, meta.draft_id], ['Cut', folder, drafts, info.id]);
+  assert.deepEqual(info.canvas_config, { width: 320, height: 180, ratio: 'original' });
+  assert.equal(info.fps, 25);
+  /* every clip's material is a file in the draft's media folder */
+  const materials = new Map([...info.materials.videos, ...info.materials.audios].map((m) => [m.id, m]));
+  for (const seg of info.tracks.filter((t) => t.type !== 'text').flatMap((t) => t.segments)) {
+    const m = materials.get(seg.material_id);
+    assert.ok(m && existsSync(m.path) && m.path.startsWith(join(folder, 'media')), `${m?.path}`);
+  }
+  /* the footage plays its own sound at its level, so there is no second clip of it */
+  const shot = info.tracks.flatMap((t) => t.segments).find((s) => materials.get(s.material_id)?.path.endsWith('shot one.mp4') && s.clip);
+  assert.equal(shot.volume, 0.5);
+  assert.deepEqual(shot.target_timerange, { start: 0, duration: 1_600_000 });
+  assert.deepEqual(shot.source_timerange, { start: 400_000, duration: 1_600_000 });
+  /* the muted bed comes muted */
+  assert.equal(info.tracks.find((t) => t.type === 'audio' && t.name === 'Music').attribute, 1);
+  const text = info.tracks.find((t) => t.type === 'text');
+  assert.deepEqual(info.materials.texts.map((m) => JSON.parse(m.content).text), CUES.map((c) => c.text));
+  assert.deepEqual(text.segments.map((s) => s.target_timerange.start), [0, 800_000]);
+});
+
 test('burned-in subtitles: drawn over the frame, bars included; a subtitle file beside the video', ffmpeg, async () => {
   /* the pixels of the bottom tenth of a picture that are near white (the title's own text is at the top) */
   const bright = (file) => {
@@ -636,6 +679,7 @@ test('the API: where exports go and what can be made here; several at once; open
     assert.deepEqual(listed.exports, []);
     assert.equal(listed.folder, exportsRoot());
     assert.deepEqual(Object.keys(listed.can).sort(), ['h264', 'hevc', 'hevcAlpha', 'mp3', 'prores', 'vp9']);
+    assert.deepEqual(Object.keys(listed.drafts).sort(), ['capcut', 'jianying'], 'whether 剪映 and CapCut are here, for an editing project');
     assert.equal(listed.subtitles, 0, 'no subtitle cues in a new project');
     const bad = await api(`/projects/${project.id}/exports`, { method: 'POST', body: { jobs: [{ kind: 'audio' }, { kind: 'slides', format: 'key' }] } });
     assert.equal(bad.status, 400);

@@ -3,15 +3,17 @@
  * OpenFilm Studio's server: one process for the whole editor. Two origins, so a web page can never reach the editor:
  *
  *   http://127.0.0.1:<port>      the editor's pages and its API. The API needs the launch key: as a cookie, set by
- *                                /open?key=…, or as `x-studio-key` (the CLI). Writes from a browser must come from
- *                                this origin.
+ *                                any page's address with ?key=… (/open?key=… too), or as `x-studio-key` (the CLI).
+ *                                The key stays in the pages' address, so a copied address opens Studio anywhere on
+ *                                this machine (another browser, an agent's preview). Writes from a browser must come
+ *                                from this origin.
  *   http://localhost:<port + 1>  the film itself: project files, read only, for the preview (see pages.mjs).
  *
  * Both answer only requests addressed to 127.0.0.1, localhost or [::1] at their own port (ownHost): another site
  * whose name is pointed at this machine (DNS rebinding) gets nothing, not even /api/health.
  */
 import { randomBytes, timingSafeEqual } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { basename, extname, isAbsolute, join, normalize, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'node:http';
@@ -19,8 +21,8 @@ import { mkdir, readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { EditError, editProjectFilm, readProjectFilm } from './film.mjs';
-import { FileError, extractAudio, freezeFrame, importFile, inside, listFiles, makeFolder, moveCheck, moveFile, trashFile } from './files.mjs';
-import { ExportError, createExports, exportCapabilities, exportsRoot, projectSizes } from './exports.mjs';
+import { FileError, bringIn, collect, extractAudio, freezeFrame, importFile, inside, listFiles, makeFolder, moveCheck, moveFile, readable, relink, trashFile } from './files.mjs';
+import { ExportError, createExports, draftApps, exportCapabilities, exportsRoot, projectSizes } from './exports.mjs';
 import { MediaError, frame, loudness, poster, probe, waveform } from './derived.mjs';
 import { HistoryError, checkout, commitChanges, deleteBranch, discardChanges, historyFiles, log, mergeBranch, renameBranch, restoreCommit, status as historyStatus } from './history.mjs';
 import { ownHost, startPages } from './pages.mjs';
@@ -33,7 +35,9 @@ import {
 import { FetchError, createFetches } from './fetch-repo.mjs';
 import { BrowseError, browseFolder, browsePlaces } from './browse.mjs';
 import { listExamples } from './examples.mjs';
-import { pickFolder } from './folder-picker.mjs';
+import { pickFiles, pickFolder } from './folder-picker.mjs';
+import { readPrefs, writePrefs } from './prefs.mjs';
+import { ensureProxies } from './proxies.mjs';
 import { npmOpenfilm, olderThanThis } from '../client.mjs';
 import { writeAtomic } from './atomic.mjs';
 import { createWatchers } from './watch.mjs';
@@ -155,16 +159,29 @@ export async function startStudio({ port = 4747, key, openBrowser = systemBrowse
     /* which Studio this is: the CLI replaces an older one, and finds its own home's when run.json is gone. Asked
        without the key, so it says nothing of the machine: its home only as a digest (homeTag), no process id */
     if (path === '/api/health') return json(res, 200, { product: 'openfilm-studio', version: VERSION, home: homeTag(), filmOrigin });
+    const signIn = [`${COOKIE}=${key}; Path=/; HttpOnly; SameSite=Strict`, `${FRAMED}=${key}; Path=/; HttpOnly; Secure; SameSite=None; Partitioned`];
+    /** A page's address with the key in it (the address bar is what a person copies). */
+    const keyed = (/** @type {string} */ to) => {
+      const at = new URL(to, origin);
+      at.searchParams.set('key', String(key));
+      return at.pathname + at.search;
+    };
     if (path === '/open') {
       if (!sameKey(url.searchParams.get('key'))) throw new HttpError(403, 'this link is from another Studio launch; use the one `openfilm open` printed');
       const to = url.searchParams.get('to') ?? '/';
-      res.writeHead(302, {
-        location: /^\/(?!\/)[^\s\\]*$/.test(to) ? to : '/',
-        'set-cookie': [`${COOKIE}=${key}; Path=/; HttpOnly; SameSite=Strict`, `${FRAMED}=${key}; Path=/; HttpOnly; Secure; SameSite=None; Partitioned`],
-      });
+      res.writeHead(302, { location: keyed(/^\/(?!\/)[^\s\\]*$/.test(to) ? to : '/'), 'set-cookie': signIn, 'referrer-policy': 'no-referrer' });
       return res.end();
     }
-    if (!path.startsWith('/api/')) return sendEditor(res, editorDir, path);
+    if (!path.startsWith('/api/')) {
+      if (path.startsWith('/assets/')) return sendEditor(res, editorDir, path);
+      /* a page with the key in its address signs this browser in; one signed in without it gets it in its address */
+      if (sameKey(url.searchParams.get('key'))) return sendEditor(res, editorDir, path, { 'set-cookie': signIn });
+      if (sameKey(cookieKey(req))) {
+        res.writeHead(302, { location: keyed(path + url.search), 'referrer-policy': 'no-referrer' });
+        return res.end();
+      }
+      return sendEditor(res, editorDir, path);
+    }
 
     authorize(req);
     const parts = path.slice('/api/'.length).split('/').map(decodeURIComponent);
@@ -243,6 +260,21 @@ export async function startStudio({ port = 4747, key, openBrowser = systemBrowse
       try {
         const path = await pickFolder({ title: typeof title === 'string' && title.trim() ? title.trim().slice(0, 120) : 'Choose a folder', at: typeof at === 'string' ? at : null });
         return json(res, 200, { path });
+      } catch (e) {
+        throw new HttpError(501, /** @type {Error} */ (e).message);
+      }
+    }
+    /* Studio's own preferences, the same for every project (prefs.mjs) */
+    if (parts[0] === 'prefs' && parts.length === 1) {
+      if (req.method === 'GET') return json(res, 200, readPrefs());
+      if (req.method === 'PATCH') return json(res, 200, writePrefs(await readJson(req)));
+    }
+    /* the system's file dialog (folder-picker.mjs pickFiles), several at once: { paths } (none: cancelled); 501 when
+       this system has none */
+    if (parts[0] === 'pick-files' && parts.length === 1 && req.method === 'POST') {
+      const { title } = /** @type {{ title?: unknown }} */ (await readJson(req).catch(() => ({})) ?? {});
+      try {
+        return json(res, 200, { paths: await pickFiles({ title: typeof title === 'string' && title.trim() ? title.trim().slice(0, 120) : 'Choose files', at: null }) });
       } catch (e) {
         throw new HttpError(501, /** @type {Error} */ (e).message);
       }
@@ -442,6 +474,37 @@ export async function startStudio({ port = 4747, key, openBrowser = systemBrowse
       const { path: from } = /** @type {{ path?: string }} */ (await readJson(req));
       return json(res, 200, { path: await extractAudio(project.path, String(from ?? '')) });
     }
+    /* files or folders of this computer copied in (cloned where the disk can) or linked (files.mjs bringIn): the paths
+       given (the desktop app knows a dropped file's), else the person's pick in the system's dialog. { landed } */
+    if (rest === 'files/bring' && req.method === 'POST') {
+      const { into, mode, paths, folder, title } = /** @type {{ into?: unknown, mode?: unknown, paths?: unknown, folder?: unknown, title?: unknown }} */ (await readJson(req));
+      const how = mode === 'link' ? 'link' : 'copy';
+      const ask = { title: typeof title === 'string' && title.trim() ? title.trim().slice(0, 120) : 'Choose', at: null };
+      const picked = Array.isArray(paths) ? paths.map(String)
+        : await (folder === true ? pickFolder(ask).then((p) => (p ? [p] : [])) : pickFiles(ask)).catch((e) => { throw new HttpError(501, String(e?.message ?? e)); });
+      return json(res, 200, { landed: await bringIn(project.path, String(into ?? 'assets'), picked, how) });
+    }
+    /* a link pointed somewhere else (files.mjs relink): the path given, else the person's pick. { path } (null: cancelled) */
+    if (rest === 'files/relink' && req.method === 'POST') {
+      const { path: rel, to, folder, title } = /** @type {{ path?: unknown, to?: unknown, folder?: unknown, title?: unknown }} */ (await readJson(req));
+      const ask = { title: typeof title === 'string' && title.trim() ? title.trim().slice(0, 120) : 'Choose', at: null };
+      const where = typeof to === 'string' ? to
+        : await (folder === true ? pickFolder(ask) : pickFiles(ask).then((p) => p[0] ?? null)).catch((e) => { throw new HttpError(501, String(e?.message ?? e)); });
+      return json(res, 200, { path: where ? await relink(project.path, String(rel ?? ''), where) : null });
+    }
+    /* the proxies the preview plays heavy footage from (proxies.mjs), asked for when not made yet: each heavy video's
+       state. Off: none */
+    if (rest === 'proxies' && req.method === 'POST') {
+      const { proxies } = readPrefs();
+      if (!proxies.on) return json(res, 200, { on: false, height: proxies.height, states: {} });
+      const videos = (await listFiles(project.path)).files.filter((f) => f.kind === 'video').map((f) => f.path);
+      return json(res, 200, { on: true, height: proxies.height, states: await ensureProxies(project.path, videos, proxies.height) });
+    }
+    /* what a link leads to copied into the project in its place (files.mjs collect) */
+    if (rest === 'files/collect' && req.method === 'POST') {
+      const { path: rel } = /** @type {{ path?: unknown }} */ (await readJson(req));
+      return json(res, 200, { path: await collect(project.path, String(rel ?? '')) });
+    }
     /* a video's frame made a still beside it (files.mjs freezeFrame): the timeline's freeze frame */
     if (rest === 'files/still' && req.method === 'POST') {
       const { path: from, ms } = /** @type {{ path?: string, ms?: number }} */ (await readJson(req));
@@ -521,7 +584,7 @@ export async function startStudio({ port = 4747, key, openBrowser = systemBrowse
        how many subtitle cues the film has (the subtitle choices need some), and how big the project and its parts are */
     if (rest === 'exports') {
       if (req.method === 'GET') {
-        return json(res, 200, { exports: exports.list(project.id), folder: exportsRoot(), can: await exportCapabilities(), subtitles: await exports.subtitles(project.path), project: await projectSizes(project.path) });
+        return json(res, 200, { exports: exports.list(project.id), folder: exportsRoot(), can: await exportCapabilities(), drafts: draftApps(), subtitles: await exports.subtitles(project.path), project: await projectSizes(project.path) });
       }
       if (req.method === 'POST') {
         exportRoots.set(project.id, project.path);
@@ -557,9 +620,9 @@ export async function startStudio({ port = 4747, key, openBrowser = systemBrowse
     }
     /* a file or folder of the project, shown where it is on the person's computer */
     if (rest === 'reveal' && req.method === 'POST') {
-      const { path: rel } = /** @type {{ path?: string }} */ (await readJson(req));
-      /* no path: the project's own folder */
-      const abs = rel ? inside(project.path, String(rel)) : project.path;
+      const { path: rel, original } = /** @type {{ path?: string, original?: boolean }} */ (await readJson(req));
+      /* no path: the project's own folder; `original`: where a linked file is kept */
+      const abs = !rel ? project.path : original === true ? realpathSync(readable(project.path, String(rel))) : readable(project.path, String(rel));
       if (!existsSync(abs)) throw new HttpError(404, 'that is not there any more');
       reveal(abs);
       return json(res, 200, {});
@@ -690,7 +753,7 @@ const EDITOR_DIR = fileURLToPath(new URL('../ui/dist/', import.meta.url));
 const TYPES = { '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2', '.ico': 'image/x-icon' };
 
 /** The editor's files: its assets as they are (named by their content, so kept for good), any other path its page. */
-function sendEditor(/** @type {Res} */ res, /** @type {string} */ dir, /** @type {string} */ path) {
+function sendEditor(/** @type {Res} */ res, /** @type {string} */ dir, /** @type {string} */ path, /** @type {Record<string, string | string[]>} */ headers = {}) {
   const root = dir.endsWith(sep) ? dir : dir + sep;
   if (path.startsWith('/assets/')) {
     const file = normalize(join(root, path));
@@ -702,7 +765,8 @@ function sendEditor(/** @type {Res} */ res, /** @type {string} */ dir, /** @type
     return;
   }
   const page = join(root, 'index.html');
-  res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
+  /* no referrer: the page's address holds the key, and a link it opens must not carry it to another site */
+  res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'referrer-policy': 'no-referrer', ...headers });
   res.end(existsSync(page) ? readFileSync(page) : '<!doctype html><meta charset="utf-8"><title>OpenFilm Studio</title><p>The editor is not built: run <code>npm run build:ui</code>.</p>');
 }
 

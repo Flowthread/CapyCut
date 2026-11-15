@@ -87,7 +87,7 @@
     for (const c of shown()) {
       if (pictures && c.kind === 'page') continue;
       const p = matrixOf(c).inverse().transformPoint(new DOMPoint(x, y));
-      if (p.x >= 0 && p.y >= 0 && p.x <= c.w && p.y <= c.h) return c;
+      if (p.x >= 0 && p.y >= 0 && p.x <= c.w && p.y <= c.h && shownAt(c.el, p.x, p.y, c.w, c.h)) return c;
     }
     return null;
   };
@@ -149,8 +149,10 @@
   /* an icon beside the words (a badge's ✓, a button's arrow) does not stop them being the element's text: its own
      words are typed in place, and the icon stays (a text override changes the element's own words only) */
   const ICON = new Set(['svg', 'img']);
+  /** Words alone, or lines between <br>s: a `text` override changes all of them, a <br> at each line break. */
+  const onlyBreaks = (el) => [...el.children].every((ch) => ch.localName === 'br');
   const textOf = (el) => {
-    if (el.childElementCount === 0) return stageText(el);
+    if (onlyBreaks(el)) return stageText(el);
     if (![...el.children].every((c) => INLINE.has(c.tagName) || ICON.has(c.localName))) return '';
     return ownWords(el);
   };
@@ -165,7 +167,12 @@
   const paints = (cs) => !transparent(cs.backgroundColor)
     || (cs.backgroundImage && cs.backgroundImage !== 'none')
     || (Number.parseFloat(cs.borderTopWidth) > 0 && !transparent(cs.borderTopColor))
-    || (cs.boxShadow && cs.boxShadow !== 'none');
+    || (cs.boxShadow && cs.boxShadow !== 'none')
+    || (Number.parseFloat(cs.outlineWidth) > 0 && cs.outlineStyle !== 'none' && !transparent(cs.outlineColor))
+    || (cs.backdropFilter && cs.backdropFilter !== 'none');
+  /** Whether the person changed how it looks in Studio (an override's style is written with priority): theirs to
+      select again, though it paints nothing now (its fill taken off) */
+  const restyled = (el) => [...el.style].some((p) => el.style.getPropertyPriority(p) === 'important');
 
   /** text, image, shape or box; null for an empty shell (a click there goes to what is under it). */
   const kindOf = (el) => {
@@ -173,7 +180,7 @@
     const byTag = tagKind(el.localName.toLowerCase());
     if (byTag) return byTag;
     if (el.namespaceURI !== SVG_NS && textOf(el)) return 'text';
-    return paints(css(el)) ? 'box' : null;
+    return paints(css(el)) || restyled(el) ? 'box' : null;
   };
 
   const angleDeg = (raw) => {
@@ -258,6 +265,258 @@
     const dx = x - f.cx;
     const dy = y - f.cy;
     return Math.abs(dx * Math.cos(rad) - dy * Math.sin(rad)) <= f.w / 2 + 0.5 && Math.abs(dx * Math.sin(rad) + dy * Math.cos(rad)) <= f.h / 2 + 0.5;
+  };
+  /* ── what a mask or a crop cuts away: nothing is found there (as in Photoshop and Figma) ── */
+  /*
+   * A point is tested against the box's `clip-path` (inset, circle, ellipse, polygon) and its `mask-image`, drawn
+   * small on a canvas the way CSS draws it (linear and radial gradients, inline SVG, `mask-composite`) and read at the
+   * point. A mask this cannot draw (a picture file, a repeating gradient, a size of its own) leaves the box whole.
+   */
+  const MASK_SIDE = 96;
+  const masks = new Map();
+  const svgs = new Map();
+  /** A list's top-level parts: commas inside parentheses and quotes stay. */
+  const splitTop = (v, sep = ',') => {
+    const out = [];
+    let depth = 0;
+    let quote = '';
+    let from = 0;
+    for (let i = 0; i < v.length; i++) {
+      const ch = v[i];
+      if (quote) { if (ch === quote && v[i - 1] !== '\\') quote = ''; continue; }
+      if (ch === '"' || ch === "'") quote = ch;
+      else if (ch === '(') depth++;
+      else if (ch === ')') depth--;
+      else if (depth === 0 && (sep === ' ' ? /\s/.test(ch) : ch === sep)) { out.push(v.slice(from, i).trim()); from = i + 1; }
+    }
+    out.push(v.slice(from).trim());
+    return out.filter(Boolean);
+  };
+  /** A length or % (of `of`), else NaN. */
+  const lengthIn = (v, of) => {
+    const m = /^(-?\d*\.?\d+(?:e-?\d+)?)(px|%)?$/.exec(v ?? '');
+    if (!m) return NaN;
+    return m[2] === '%' ? (Number(m[1]) / 100) * of : Number(m[1]);
+  };
+  const isColor = (v) => /^(rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\(|^#|^(transparent|black|white|currentcolor)\b/i.test(v);
+  /** Color stops at their positions along a line `L` long: missing positions spread as CSS does; hints dropped. */
+  const stopsOf = (parts, L) => {
+    const stops = [];
+    for (const p of parts) {
+      const words = splitTop(p, ' ');
+      if (!words.length || !isColor(words[0])) continue;
+      if (words.length === 1) stops.push({ color: words[0], at: NaN });
+      for (const w of words.slice(1)) stops.push({ color: words[0], at: lengthIn(w, L) / L });
+    }
+    if (stops.length < 2) return null;
+    if (Number.isNaN(stops[0].at)) stops[0].at = 0;
+    if (Number.isNaN(stops[stops.length - 1].at)) stops[stops.length - 1].at = 1;
+    for (let i = 1; i < stops.length; i++) {
+      if (Number.isNaN(stops[i].at)) {
+        let j = i;
+        while (Number.isNaN(stops[j].at)) j++;
+        for (let k = i; k < j; k++) stops[k].at = stops[i - 1].at + ((stops[j].at - stops[i - 1].at) * (k - i + 1)) / (j - i + 1);
+      }
+      stops[i].at = Math.max(stops[i].at, stops[i - 1].at);
+    }
+    return stops;
+  };
+  const addStops = (g, stops, lo, hi) => { for (const s of stops) g.addColorStop(Math.min(1, Math.max(0, (s.at - lo) / (hi - lo || 1))), s.color); };
+  const ANGLES = { top: 0, right: 90, bottom: 180, left: 270 };
+  const angleOf = (v, W, H) => {
+    const m = /^(-?\d*\.?\d+)(deg|turn|rad|grad)$/.exec(v);
+    if (m) return Number(m[1]) * { deg: 1, turn: 360, rad: 180 / Math.PI, grad: 0.9 }[m[2]];
+    const to = /^to\s+(.+)$/.exec(v)?.[1]?.split(/\s+/);
+    if (!to) return null;
+    if (to.length === 1) return ANGLES[to[0]] ?? null;
+    const sx = to.includes('right') ? 1 : -1;
+    const sy = to.includes('bottom') ? 1 : -1;
+    return (Math.atan2(sx * H, -sy * W) * 180) / Math.PI;
+  };
+  /** One mask layer drawn on `ctx` (W × H): false when it cannot be, null while its picture loads. */
+  const drawLayer = (ctx, layer, W, H) => {
+    const fn = /^([a-z-]+)\((.*)\)$/s.exec(layer);
+    if (!fn) return layer === 'none' ? true : false;
+    const [, name, body] = fn;
+    if (name === 'url') {
+      const src = body.trim().replace(/^(['"])(.*)\1$/s, '$2');
+      if (!src.startsWith('data:image/svg+xml')) return false;
+      let img = svgs.get(src);
+      if (!img) { img = new Image(); img.src = src; svgs.set(src, img); }
+      if (!img.complete) return null;
+      if (!img.naturalWidth && !img.naturalHeight && img.width === 0) return false;
+      ctx.drawImage(img, 0, 0, W, H);
+      return true;
+    }
+    const parts = splitTop(body);
+    if (name === 'linear-gradient') {
+      let deg = 180;
+      if (!isColor(parts[0])) { const a = angleOf(parts.shift(), W, H); if (a == null) return false; deg = a; }
+      const r = (deg * Math.PI) / 180;
+      const dx = Math.sin(r);
+      const dy = -Math.cos(r);
+      const L = Math.abs(W * dx) + Math.abs(H * dy);
+      const stops = stopsOf(parts, L);
+      if (!stops) return false;
+      const lo = Math.min(0, stops[0].at);
+      const hi = Math.max(1, stops[stops.length - 1].at);
+      const x0 = W / 2 - (dx * L) / 2;
+      const y0 = H / 2 - (dy * L) / 2;
+      const g = ctx.createLinearGradient(x0 + dx * L * lo, y0 + dy * L * lo, x0 + dx * L * hi, y0 + dy * L * hi);
+      addStops(g, stops, lo, hi);
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, W, H);
+      return true;
+    }
+    if (name === 'radial-gradient') {
+      let shape = 'ellipse';
+      let size = 'farthest-corner';
+      let cx = W / 2;
+      let cy = H / 2;
+      let rx = NaN;
+      let ry = NaN;
+      if (!isColor(parts[0])) {
+        const [before, after] = parts.shift().split(/\s*\bat\b\s*/);
+        if (after) {
+          const pos = after.split(/\s+/);
+          const KEY = { left: 0, top: 0, center: 50, right: 100, bottom: 100 };
+          const ax = (w, of) => (w in KEY ? (KEY[w] / 100) * of : lengthIn(w, of));
+          const [px, py = 'center'] = pos[0] === 'top' || pos[0] === 'bottom' ? [pos[1] ?? 'center', pos[0]] : pos;
+          cx = ax(px, W);
+          cy = ax(py, H);
+        }
+        const words = (before ?? '').split(/\s+/).filter(Boolean);
+        const lens = words.filter((w) => !/^(circle|ellipse|closest-side|farthest-side|closest-corner|farthest-corner)$/.test(w));
+        if (words.includes('circle') || lens.length === 1) shape = 'circle';
+        size = words.find((w) => /-(side|corner)$/.test(w)) ?? size;
+        if (lens.length === 1) { rx = lengthIn(lens[0], W); ry = rx; }
+        if (lens.length === 2) { rx = lengthIn(lens[0], W); ry = lengthIn(lens[1], H); }
+      }
+      if (Number.isNaN(cx) || Number.isNaN(cy)) return false;
+      if (Number.isNaN(rx)) {
+        const sides = [cx, W - cx, cy, H - cy];
+        const near = size.startsWith('closest');
+        const pick = near ? Math.min : Math.max;
+        if (shape === 'circle') {
+          rx = size.endsWith('side') ? pick(...sides) : pick(...[[0, 0], [W, 0], [0, H], [W, H]].map(([x, y]) => Math.hypot(x - cx, y - cy)));
+          ry = rx;
+        } else {
+          rx = pick(sides[0], sides[1]);
+          ry = pick(sides[2], sides[3]);
+          if (size.endsWith('corner')) { rx *= Math.SQRT2; ry *= Math.SQRT2; }
+        }
+      }
+      if (!(rx > 0 && ry > 0)) return false;
+      const stops = stopsOf(parts, rx);
+      if (!stops) return false;
+      const hi = Math.max(1, stops[stops.length - 1].at);
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.scale(1, ry / rx);
+      const g = ctx.createRadialGradient(0, 0, 0, 0, 0, rx * hi);
+      addStops(g, stops.map((s) => ({ ...s, at: Math.max(0, s.at) })), 0, hi);
+      ctx.fillStyle = g;
+      ctx.fillRect(-cx, -cy * (rx / ry), W, H * (rx / ry));
+      ctx.restore();
+      return true;
+    }
+    return false;
+  };
+  const COMPOSITE = { add: 'source-over', subtract: 'source-out', intersect: 'destination-in', exclude: 'xor' };
+  /** The mask's alpha all over a W × H box, small: null when it cannot be drawn (or not yet). */
+  const maskPixels = (image, composite, W, H) => {
+    const key = `${image}|${composite}|${Math.round(W)}x${Math.round(H)}`;
+    if (masks.has(key)) return masks.get(key);
+    const k = MASK_SIDE / Math.max(W, H);
+    const w = Math.max(1, Math.round(W * k));
+    const h = Math.max(1, Math.round(H * k));
+    const layers = splitTop(image);
+    const ops = splitTop(composite || 'add');
+    const out = document.createElement('canvas');
+    out.width = w;
+    out.height = h;
+    const octx = out.getContext('2d', { willReadFrequently: true });
+    if (masks.size > 64) masks.clear();
+    for (let i = layers.length - 1; i >= 0; i--) {
+      const one = document.createElement('canvas');
+      one.width = w;
+      one.height = h;
+      const ctx = one.getContext('2d');
+      ctx.scale(w / W, h / H);
+      const drawn = drawLayer(ctx, layers[i], W, H);
+      /* a picture still loading is tried again next time; one this cannot draw leaves the box whole */
+      if (drawn === null) return null;
+      if (drawn === false) { masks.set(key, null); return null; }
+      octx.globalCompositeOperation = i === layers.length - 1 ? 'source-over' : COMPOSITE[ops[i % ops.length]] ?? 'source-over';
+      octx.drawImage(one, 0, 0);
+    }
+    const value = { w, h, k: [w / W, h / H], data: octx.getImageData(0, 0, w, h).data };
+    masks.set(key, value);
+    return value;
+  };
+  /** Whether `clip-path` keeps point (x, y) of a W × H box (a shape this does not read keeps all of it). */
+  const clipKeeps = (clip, x, y, W, H) => {
+    const fn = /^(inset|circle|ellipse|polygon)\((.*)\)/s.exec(clip ?? '');
+    if (!fn) return true;
+    const [, name, body] = fn;
+    if (name === 'inset') {
+      const v = body.split(/\s+round\s+/)[0].trim().split(/\s+/);
+      const [t, r = t, b = t, l = r] = v;
+      return x >= lengthIn(l, W) && x <= W - lengthIn(r, W) && y >= lengthIn(t, H) && y <= H - lengthIn(b, H);
+    }
+    if (name === 'polygon') {
+      const pts = splitTop(body).filter((p) => !/^(nonzero|evenodd)$/.test(p)).map((p) => p.split(/\s+/)).map(([px, py]) => [lengthIn(px, W), lengthIn(py, H)]);
+      let inside = false;
+      for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+        const [xi, yi] = pts[i];
+        const [xj, yj] = pts[j];
+        if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+      }
+      return inside;
+    }
+    const [size, pos] = body.split(/\s*\bat\b\s*/);
+    const [px = '50%', py = '50%'] = (pos ?? '').split(/\s+/).filter(Boolean).map((w) => ({ left: '0%', top: '0%', center: '50%', right: '100%', bottom: '100%' }[w] ?? w));
+    const cx = lengthIn(px, W);
+    const cy = lengthIn(py, H);
+    const lens = (size ?? '').split(/\s+/).filter((w) => w && !/side$/.test(w));
+    const rx = name === 'circle' ? lengthIn(lens[0] ?? '', Math.hypot(W, H) / Math.SQRT2) : lengthIn(lens[0] ?? '', W);
+    const ry = name === 'circle' ? rx : lengthIn(lens[1] ?? '', H);
+    if (!(rx > 0 && ry > 0)) return true;
+    return ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1;
+  };
+  /** Whether point (x, y) of element `el`'s W × H box is drawn: not cut away by its crop or mask. */
+  const shownAt = (el, x, y, W, H) => {
+    const s = view(el).getComputedStyle(el);
+    if (!clipKeeps(s.clipPath, x, y, W, H)) return false;
+    const image = s.maskImage || s.webkitMaskImage;
+    if (!image || image === 'none') return true;
+    const px = maskPixels(image, s.maskComposite || 'add', W, H);
+    if (!px) return true;
+    const i = Math.min(px.w - 1, Math.max(0, Math.floor(x * px.k[0])));
+    const j = Math.min(px.h - 1, Math.max(0, Math.floor(y * px.k[1])));
+    return px.data[(j * px.w + i) * 4 + 3] > 64;
+  };
+  /**
+   * Whether a page's point (page px) is cut away from `el`: by its own crop or mask, or by one of its parents' (theirs,
+   * or a parent that clips what overflows it).
+   */
+  const cutAway = (el, x, y) => {
+    const root = el.ownerDocument.documentElement;
+    for (let node = el; node && node !== root && node !== el.ownerDocument.body; node = node.parentElement) {
+      const s = css(node);
+      const clips = node !== el && s.overflow !== 'visible';
+      if (!clips && s.clipPath === 'none' && (!s.maskImage || s.maskImage === 'none') && (!s.webkitMaskImage || s.webkitMaskImage === 'none')) continue;
+      const f = frameOf(node);
+      if (!(f.w > 0 && f.h > 0)) continue;
+      const rad = (-f.r * Math.PI) / 180;
+      const dx = x - f.cx;
+      const dy = y - f.cy;
+      const lx = dx * Math.cos(rad) - dy * Math.sin(rad) + f.w / 2;
+      const ly = dx * Math.sin(rad) + dy * Math.cos(rad) + f.h / 2;
+      if (clips && (lx < 0 || ly < 0 || lx > f.w || ly > f.h)) return true;
+      if (!shownAt(node, lx, ly, f.w, f.h)) return true;
+    }
+    return false;
   };
   /** Override px → page px: `translate` is in the parent's coordinates, so the parent's own scale counts. */
   const localScale = (el) => {
@@ -392,10 +651,16 @@
   /* styles the inspector shows per kind (computed: a page states none as source keys) */
   const TEXT_STYLE_KEYS = ['fontFamily', 'fontWeight', 'fontStyle', 'fontSize', 'lineHeight', 'letterSpacing', 'textAlign', 'color', 'opacity'];
   const SVG_TEXT_STYLE_KEYS = ['fontFamily', 'fontWeight', 'fontStyle', 'fontSize', 'letterSpacing', 'fill', 'opacity'];
-  const KIND_STYLE_KEYS = { text: [...TEXT_STYLE_KEYS, 'textTransform'], image: ['opacity', 'borderRadius', 'objectFit', 'objectPosition', 'clipPath'], shape: ['opacity'], box: ['backgroundColor', 'borderRadius', 'opacity', 'clipPath'] };
-  /* the look every kind shows (blend, adjustments and shadow, stroke, faded edges): as the page draws it, its CSS's or its own */
-  const LOOK_STYLE_KEYS = ['mixBlendMode', 'filter', 'border', 'maskImage', 'maskComposite'];
-  const LOOK_KEYS = new Set([...LOOK_STYLE_KEYS, 'textTransform', 'objectPosition', 'clipPath']);
+  const KIND_STYLE_KEYS = {
+    text: [...TEXT_STYLE_KEYS, 'textTransform', 'textDecorationLine'],
+    image: ['opacity', 'borderRadius', 'objectFit', 'objectPosition', 'clipPath'],
+    shape: ['opacity', 'fill'],
+    box: ['backgroundColor', 'borderRadius', 'opacity', 'clipPath', 'boxShadow'],
+  };
+  /* the look every kind shows (blend, adjustments and shadow, stroke, faded edges, what is behind blurred): as the
+     page draws it, its CSS's or its own */
+  const LOOK_STYLE_KEYS = ['mixBlendMode', 'filter', 'border', 'outline', 'outlineOffset', 'backdropFilter', 'maskImage', 'maskComposite'];
+  const LOOK_KEYS = new Set([...LOOK_STYLE_KEYS, 'textTransform', 'textDecorationLine', 'objectPosition', 'clipPath', 'boxShadow']);
   const UNITLESS = new Set(['opacity', 'fontWeight', 'lineHeight', 'zIndex', 'flex', 'flexGrow', 'flexShrink', 'order', 'zoom', 'scale', 'fillOpacity', 'strokeOpacity', 'strokeMiterlimit']);
   const isColorKey = (key) => /^(color|fill|stroke|background|backgroundColor|borderColor|outlineColor|stopColor)$/.test(key) || /Color$/.test(key);
   const pxNumber = (value) => {
@@ -431,7 +696,12 @@
     if (key === 'fontFamily') return own(el, 'font-family') || cs.fontFamily || undefined;
     if (key === 'fontStyle') { const v = own(el, 'font-style') || cs.fontStyle; return v && v !== 'normal' ? v : undefined; }
     if (key === 'textAlign') { const v = own(el, 'text-align') || cs.textAlign; return v && v !== 'start' ? v : undefined; }
-    if (LOOK_KEYS.has(key)) { const v = own(el, name) || cs.getPropertyValue(name); return v && !/^(none|normal|add|50% 50%)$/.test(v) && !/^0px none\b/.test(v) ? v : undefined; }
+    if (LOOK_KEYS.has(key)) {
+      const v = own(el, name) || cs.getPropertyValue(name);
+      /* an outline is computed color first: "rgb(0, 0, 0) none 0px" is none */
+      if (key === 'outline' && /\bnone\b/.test(v)) return undefined;
+      return v && !/^(none|normal|add|50% 50%)$/.test(v) && !/^0px none\b/.test(v) ? v : undefined;
+    }
     if (UNITLESS.has(key)) {
       const mine = own(el, name);
       const n = Number(mine || cs.getPropertyValue(name));
@@ -446,13 +716,16 @@
     const cs = css(el);
     let keys = [...(kind === 'text' && isSvgText(el) ? SVG_TEXT_STYLE_KEYS : KIND_STYLE_KEYS[kind]), ...LOOK_STYLE_KEYS];
     /* a line with its own fill (a badge, a tag) is a box too */
-    if (kind === 'text' && paints(cs)) keys.push('backgroundColor', 'borderRadius');
+    if (kind === 'text' && paints(cs)) keys.push('backgroundColor', 'borderRadius', 'boxShadow');
     keys = [...new Set(keys)];
     for (const key of keys) {
       if (key === 'backgroundColor' && transparent(cs.backgroundColor)) continue;
       if (key === 'objectFit') { const fit = own(el, 'object-fit') || cs.objectFit; if (fit) style[key] = fit; continue; }
       if (key === 'borderRadius') {
         const mine = own(el, 'border-radius');
+        /* four corners not alike: all four, as the shorthand writes them (top left, top right, bottom right, left) */
+        const corners = [cs.borderTopLeftRadius, cs.borderTopRightRadius, cs.borderBottomRightRadius, cs.borderBottomLeftRadius];
+        if (!mine && new Set(corners).size > 1 && corners.every((c) => pxNumber(c) != null)) { style[key] = corners.join(' '); continue; }
         const n = pxNumber(mine || cs.borderTopLeftRadius);
         if (n != null) style[key] = n; else if (mine) style[key] = mine;
         continue;
@@ -501,6 +774,7 @@
       const kind = kindOf(el);
       if (!kind || invisible(el)) return;
       if (!includeLocked && lockedOf(c, el)) return;
+      if (cutAway(el, x, y)) return;
       hits.push({ el, kind, rect, frame, area: frame.w * frame.h, order });
     });
     return hits.sort((a, b) => a.area - b.area || b.order - a.order);
@@ -717,7 +991,7 @@
     if (kept) draft(c, edit.target, { text: value });
     post({ type: 'stage-event', event: 'text', handle: edit.handle, commit: Boolean(kept), ...(kept ? { value, before: edit.before } : {}) });
   };
-  const startText = ({ handle, multiline }) => {
+  const startText = ({ handle }) => {
     const el = nodeOf(handle);
     const c = el && clipOfNode(el);
     if (!el || !c || editing) return false;
@@ -726,7 +1000,8 @@
     const walker = doc.createTreeWalker(el, 4);
     for (let n = walker.nextNode(); n; n = walker.nextNode()) data.set(n, n.data);
     const attrs = { contentEditable: el.getAttribute('contenteditable'), style: el.getAttribute('style'), spellcheck: el.getAttribute('spellcheck') };
-    const overlay = isSvgText(el) || el.childElementCount > 0;
+    /* typed in place, lines and all, where it can be: the line keeps its own width and wraps as it does */
+    const overlay = isSvgText(el) || !onlyBreaks(el);
     const host = overlay ? openOverlay(el) : el;
     if (overlay) el.style.setProperty('visibility', 'hidden', 'important');
     try { host.contentEditable = 'plaintext-only'; } catch { host.contentEditable = 'true'; }
@@ -735,11 +1010,12 @@
     for (const [name, value] of [['user-select', 'text'], ['-webkit-user-select', 'text'], ['cursor', 'text'], ['outline', 'none'], ['pointer-events', 'auto'], ['caret-color', BLUE]]) {
       host.style.setProperty(name, value, 'important');
     }
-    const lines = Boolean(multiline) && !overlay;
+    /* Shift+Enter breaks the line (where the words can hold one); Enter keeps them, Esc gives them up */
+    const lines = !overlay;
     const onKey = (e) => {
       e.stopPropagation();
       if (e.key === 'Escape') { e.preventDefault(); finishText(false); }
-      else if (e.key === 'Enter' && (e.metaKey || e.ctrlKey || !lines)) { e.preventDefault(); finishText(true); }
+      else if (e.key === 'Enter' && !(lines && e.shiftKey)) { e.preventDefault(); finishText(true); }
     };
     const onBlur = () => finishText(true);
     host.addEventListener('keydown', onKey);
@@ -767,7 +1043,8 @@
     if (editing || typing(e.target)) return;
     const mod = e.metaKey || e.ctrlKey;
     const k = e.key.toLowerCase();
-    if ((EDITOR_KEYS.has(e.key) && !mod) || (mod && (k === 'z' || (e.shiftKey && (k === 'h' || k === 'l'))))) e.preventDefault();
+    /* ⌘A is the editor's select-all, not the page's text selected */
+    if ((EDITOR_KEYS.has(e.key) && !mod) || (mod && (k === 'z' || (k === 'a' && !e.shiftKey && !e.altKey) || (e.shiftKey && (k === 'h' || k === 'l'))))) e.preventDefault();
     post({ type: 'stage-event', event: 'key', key: e.key, code: e.code, repeat: e.repeat, metaKey: e.metaKey, ctrlKey: e.ctrlKey, shiftKey: e.shiftKey, altKey: e.altKey });
   };
   const listening = new WeakSet();

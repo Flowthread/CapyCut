@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { extname, join, normalize, resolve, sep } from 'node:path';
 import { chromium } from 'playwright-core';
 import { DEFAULT_STAGE, FILM_FILE, readFilmFile } from './film-doc.mjs';
+import { readableLink } from './media-links.mjs';
 
 // Media seeks that land inside the frame they name. A plain `video.currentTime = t` at a frame boundary otherwise
 // shows the previous frame about a third of the time. Every page that draws a film by seeking video runs it first,
@@ -57,7 +58,8 @@ const TYPES = {
  * `headers` go on every response (a host adds its own policy); the film (film.html) is played by the built-in
  * timeline, and gets `timelineInject` instead of `inject` (a host that drives it, like Studio, adds its bridge there). Returns false when the path is not inside
  * `root`, or leads out of it through a link.
- * `swap(file)` may name another file to serve in a file's place (a render's fast-seeking copy of a video, seekable.mjs).
+ * `swap(file)` may name another file to serve in a file's place (a render's fast-seeking copy of a video, seekable.mjs;
+ * the preview's proxy of heavy footage, studio/server/proxies.mjs); not for `?film-facts`, which asks what the file is.
  * @param {string} root @param {{ inject?: string, timelineInject?: string, headers?: Record<string, string>, swap?: (file: string) => string | null }} [options]
  */
 export function folderFiles(root, { inject = `<script>${HOST_FLAG}</script>`, timelineInject = inject, headers: extraHeaders = {}, swap } = {}) {
@@ -89,11 +91,13 @@ export function folderFiles(root, { inject = `<script>${HOST_FLAG}</script>`, ti
     const asked = normalize(join(root, rel));
     if (asked !== root && !asked.startsWith(root + sep)) return false;
     try { statSync(asked); } catch { res.writeHead(404, extraHeaders).end('not found'); return true; }
-    // a link out of the folder is not followed: a film from elsewhere can bring one to any of the person's files
+    // a link out of the folder is not followed: a film from elsewhere can bring one to any of the person's files. Only
+    // media the person linked is (src/media-links.mjs)
     let inRoot = false;
-    try { inRoot = within(realpathSync(root), realpathSync(asked)); } catch { /* gone meanwhile */ }
+    try { inRoot = within(realpathSync(root), realpathSync(asked)) || readableLink(root, asked); } catch { /* gone meanwhile */ }
     if (!inRoot) return false;
-    const file = swap?.(asked) ?? asked;
+    /* what a file is (its length and size: `film-facts`) is the file's own, never its copy's */
+    const file = (query?.has('film-facts') ? null : swap?.(asked)) ?? asked;
     let stat;
     try { stat = statSync(file); } catch { res.writeHead(404, extraHeaders).end('not found'); return true; }
     if (stat.isDirectory()) { res.writeHead(302, { ...extraHeaders, location: `${path}/` }).end(); return true; }
@@ -127,14 +131,14 @@ export function folderFiles(root, { inject = `<script>${HOST_FLAG}</script>`, ti
 
 const within = (folder, path) => path === folder || path.startsWith(folder.endsWith(sep) ? folder : folder + sep);
 
-/** The file an address names inside `root` (not through a link out of it), or null. */
+/** The file an address names inside `root` (not through a link out of it, but for media the person linked), or null. */
 function fileInRoot(root, address) {
   let rel;
   try { rel = decodeURIComponent(address); } catch { return null; }
   if (!rel.startsWith('/') || rel.includes('\\') || rel.includes('\0')) return null;
   const file = normalize(join(root, rel));
   if (!file.startsWith(root + sep)) return null;
-  try { return within(realpathSync(root), realpathSync(file)) && statSync(file).isFile() ? file : null; } catch { return null; }
+  try { return (within(realpathSync(root), realpathSync(file)) || readableLink(root, file)) && statSync(file).isFile() ? file : null; } catch { return null; }
 }
 
 /** @type {Map<string, Promise<number | null>>} */
@@ -335,7 +339,7 @@ export class FilmPage {
       /* a page without a size of its own, opened on its own, is 1920 × 1080 (inside a film it is the stage's); one
          without a duration has no end (null) */
       const sized = a.width != null || a.height != null;
-      return { duration: a.duration ?? null, width: sized ? a.width : 1920, height: sized ? a.height : 1080,
+      return { duration: a.duration ?? null, width: sized ? a.width : 1920, height: sized ? a.height : 1080, sized,
         /* an edit's sound, from the built-in timeline (a single page has none) */
         sounds: window.__filmSounds?.() ?? [] };
     }), readyMs, `film.ready did not finish within ${readyMs / 1000} s`).catch(async (e) => {

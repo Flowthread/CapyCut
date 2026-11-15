@@ -17,7 +17,7 @@ import {
 import React from 'react';
 import { createPortal } from 'react-dom';
 
-import { useT } from '@/i18n';
+import { useLanguage, useT } from '@/i18n';
 import { studioHost } from '@/lib/host';
 import { MenuSelect } from '@/components/MenuSelect';
 import { CustomFrame } from '@/components/FramePicker';
@@ -57,10 +57,10 @@ import { FILM_FRAME_IDS, filmFrameBox, filmFrameRatio, type FilmFrameFill, type 
 type Dest = 'social' | 'video' | 'alpha' | 'nle' | 'gif' | 'audio' | 'subtitles' | 'images' | 'slides' | 'project';
 
 const DESTS: readonly { id: Dest; icon: React.ReactNode }[] = [
-  { id: 'social', icon: <MonitorPlay size={16} /> },
   { id: 'video', icon: <Film size={16} /> },
-  { id: 'alpha', icon: <Layers size={16} /> },
   { id: 'nle', icon: <Clapperboard size={16} /> },
+  { id: 'social', icon: <MonitorPlay size={16} /> },
+  { id: 'alpha', icon: <Layers size={16} /> },
   { id: 'gif', icon: <Sparkles size={16} /> },
   { id: 'audio', icon: <AudioLines size={16} /> },
   { id: 'subtitles', icon: <Captions size={16} /> },
@@ -68,6 +68,10 @@ const DESTS: readonly { id: Dest; icon: React.ReactNode }[] = [
   { id: 'slides', icon: <Presentation size={16} /> },
   { id: 'project', icon: <FolderArchive size={16} /> },
 ];
+
+/** Editors' names, never translated. */
+const NLE_APP_NAME = { premiere: 'Premiere Pro', resolve: 'DaVinci Resolve' } as const;
+const DRAFT_APP_NAME = { jianying: '剪映', capcut: 'CapCut' } as const;
 
 /** "As now" in a frame choice: the delivery frame picked beside the player. */
 type FrameChoice = FilmFrameId | 'current';
@@ -101,7 +105,9 @@ interface Settings {
   alpha: { codec: ExportVideoCodec; source: string; shortEdge: number; scale: number; fps: number; audio: boolean };
   audio: { format: 'wav' | 'm4a' | 'mp3'; mix: boolean; stems: boolean };
   /** For an editing program: the sound as clips or as mixed stems. */
-  nle: { fps: number | 'source'; audio: 'clips' | 'stems'; subtitles: boolean };
+  /** the app it is for: `draft` 剪映 (in Chinese) or CapCut (elsewhere), the same draft; `auto`: the draft when that app
+      is on this computer, else Premiere Pro */
+  nle: { app: 'auto' | 'draft' | 'premiere' | 'resolve'; fps: number | 'source'; audio: 'clips' | 'stems'; subtitles: boolean };
   subtitles: { format: 'srt' | 'vtt' | 'txt' };
   images: { format: 'png' | 'jpg'; shortEdge: number; frame: FrameChoice; fill: FilmFrameFill; burn: boolean };
   slides: { format: 'pptx' | 'pdf'; shortEdge: number; frame: FrameChoice; fill: FilmFrameFill; burn: boolean };
@@ -112,7 +118,7 @@ interface Settings {
 }
 
 const DEFAULTS: Settings = {
-  dest: 'social',
+  dest: 'video',
   presets: ['youtube'],
   socialQuality: 'high',
   socialSubs: 'auto',
@@ -122,7 +128,7 @@ const DEFAULTS: Settings = {
   gif: { width: 640, fps: 15, frame: 'current', fill: 'contain', burn: true },
   alpha: { codec: 'prores4444', source: WHOLE_FILM, shortEdge: 1080, scale: 1, fps: 30, audio: true },
   audio: { format: 'wav', mix: true, stems: false },
-  nle: { fps: 'source', audio: 'clips', subtitles: true },
+  nle: { app: 'auto', fps: 'source', audio: 'clips', subtitles: true },
   subtitles: { format: 'srt' },
   images: { format: 'png', shortEdge: 1080, frame: 'current', fill: 'contain', burn: false },
   slides: { format: 'pptx', shortEdge: 1080, frame: 'current', fill: 'contain', burn: false },
@@ -219,7 +225,10 @@ export interface ExportCenterProps {
 export function ExportCenter(props: ExportCenterProps) {
   const { open, onClose } = props;
   const t = useT();
+  const language = useLanguage();
   const [can, setCan] = React.useState<ExportCapabilities | null>(null);
+  /** 剪映 and CapCut on this computer: an editing project for one goes into its drafts */
+  const [draftApps, setDraftApps] = React.useState<{ jianying: boolean; capcut: boolean }>({ jianying: false, capcut: false });
   const [s, setS] = React.useState<Settings>(DEFAULTS);
   const [hydrated, setHydrated] = React.useState(false);
   const [range, setRange] = React.useState<{ on: boolean; from: number; to: number }>({ on: false, from: 0, to: 0 });
@@ -246,7 +255,7 @@ export function ExportCenter(props: ExportCenterProps) {
     setWorking(null);
     setFolderDraft(null);
     setRange((r) => ({ ...r, on: false }));
-    void listExports(props.projectId).then((r) => { setCan(r.can); setDefaultFolder(r.folder); setCaptionCount(r.subtitles ?? 0); setProjectSizes(r.project ?? null); }).catch(() => {});
+    void listExports(props.projectId).then((r) => { setCan(r.can); setDraftApps({ jianying: Boolean(r.drafts?.jianying), capcut: Boolean(r.drafts?.capcut) }); setDefaultFolder(r.folder); setCaptionCount(r.subtitles ?? 0); setProjectSizes(r.project ?? null); }).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
@@ -335,6 +344,16 @@ export function ExportCenter(props: ExportCenterProps) {
   const videoCodec: ExportVideoCodec = codecAvailable(s.video.codec, can) && VIDEO_CODECS.includes(s.video.codec) ? s.video.codec : 'h264';
   const alphaCodec: ExportVideoCodec = EXPORT_ALPHA_CODECS.includes(s.alpha.codec) && codecAvailable(s.alpha.codec, can) ? s.alpha.codec : 'prores4444';
   const audioFormat = s.audio.format === 'mp3' && can && !can.mp3 ? 'wav' : s.audio.format;
+  /* the same draft is 剪映's or CapCut's: the one on this computer, else (both or neither) 剪映 in Chinese and CapCut in
+     any other language; always by its own name */
+  const known: 'jianying' | 'capcut' = language === 'zh-CN' ? 'jianying' : 'capcut';
+  const draftApp = draftApps[known] || !draftApps[known === 'jianying' ? 'capcut' : 'jianying'] ? known : known === 'jianying' ? 'capcut' : 'jianying';
+  const draftHere = draftApps[draftApp];
+  /** a translation naming the draft's app */
+  const tApp = (path: string) => t(path).replaceAll('{app}', DRAFT_APP_NAME[draftApp]);
+  const nleApp = s.nle.app === 'auto' ? (draftHere ? 'draft' : 'premiere') : s.nle.app;
+  /* a draft goes into its app's drafts folder, whatever folder is picked */
+  const toDrafts = dest === 'nle' && nleApp === 'draft' && draftHere;
   const codecName = (c: ExportVideoCodec) => CODEC_LABEL[c] + (c === 'png' ? ` ${t('exportCenter.sequence')}` : '');
 
   /* the parts of the project asked that it has (a part it has none of is left out) */
@@ -377,8 +396,8 @@ export function ExportCenter(props: ExportCenterProps) {
       }
       case 'nle':
         return [{
-          kind: 'nle', fps: s.nle.fps === 'source' ? (nleSourceFps ?? projectFps) : s.nle.fps, audio: s.nle.audio, media: 'copy',
-          subtitles: s.nle.subtitles, label: t('exportCenter.nleTitle'),
+          kind: 'nle', format: nleApp === 'draft' ? draftApp : 'xml', fps: s.nle.fps === 'source' ? (nleSourceFps ?? projectFps) : s.nle.fps, audio: s.nle.audio, media: 'copy',
+          subtitles: s.nle.subtitles, label: nleApp === 'draft' ? tApp('exportCenter.nleDraftTitle') : `${NLE_APP_NAME[nleApp]} XML`,
         }];
       case 'subtitles':
         return [{ kind: 'subtitles', format: s.subtitles.format, label: s.subtitles.format === 'txt' ? t('exportCenter.transcript') : s.subtitles.format.toUpperCase(), ...ranged }];
@@ -399,7 +418,7 @@ export function ExportCenter(props: ExportCenterProps) {
         }];
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dest, s, can, rangeSec?.[0], rangeSec?.[1], props.frame, blocks, nleSourceFps, captions, projectParts]);
+  }, [dest, s, can, nleApp, draftApp, rangeSec?.[0], rangeSec?.[1], props.frame, blocks, nleSourceFps, captions, projectParts]);
 
   /* a range, not a size: what is in the picture decides a video's or a GIF's size (export-spec.ts); sound is exact */
   const estBytes = React.useMemo(() => requests.reduce<[number, number]>(([low, high], r) => {
@@ -547,7 +566,7 @@ export function ExportCenter(props: ExportCenterProps) {
                   <span className={`block text-[13px] font-medium ${on ? 'text-[var(--text)]' : 'text-[var(--text-muted)]'}`}>
                     {t(`exportCenter.dest.${d.id}`)}
                   </span>
-                  <span className="block text-[11px] leading-snug text-[var(--text-faint)]">{t(`exportCenter.destHint.${d.id}`)}</span>
+                  <span className="block text-[11px] leading-snug text-[var(--text-faint)]">{tApp(`exportCenter.destHint.${d.id}`)}</span>
                 </span>
               </button>
             );
@@ -563,7 +582,7 @@ export function ExportCenter(props: ExportCenterProps) {
           <div className="flex shrink-0 items-center gap-2 px-5 pb-1 pt-4">
             <div className="min-w-0 flex-1">
               <h3 className="text-[14px] font-semibold text-[var(--text)]">{t(`exportCenter.dest.${dest}`)}</h3>
-              <p className="mt-0.5 text-[12px] leading-relaxed text-[var(--text-muted)]">{t(`exportCenter.destDesc.${dest}`)}</p>
+              <p className="mt-0.5 text-[12px] leading-relaxed text-[var(--text-muted)]">{tApp(`exportCenter.destDesc.${dest}`)}</p>
             </div>
             <button
               type="button"
@@ -795,6 +814,17 @@ export function ExportCenter(props: ExportCenterProps) {
 
               {dest === 'nle' && (
                 <>
+                  <Field label={t('exportCenter.nleFor')}>
+                    <Segmented
+                      value={nleApp}
+                      options={[
+                        { value: 'draft', label: DRAFT_APP_NAME[draftApp] },
+                        { value: 'premiere', label: NLE_APP_NAME.premiere },
+                        { value: 'resolve', label: NLE_APP_NAME.resolve },
+                      ]}
+                      onChange={(app) => patch('nle', { app })}
+                    />
+                  </Field>
                   <Field label={t('exportCenter.fps')}>
                     <FpsSelect
                       label={t('exportCenter.fps')}
@@ -815,9 +845,9 @@ export function ExportCenter(props: ExportCenterProps) {
                     />
                   </Field>
                   {captions > 0 && (
-                    <Toggle checked={s.nle.subtitles} onChange={(subtitles) => patch('nle', { subtitles })} label={t('exportCenter.nleSrt')} />
+                    <Toggle checked={s.nle.subtitles} onChange={(subtitles) => patch('nle', { subtitles })} label={t(nleApp === 'draft' ? 'exportCenter.nleSubs' : 'exportCenter.nleSrt')} />
                   )}
-                  <Hint>{t('exportCenter.nleHint')}</Hint>
+                  <Hint>{tApp(nleApp === 'premiere' ? 'exportCenter.nleHintPremiere' : nleApp === 'resolve' ? 'exportCenter.nleHintResolve' : draftHere ? 'exportCenter.nleHintDraft' : 'exportCenter.nleHintDraftNone')}</Hint>
                 </>
               )}
 
@@ -1031,28 +1061,28 @@ export function ExportCenter(props: ExportCenterProps) {
                   />
                   {range.on && (
                     <div className="mt-2 flex flex-wrap items-center gap-2 text-[12px] text-[var(--text-muted)]">
-                      <select
-                        value={range.from}
-                        onChange={(e) => {
-                          const from = Number(e.target.value);
-                          setRange((r) => ({ ...r, from, to: r.to > from ? r.to : (boundaries.ends.find((m) => m.ms > from)?.ms ?? totalMs) }));
-                        }}
-                        className="h-8 max-w-[220px] rounded-lg border border-[var(--border)] bg-[var(--bg)] px-2 text-[12px] text-[var(--text)]"
-                      >
-                        {boundaries.starts.map((m) => (
-                          <option key={`f${m.ms}`} value={m.ms}>{[formatFilmTime(m.ms), m.title].filter(Boolean).join(' · ')}</option>
-                        ))}
-                      </select>
+                      <div className="flex w-[220px] min-w-0">
+                        <MenuSelect
+                          label={t('exportCenter.rangeFrom')}
+                          size="md"
+                          value={String(range.from)}
+                          groups={[{ choices: boundaries.starts.map((m) => ({ value: String(m.ms), label: [formatFilmTime(m.ms), m.title].filter(Boolean).join(' · ') })) }]}
+                          onPick={(v) => {
+                            const from = Number(v);
+                            setRange((r) => ({ ...r, from, to: r.to > from ? r.to : (boundaries.ends.find((m) => m.ms > from)?.ms ?? totalMs) }));
+                          }}
+                        />
+                      </div>
                       <span>→</span>
-                      <select
-                        value={range.to}
-                        onChange={(e) => setRange((r) => ({ ...r, to: Number(e.target.value) }))}
-                        className="h-8 max-w-[220px] rounded-lg border border-[var(--border)] bg-[var(--bg)] px-2 text-[12px] text-[var(--text)]"
-                      >
-                        {boundaries.ends.filter((m) => m.ms > range.from).map((m) => (
-                          <option key={`t${m.ms}`} value={m.ms}>{[formatFilmTime(m.ms), m.title].filter(Boolean).join(' · ')}</option>
-                        ))}
-                      </select>
+                      <div className="flex w-[220px] min-w-0">
+                        <MenuSelect
+                          label={t('exportCenter.rangeTo')}
+                          size="md"
+                          value={String(range.to)}
+                          groups={[{ choices: boundaries.ends.filter((m) => m.ms > range.from).map((m) => ({ value: String(m.ms), label: [formatFilmTime(m.ms), m.title].filter(Boolean).join(' · ') })) }]}
+                          onPick={(v) => setRange((r) => ({ ...r, to: Number(v) }))}
+                        />
+                      </div>
                       <span className="tabular-nums">{formatFilmTime(rangeMs)}</span>
                     </div>
                   )}
@@ -1063,7 +1093,17 @@ export function ExportCenter(props: ExportCenterProps) {
 
           {/* bottom: where it goes (the folder, a click changes it), what comes out, and the primary button */}
           <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-3 border-t border-[var(--border-soft)] bg-[color-mix(in_srgb,var(--surface-2)_45%,transparent)] px-5 py-3.5">
-            {folderDraft != null ? (
+            {toDrafts ? (
+              <div className="-ml-2 flex min-w-0 max-w-[340px] flex-1 items-center gap-2.5 px-2 py-1.5">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--surface-2)] text-[var(--text-muted)] ring-1 ring-[var(--border)]">
+                  <Clapperboard size={15} />
+                </span>
+                <span className="flex min-w-0 items-baseline gap-1.5">
+                  <span className="shrink-0 text-[11px] text-[var(--text-faint)]">{t('exportCenter.saveTo')}</span>
+                  <span className="truncate text-[13px] font-medium text-[var(--text)]">{tApp('exportCenter.nleDraftTitle')}</span>
+                </span>
+              </div>
+            ) : folderDraft != null ? (
               <input
                 autoFocus
                 value={folderDraft}
@@ -1241,14 +1281,15 @@ function Segmented<V extends string>({ value, options, onChange }: {
   onChange: (v: V) => void;
 }) {
   return (
-    <div className="inline-flex max-w-full flex-wrap self-start rounded-lg border border-[var(--border)] bg-[var(--bg)] p-0.5">
+    /* a capsule in a capsule: the same even gap all round, so their curves run side by side */
+    <div className="inline-flex max-w-full self-start overflow-x-auto rounded-full border border-[var(--border)] bg-[var(--bg)] p-[3px]">
       {options.map((o) => (
         <button
           key={o.value}
           type="button"
           aria-pressed={o.value === value}
           onClick={() => onChange(o.value)}
-          className={`rounded-md px-2.5 py-1 text-[12px] font-medium transition ${
+          className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-[12px] font-medium transition ${
             o.value === value ? 'bg-[var(--surface-3,var(--bg-hover))] text-[var(--text)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-muted)] hover:text-[var(--text)]'
           }`}
         >
@@ -1360,9 +1401,8 @@ function FrameField({ value, fill, current, stage, onChange, onFill, t }: {
             </button>
           );
         })}
+        <CustomFrame chip value={resolved} onPick={(f) => onChange(f === current ? 'current' : f)} />
       </div>
-      <CustomFrame value={resolved} onPick={(f) => onChange(f === current ? 'current' : f)}
-        className="-mx-2 max-w-[260px] rounded-lg" />
       {differs && (
         <Segmented
           value={fill}

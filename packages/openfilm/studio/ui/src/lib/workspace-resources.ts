@@ -29,11 +29,22 @@ export interface WorkspaceResource {
   durationMs?: number;
   /** A web page without a duration: it has no end, so on the timeline it takes a length of its own, as a still. */
   endless?: boolean;
+  /** A web page that sets no size of its own: `w` × `h` is the size it is shown at alone (1920 × 1080). */
+  reflows?: boolean;
   w?: number;
   h?: number;
   /** Source frame rate: shown, because 25 and 30 fps footage mixed in one film repeats frames after export. */
   fps?: number;
+  /** A link to media kept elsewhere (a NAS, another disk): where it leads, and whether it can be reached now. */
+  link?: MediaLink;
+  /** Heavy footage's proxy for the preview (studio/server/proxies.mjs): waiting, being made (`ratio`), ready, failed. */
+  proxy?: MediaProxy;
 }
+
+export interface MediaProxy { state: 'waiting' | 'making' | 'ready' | 'failed'; ratio?: number }
+
+/** Where a linked file or folder is kept (`to`, a full path); `missing`: it cannot be reached (a NAS that is off). */
+export interface MediaLink { to: string; missing?: boolean }
 
 export interface MediaListing {
   /** The media root's own name (`assets`), so folder paths relative to it can be made project paths. */
@@ -49,6 +60,8 @@ export interface MediaListing {
   made?: readonly string[];
   /** The film's pages, as `kind: 'mg'` resources. */
   pages: readonly WorkspaceResource[];
+  /** Folders that are links to media kept elsewhere (relative to the media root). */
+  linkedDirs?: Readonly<Record<string, MediaLink>>;
 }
 
 /** Where the pane's pictures, sounds and pages come from. Addresses should carry the file's version (its mtime). */
@@ -75,6 +88,8 @@ export type MediaResult = 'ok' | 'taken' | 'failed';
 export interface MediaFacts {
   durationMs?: number;
   endless?: boolean;
+  proxy?: MediaProxy;
+  reflows?: boolean;
   w?: number;
   h?: number;
   fps?: number;
@@ -85,6 +100,8 @@ export interface FilesListing {
   files: readonly { path: string; kind: string; size: number; mtime: number }[];
   folders: readonly string[];
   pages: readonly { path: string; size: number; mtime: number }[];
+  /** Links to media kept elsewhere, by project path (files and folders). */
+  links?: Readonly<Record<string, MediaLink>>;
 }
 
 const MEDIA_KINDS: readonly string[] = ['video', 'image', 'audio'];
@@ -125,16 +142,19 @@ export function mediaListingOf(
   const dirOf = (path: string) => { const r = rel(path); return r.includes('/') ? r.slice(0, r.lastIndexOf('/')) : ''; };
   return {
     dir: root,
+    /* a page put in a folder here is a page still: its poster, its preview, an mg clip */
     files: raw.files.map((f) => ({
       path: f.path,
-      name: f.path.slice(f.path.lastIndexOf('/') + 1),
+      name: f.kind === 'page' ? pageName(f.path) : f.path.slice(f.path.lastIndexOf('/') + 1),
       dir: dirOf(f.path),
       size: f.size,
-      kind: (MEDIA_KINDS.includes(f.kind) ? f.kind : 'other') as WorkspaceResourceKind,
+      kind: (f.kind === 'page' ? 'mg' : MEDIA_KINDS.includes(f.kind) ? f.kind : 'other') as WorkspaceResourceKind,
       mtimeMs: f.mtime,
       ...facts?.(f.path),
+      ...(raw.links?.[f.path] ? { link: raw.links[f.path]! } : {}),
     })),
     dirs: raw.folders.filter((d) => d.startsWith(`${root}/`)).map(rel),
+    linkedDirs: Object.fromEntries(Object.entries(raw.links ?? {}).filter(([path]) => raw.folders.includes(path)).map(([path, link]) => [rel(path), link])),
     ...(made ? { made: made.filter((d) => d.startsWith(`${root}/`)).map(rel) } : {}),
     pages: raw.pages.map((p) => ({
       path: p.path,
@@ -282,6 +302,25 @@ export function warmProjectMedia(projectId: string, listing: MediaListing | null
 export function srcHitsAsset(src: string, path: string): boolean {
   if (!src) return false;
   return src === path || path.endsWith(`/${src}`) || src.endsWith(`/${path}`);
+}
+
+const SIZE_UNITS = ['B', 'KB', 'MB', 'GB', 'TB'];
+
+/** "12.3 MB": the order of magnitude is what a person reads, not the exact byte count. */
+export function formatFileSize(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+  let value = bytes;
+  let unit = 0;
+  while (value >= 1024 && unit < SIZE_UNITS.length - 1) {
+    value /= 1024;
+    unit += 1;
+  }
+  /* no decimals for bytes or past three digits ("248 MB" reads better than "248.3 MB") */
+  const text = value.toFixed(unit === 0 || value >= 100 ? 0 : 1);
+  /* 1023.97 KB rounds to 1024.0, which is 1 MB */
+  return Number(text) >= 1024 && unit < SIZE_UNITS.length - 1
+    ? `1.0 ${SIZE_UNITS[unit + 1]}`
+    : `${text} ${SIZE_UNITS[unit]}`;
 }
 
 /**

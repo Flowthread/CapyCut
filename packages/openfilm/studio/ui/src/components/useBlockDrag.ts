@@ -40,17 +40,19 @@ import {
 } from '@/lib/timeline-drag';
 import {
   linkedIds,
+  magnetOn,
   planEdges,
   planMove,
   planRippleTrim,
   rollMoves,
   slideMoves,
+  sourceLeftMs,
   type EditMode,
   type EditModel,
   type EditPlan,
   type TrackDest,
 } from '@/lib/timeline-edit';
-import type { TimelinePrefs } from '@/lib/timeline-prefs';
+import { followOf, type TimelinePrefs } from '@/lib/timeline-prefs';
 import { snapToFrame } from '@/lib/timecode';
 import type { TimelineBlock, TimelineTrack } from '@/lib/timeline-layout';
 
@@ -84,6 +86,8 @@ export interface GestureTip {
   deltaMs: number;
   /** The clip's length now, for a trim. */
   lengthMs?: number;
+  /** A trim that reached the end of the clip's source on that side: it can go no further. */
+  sourceEnd?: boolean;
   /** Where to show it: this film time, on this row. */
   atMs: number;
   lane: number;
@@ -289,7 +293,8 @@ export function useBlockDrag(opts: {
     const snapCache = new Map<string, SnapTarget[]>();
     /* without the magnet a trim stops at the neighbors on the clip's own track (every row of it) */
     const fence = mode === 'trim-start' || mode === 'trim-end' ? trimFence(geom, singleLanes[homeLaneIndex]?.occupied ?? []) : undefined;
-    const ripple = prefs.magnet && (mode === 'trim-start' || mode === 'trim-end');
+    /* the magnet acts on the main track alone: a trim there ripples, elsewhere it stops at the neighbors */
+    const ripple = magnetOn(model, homeLane?.docIndex, prefs.magnet) && (mode === 'trim-start' || mode === 'trim-end');
 
     let dragging = false;
     let last: DragPreview | null = null;
@@ -342,13 +347,16 @@ export function useBlockDrag(opts: {
           const edge = mode === 'trim-end' ? 'end' : 'start';
           const want = edge === 'end' ? out.endMs - geom.endMs : out.startMs - geom.startMs;
           plan = ripple
-            ? planRippleTrim(m, ids, edge, want, { sync: p.sync })
+            ? planRippleTrim(m, ids, edge, want, followOf(p))
             : planEdges(m, ids.map((id) => ({ id, kind: edge })), want);
           if (plan.deltaMs === want) snappedTo = out.snappedTo;
           const own = plan.placed.get(block.clipId!);
+          /* how much source is left past that edge once it moved (pulled out, the edge moves away from the clip) */
+          const left = (sourceLeftMs(m, block.clipId!, edge) ?? Infinity) - (edge === 'end' ? plan.deltaMs : -plan.deltaMs);
           tip = {
             kind: ripple ? 'ripple' : 'trim', deltaMs: plan.deltaMs, lengthMs: own ? own.endMs - own.startMs : geom.endMs - geom.startMs,
             atMs: edge === 'end' || ripple ? (own?.endMs ?? geom.endMs) : (own?.startMs ?? geom.startMs), lane: homeLaneIndex,
+            ...(left < 1 ? { sourceEnd: true } : {}),
           };
         } else if (mode === 'roll') {
           const out = applyDrag(geom, 'trim-end', deltaMs, targets, pxPerMs);
@@ -417,7 +425,13 @@ export function useBlockDrag(opts: {
       const alongOwnTrack = grouped ? shift.ok && shift.delta === 0 : drop.action === 'stay';
       const wouldLand = { startMs: out.startMs + (flush?.shiftMs ?? 0), endMs: out.endMs + (flush?.shiftMs ?? 0) };
       const overlaps = alongOwnTrack && rangeOverlaps(wouldLand, singleLanes[homeLaneIndex]?.occupied ?? []);
-      const editMode: EditMode = moveEditMode({ magnet: p.magnet, alt: altNow, overlaps });
+      /* the track it lands on: the magnet inserts on the main track; elsewhere with the magnet it covers nothing (a clip
+         landing on another goes to a free track, see planMove), ⌥ inserting there */
+      const landsOn = drop.action === 'move' ? drop.trackIndex : drop.action === 'insert' ? null : homeLane?.docIndex;
+      const onMain = magnetOn(m, landsOn, p.magnet);
+      const editMode: EditMode = p.magnet && !onMain
+        ? (altNow ? 'insert' : 'overwrite')
+        : moveEditMode({ magnet: onMain, alt: altNow, overlaps });
       const settle = editMode === 'overwrite' ? flush : null;
       const to = new Map<string, TrackDest>();
       if (drop.action === 'move') to.set(block.clipId!, drop.trackIndex);
@@ -433,7 +447,8 @@ export function useBlockDrag(opts: {
         pointerMs: grabMs + deltaMs,
         to,
         mode: editMode,
-        sync: p.sync,
+        magnet: p.magnet,
+        ...followOf(p),
       });
       lastPlan = plan;
       document.body.style.cursor = outside ? 'copy' : 'grabbing';

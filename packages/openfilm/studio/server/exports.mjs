@@ -31,11 +31,13 @@
  *       plain transcript); refused when the film has none
  *   { kind: 'slides', format?: 'pptx' (default) | 'pdf', frame?, fill?, shortEdge? (default 1080), at?: number[] }
  *       the scene stills bound as a deck (the scene's name in the speaker notes) or a PDF, one page each
- *   { kind: 'nle', fps? (snapped to 23.976, 24, 25, 29.97, 30, 50, 59.94 or 60; default 30), audio?: 'clips' (default)
- *     | 'stems', media?: 'copy' (default) | 'link', subtitles?: boolean (default true) }
+ *   { kind: 'nle', format?: 'xml' (default) | 'jianying' | 'capcut', fps? (snapped to 23.976, 24, 25, 29.97, 30, 50, 59.94 or 60;
+ *     default 30), audio?: 'clips' (default) | 'stems', media?: 'copy' (default) | 'link', subtitles?: boolean (default true) }
  *       a folder an editing program opens (see nle.mjs): `<name>.xml` (xmeml: Premiere Pro, DaVinci Resolve), each
  *       web page rendered to a ProRes 4444 with alpha in media/, footage, stills and sounds cloned there (`link`:
- *       pointed at where they are), the sound as clips or as mixed stems, `<name>.srt` when there are subtitles
+ *       pointed at where they are), the sound as clips or as mixed stems, `<name>.srt` when there are subtitles.
+ *       `jianying`, `capcut`: the same timeline as a 剪映 or CapCut draft (see jianying.mjs), made in the app's drafts folder when this
+ *       computer has one (else in the exports folder, to be moved there), its subtitles a text track
  *
  *   { kind: 'project', parts?: ('history' | 'chat' | 'logs')[], as?: 'zip' (default) | 'folder' }
  *       the project itself, to hand on or keep (see projectFiles): its work always, the parts asked besides; a zip
@@ -57,6 +59,7 @@ import { FilmPage, launch } from '../../src/host.mjs';
 import { filmSound, kill as killProcess, mix, open } from '../../src/shared.mjs';
 import { FILM_FILE, clipFade, filmHtml, fittedFade, kindOf, pictureRect, readFilmFile } from '../../src/film-doc.mjs';
 import { NLE_FPS, nleFps, planNleTimeline, probeSource, soundStem, xmemlDocument } from './nle.mjs';
+import { draftsRoot, jianyingDraft } from './jianying.mjs';
 import { slidesPdf, writePptx } from './slides.mjs';
 import { subtitlesForExport } from './captions.mjs';
 import { filmSubtitleCuesInRange, filmSubtitleShown, filmSubtitleSrt, filmSubtitleTranscript, filmSubtitleVtt } from './film-subtitle.mjs';
@@ -85,7 +88,7 @@ export const exportsRoot = () => process.env.OPENFILM_EXPORTS
  * @typedef {Framing & { kind: 'poster', format?: 'png' | 'jpg', shortEdge?: number, at?: number }} PosterAsk
  * @typedef {{ kind: 'subtitles', format?: 'srt' | 'vtt' | 'txt' }} SubtitlesAsk
  * @typedef {Framing & { kind: 'slides', format?: 'pptx' | 'pdf', shortEdge?: number, at?: number[] }} SlidesAsk
- * @typedef {{ kind: 'nle', fps?: number, audio?: 'clips' | 'stems', media?: 'copy' | 'link', subtitles?: boolean }} NleAsk
+ * @typedef {{ kind: 'nle', format?: 'xml' | 'jianying' | 'capcut', fps?: number, audio?: 'clips' | 'stems', media?: 'copy' | 'link', subtitles?: boolean }} NleAsk
  * @typedef {{ kind: 'project', parts?: ProjectPart[], as?: 'zip' | 'folder' }} ProjectAsk
  * @typedef {typeof PROJECT_PARTS[number]} ProjectPart
  * @typedef {VideoAsk | GifAsk | AudioAsk | StillsAsk | PosterAsk | SubtitlesAsk | SlidesAsk | NleAsk | ProjectAsk} ExportSpec
@@ -139,6 +142,11 @@ export async function exportCapabilities() {
   };
 }
 
+/** 剪映's or CapCut's drafts folder on this computer, or null. @param {'jianying' | 'capcut'} app */
+const defaultDrafts = (app) => draftsRoot(app, { home: homedir(), localAppData: process.env.LOCALAPPDATA, exists: existsSync });
+/** Which of 剪映 and CapCut are on this computer (their drafts folders are there): an editing project goes into its drafts. */
+export const draftApps = () => ({ jianying: Boolean(defaultDrafts('jianying')), capcut: Boolean(defaultDrafts('capcut')) });
+
 /* ── delivery frames (the same arithmetic as the editor's lib/film-frame.ts) ── */
 
 /** A frame written `W:H` ("16:9", "2.39:1"), from 1:4 to 4:1: its width ÷ height, or null. @param {unknown} frame */
@@ -152,21 +160,27 @@ const MAX_DIM = 4096;
 const even = (/** @type {number} */ n) => Math.max(2, Math.round(n / 2) * 2);
 
 /**
- * The film (`stage`) fitted into a delivery frame: the frame's size (its long side follows the film's) and the film's
- * scale inside it (`contain`: whole, with bars; `cover`: filling it, the overflow cut).
- * @param {{ w: number, h: number }} stage @param {string} frame @param {'contain' | 'cover'} fill
+ * The film (`stage`) fitted into a delivery frame: the frame's size (its long side follows the film's), its exact
+ * shape (`ratio`: the frame's own, not its even-rounded pixels'), and the film's scale inside it (`contain`: whole,
+ * with bars; `cover`: filling it, the overflow cut).
+ * @param {{ w: number, h: number, ratio?: number }} stage @param {string} frame @param {'contain' | 'cover'} fill
  */
 export function frameBox(stage, frame, fill) {
   const ratio = frame === 'native' ? null : frameRatio(frame);
-  if (ratio == null) return { w: even(stage.w), h: even(stage.h), scale: 1 };
+  /* native: the stage's own shape (a frame drawn as a page, with subtitles over it, keeps the frame's exact one) */
+  if (ratio == null) return { w: even(stage.w), h: even(stage.h), ratio: stage.ratio ?? stage.w / Math.max(1, stage.h), scale: 1 };
   const box = stage.w / ratio >= stage.h ? { w: stage.w, h: stage.w / ratio } : { w: stage.h * ratio, h: stage.h };
   const w = even(box.w), h = even(box.h);
-  return { w, h, scale: fill === 'cover' ? Math.max(w / stage.w, h / stage.h) : Math.min(w / stage.w, h / stage.h) };
+  return { w, h, ratio, scale: fill === 'cover' ? Math.max(w / stage.w, h / stage.h) : Math.min(w / stage.w, h / stage.h) };
 }
 
-/** A box's size with its short side at `shortEdge` (even, no side over 4096). @param {{ w: number, h: number }} box @param {number} shortEdge */
+/**
+ * A box's size with its short side at `shortEdge` (even, no side over 4096), in the box's exact shape: a 16:9 frame
+ * at 1080 is 1920 × 1080, whatever its rounded pixels around a 2:1 film.
+ * @param {{ w: number, h: number, ratio?: number }} box @param {number} shortEdge
+ */
 export function dimsForShortEdge(box, shortEdge) {
-  const r = box.w / Math.max(1, box.h);
+  const r = box.ratio ?? box.w / Math.max(1, box.h);
   let w, h;
   if (r >= 1) { h = even(shortEdge); w = even(h * r); } else { w = even(shortEdge); h = even(w / r); }
   if (w > MAX_DIM || h > MAX_DIM) {
@@ -176,9 +190,9 @@ export function dimsForShortEdge(box, shortEdge) {
   return { w, h };
 }
 
-/** A GIF's size: its long side at `width`. @param {{ w: number, h: number }} box @param {number} width */
+/** A GIF's size: its long side at `width`. @param {{ w: number, h: number, ratio?: number }} box @param {number} width */
 function gifDims(box, width) {
-  const r = box.w / Math.max(1, box.h);
+  const r = box.ratio ?? box.w / Math.max(1, box.h);
   return r >= 1 ? { w: even(width), h: even(width / r) } : { w: even(width * r), h: even(width) };
 }
 
@@ -232,7 +246,7 @@ function baseName(project, ask) {
     }
     case 'stills': return `${base} stills`;
     case 'poster': return `${base} poster`;
-    case 'nle': return `${base} · Editor XML`;
+    case 'nle': return ask.format === 'jianying' || ask.format === 'capcut' ? base : `${base} · Editor XML`;
     default: return `${base}${range}`;
   }
 }
@@ -292,6 +306,7 @@ function checked(/** @type {ExportAsk} */ ask) {
       break;
     case 'nle':
       if (ask.range !== undefined) throw new ExportError('an editor gets the whole timeline: no range');
+      if (ask.format !== undefined && !['xml', 'jianying', 'capcut'].includes(ask.format)) throw new ExportError('format: xml, jianying or capcut');
       if (!between(ask.fps, 1, 120)) throw new ExportError(`fps: ${NLE_FPS.join(', ')}`);
       if (ask.audio !== undefined && ask.audio !== 'clips' && ask.audio !== 'stems') throw new ExportError('audio: clips or stems');
       if (ask.media !== undefined && ask.media !== 'copy' && ask.media !== 'link') throw new ExportError('media: copy or link');
@@ -718,9 +733,11 @@ async function rasterize(browser, file, w, h, out) {
 /**
  * The export queue. `onChange(job)` is told every change of a job (its progress included), for the pages watching.
  * `captions(root)`: a film's subtitle cues and the person's style for them (captions.mjs by default).
- * @param {{ onChange?: (job: ExportJob) => void, captions?: (root: string) => Promise<{ cues: Cue[], style: SubtitleStyle }> }} [options]
+ * `drafts(app)`: 剪映's or CapCut's drafts folder, where its draft goes (null: the exports folder); this computer's by default.
+ * @param {{ onChange?: (job: ExportJob) => void, captions?: (root: string) => Promise<{ cues: Cue[], style: SubtitleStyle }>,
+ *   drafts?: (app: 'jianying' | 'capcut') => string | null }} [options]
  */
-export function createExports({ onChange = () => {}, captions = subtitlesForExport } = {}) {
+export function createExports({ onChange = () => {}, captions = subtitlesForExport, drafts = defaultDrafts } = {}) {
   /** @type {ExportJob[]} */
   const jobs = [];
   /** @type {Map<string, { root: string, folder: string, abort: AbortController }>} */
@@ -936,8 +953,8 @@ export function createExports({ onChange = () => {}, captions = subtitlesForExpo
     const probe = await open(burn ? burn.dir : root, burn ? { root } : {}).catch(async (e) => { await burn?.remove(); throw e; });
     try {
       const meta = probe.film.meta;
-      const stage = { w: meta.width, h: meta.height };
       /* with subtitles, the frame is the page drawn */
+      const stage = burn ? burn.box : { w: meta.width, h: meta.height };
       const frame = burn ? 'native' : ask.frame ?? 'native', fill = ask.fill ?? 'contain';
       const box = frameBox(stage, frame, fill);
       const size = dimsForShortEdge(box, ask.shortEdge ?? Math.min(box.w, box.h));
@@ -1048,11 +1065,15 @@ export function createExports({ onChange = () => {}, captions = subtitlesForExpo
 
   /**
    * The timeline for an editing program: a folder with the xmeml, the media it points at, and the subtitles as SRT
-   * (see nle.mjs). Made in a hidden folder beside it and moved into place when whole.
-   * @param {ExportJob} job @param {string} root @param {string} dir @param {AbortSignal} signal
+   * (see nle.mjs), or a 剪映 or CapCut draft (jianying.mjs) in the app's drafts folder. Made in a hidden folder beside it and moved
+   * into place when whole.
+   * @param {ExportJob} job @param {string} root @param {string} out @param {AbortSignal} signal
    */
-  async function exportNle(job, root, dir, signal) {
+  async function exportNle(job, root, out, signal) {
     const ask = /** @type {NleAsk} */ (job.ask);
+    const app = ask.format === 'jianying' || ask.format === 'capcut' ? ask.format : null;
+    /* a draft goes where its app lists its drafts, when the app is on this computer */
+    const dir = (app && drafts(app)) || out;
     const fps = nleFps(ask.fps ?? 30);
     const mode = ask.audio ?? 'clips';
     const title = safeName(job.name);
@@ -1202,17 +1223,26 @@ export function createExports({ onChange = () => {}, captions = subtitlesForExpo
       }
 
       update(job, { phase: 'finishing', progress: 0.98 });
-      if (ask.subtitles !== false) {
-        const srt = filmSubtitleSrt((await subtitlesOf(root).catch(() => ({ cues: [] }))).cues);
+      const cues = ask.subtitles !== false ? (await subtitlesOf(root).catch(() => ({ cues: [] }))).cues : [];
+      if (app) {
+        /* the app on Windows reads draft_content.json, on a Mac draft_info.json: the same draft in both */
+        const draft = jianyingDraft(timeline, { app, name: basename(final), folder: final, root: dir, cues });
+        const info = JSON.stringify(draft.info);
+        await writeFile(join(staging, 'draft_info.json'), info, 'utf8');
+        await writeFile(join(staging, 'draft_content.json'), info, 'utf8');
+        await writeFile(join(staging, 'draft_meta_info.json'), JSON.stringify(draft.meta), 'utf8');
+      } else {
+        const srt = filmSubtitleSrt(cues);
         if (srt) await writeFile(join(staging, `${title}.srt`), srt, 'utf8');
+        await writeFile(join(staging, `${title}.xml`), xmemlDocument(timeline), 'utf8');
       }
-      await writeFile(join(staging, `${title}.xml`), xmemlDocument(timeline), 'utf8');
       if (signal.aborted) throw new Error('cancelled');
       if (!(await readdir(join(staging, 'media'))).length) await rmdir(join(staging, 'media'));
       await rename(staging, final);
       const media = existsSync(join(final, 'media')) ? (await readdir(join(final, 'media'))).sort().map((n) => join(final, 'media', n)) : [];
-      const top = (await readdir(final)).filter((n) => n !== 'media').sort((a, b) => Number(!a.endsWith('.xml')) - Number(!b.endsWith('.xml')) || a.localeCompare(b));
-      /* the XML first: "Show in Finder" shows the first */
+      const first = app ? 'draft_info.json' : '.xml';
+      const top = (await readdir(final)).filter((n) => n !== 'media').sort((a, b) => Number(!a.endsWith(first)) - Number(!b.endsWith(first)) || a.localeCompare(b));
+      /* the XML (the draft) first: "Show in Finder" shows the first */
       const outputs = [...top.map((n) => join(final, n)), ...media];
       update(job, { out: outputs[0], outputs });
     } finally {
