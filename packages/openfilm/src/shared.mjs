@@ -1,9 +1,10 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { FilmPage, FrameError, launch, serve } from './host.mjs';
 import { FILM_FILE, readFilmFile } from './film-doc.mjs';
+import { readableLink } from './media-links.mjs';
 
 /**
  * A film argument (a project folder with film.html, a folder inside one, a folder with index.html, or an .html file)
@@ -143,10 +144,32 @@ export async function write(stream, buf) {
   if (!stream.write(buf)) await new Promise((r) => stream.once('drain', r));
 }
 
-/** Where a path the film asks for (a sound's `src`, resolved from the entry as the browser would) lives on disk. */
+/**
+ * Where a path the film asks for (a sound's `src`, resolved from the entry as the browser would) lives on disk. The
+ * file is inside the film's folder; a link out of it is followed only to media the person linked (`readableLink`,
+ * src/media-links.mjs), as the file server does.
+ */
 export function fileOf(root, entry, src) {
-  const path = decodeURIComponent(new URL(src, `http://film/${entry}`).pathname);
-  return join(root, path);
+  const path = decodeURIComponent(new URL(String(src), `http://film/${entry}`).pathname);
+  /* the URL takes care of `..` before the path is decoded: `%2F` decoded after it is a `/` the join resolves, so
+     the file is checked to be inside the folder, and, when it is there, not a link out of it */
+  const home = resolve(root);
+  const file = resolve(join(root, path));
+  if (file !== home && !file.startsWith(home + sep)) throw new Error(`${src}: outside the film's folder`);
+  if (existsSync(file)) {
+    const real = realpathSync(file), base = realpathSync(home);
+    if (real !== base && !real.startsWith(base + sep) && !readableLink(home, file)) throw new Error(`${src}: a link out of the film's folder`);
+  }
+  return file;
+}
+
+/** A sound as a film or a page lists it: a path, and numbers where numbers go (they end up in ffmpeg's filters). */
+export function checkSound(c) {
+  if (!c || typeof c.src !== 'string' || !c.src) throw new Error(`sound ${c?.clip ?? '?'}: src must be a path in the film's folder`);
+  const finite = (v) => typeof v === 'number' && Number.isFinite(v);
+  for (const key of ['at', 'from', 'to', 'volume', 'speed']) if (c[key] != null && !finite(c[key])) throw new Error(`sound ${c.src}: ${key} must be a number`);
+  if (c.fade != null && !(Array.isArray(c.fade) && c.fade.length === 2 && c.fade.every(finite))) throw new Error(`sound ${c.src}: fade must be two numbers`);
+  return c;
 }
 
 /**
@@ -156,6 +179,7 @@ export function fileOf(root, entry, src) {
  */
 export function audioClips(root, entry, clips, from = 0) {
   return (clips ?? []).map((c) => {
+    checkSound(c);
     const speed = c.speed ?? 1;
     let at = (c.at ?? 0) - from;
     let start = c.from ?? 0;
