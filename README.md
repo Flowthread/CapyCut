@@ -44,7 +44,8 @@ It opens the film in Studio and you watch it take shape. If your agent has no sk
 `npx -y openfilm@latest` and follow the manual it prints."
 
 Or download the desktop app for macOS or Windows from [openfilm.dev](https://openfilm.dev) or
-[Releases](https://github.com/openfilm/openfilm/releases): Studio with a chat beside it for the agents you have.
+[Releases](https://github.com/openfilm/openfilm/releases): Studio with a chat beside it for the agents you have. It
+comes with ffmpeg and the headless browser, so there is nothing else to install.
 
 Making, editing and rendering films needs no account. For generated voice, music, images and video, connect the
 services you use (ElevenLabs, OpenAI, Google, fal and others) with your own keys in Studio's Settings → Providers.
@@ -142,7 +143,7 @@ pnpm dev            # Studio from this checkout, with a sample film, apart from 
 pnpm test
 ```
 
-`pnpm dev` also prints a command your coding agent can run to make films with your checkout, in that Studio.
+Open your coding agent in `packages/openfilm/.dev/projects` and it makes films with your checkout, in that Studio.
 
 `pnpm dev:desktop` runs the desktop app from source, and `pnpm typecheck`, `pnpm build` and `pnpm audit:public` do
 what they say.
