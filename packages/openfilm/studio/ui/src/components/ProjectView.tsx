@@ -7,7 +7,7 @@
  * are written one at a time (see editor/use-film.ts); the agent's writes come in through the folder's events.
  */
 import * as React from 'react';
-import { GalleryVerticalEnd, Layers, LibraryBig, MessageSquarePlus, MonitorDown, Settings2, TriangleAlert } from 'lucide-react';
+import { ClipboardCopy, ClipboardPaste, GalleryVerticalEnd, Layers, LibraryBig, MessageSquarePlus, MonitorDown, Settings2, TriangleAlert } from 'lucide-react';
 import { applyOps } from '../../../server/ops.mjs';
 import { api, ApiError, PREFS_EVENT, projectEvents, type Clip, type Film, type Listing, type Op, type ProjectFilm, type ProjectSettings } from '@/api';
 import { useT } from '@/i18n';
@@ -15,10 +15,12 @@ import { useFilm, type Step } from '@/editor/use-film';
 import { Player } from '@/editor/player';
 import { Preview, type FilmInfo, type PreviewHandle } from '@/editor/Preview';
 import { filmShape, type MediaFacts } from '@/lib/film-shape';
+import { changesPicture } from '@/lib/picture-files';
 import { layoutTracks, type TimelineBlock, type TimelineTrack } from '@/lib/timeline-layout';
 import { filmClipKind, filmSrcIsPage, filmSrcKind, filmTrackBadges, parseFilmDocLoc, type FilmBox, type FilmDoc } from '@/lib/film';
-import { footageFps, secondFrames, setTimecodeFps, snapToFrame, stepFrames } from '@/lib/timecode';
-import { keyCommandOf, loopBack, playStart, shuttleRate } from '@/lib/timeline-keys';
+import { footageFps, setTimecodeFps, snapToFrame, stepFrames } from '@/lib/timecode';
+import { JUMP_FRAMES, keyCommandOf, loopBack, playStart, shuttleRate } from '@/lib/timeline-keys';
+import { attrsOf, pasteAttrs, type AttrGroup, type CopiedAttrs } from '@/lib/clip-attrs';
 import { cutPoints, namedTrack, nextCut, trackNamesOf } from '@/lib/timeline-nav';
 import { anyLocked, lockedEdits } from '@/lib/track-lock';
 import { placeMedia, type SourceRange } from '@/lib/media-place';
@@ -85,6 +87,7 @@ import { LiveTime, type PlaybackClock } from './LiveTime';
 import { Toast, useToast } from './Toast';
 import { SpendAsks } from './SpendAsks';
 import { ExportCenter } from './export/ExportCenter';
+import { PasteAttrsDialog } from './PasteAttrsDialog';
 import { ExportTray, type ExportTrayHandle } from './export/ExportTray';
 import { FilmStageSelect, type FilmStageControl, type LayerGeometry, type StageClipEdit, type StagePick } from './FilmStageSelect';
 import { openSection } from './inspector-fields';
@@ -208,9 +211,10 @@ export function ProjectView({ projectId, onProject, onLeave }: {
       setFilesTick((n) => n + 1);
       /* a page, or a file pages use, changed on disk: the picture is drawn from them again. So is a media file a clip
          plays, made again in place (a render written over the last one): its element would go on playing what it
-         had loaded of the old file. Other media under assets/ are loaded as they are used */
+         had loaded of the old file. Other media under assets/ are loaded as they are used, and what no page loads
+         (an agent's notes and scripts) leaves the picture as it is (lib/picture-files) */
       const used = new Set(blocksRef.current.map((b) => b.src).filter(Boolean));
-      if (!event.paths || event.paths.some((path) => !path.startsWith('assets/') || used.has(path))) preview.current?.reload?.();
+      if (changesPicture(event.paths, used)) preview.current?.reload?.();
     });
   }, [projectId]);
 
@@ -700,6 +704,32 @@ export function ProjectView({ projectId, onProject, onLeave }: {
   /** An edit the timeline planned (lib/timeline-edit), as it planned it: one write, one undo step. */
   const editOps = React.useCallback((ops: Op[], label: string) => edit(ops, label), [edit]);
 
+  /* ── a clip's attributes copied onto others (lib/clip-attrs, ⌘⇧C / ⌘⇧V, as CapCut's) ── */
+  const [copiedAttrs, setCopiedAttrs] = React.useState<CopiedAttrs | null>(null);
+  const [pasteAttrsOpen, setPasteAttrsOpen] = React.useState(false);
+  const filmClipOf = React.useCallback((id: string) => filmRef.current?.tracks.flatMap((tr) => tr.clips).find((c) => c.id === id) ?? null, []);
+  const copyAttrs = React.useCallback((blocks: readonly TimelineBlock[]) => {
+    const clip = blocks.map((b) => (b.clipId ? filmClipOf(b.clipId) : null)).find(Boolean);
+    if (!clip) { toast.show(t('clipAttrs.selectFirst')); return; }
+    setCopiedAttrs(attrsOf(clip));
+    toast.show(t('clipAttrs.copied'));
+  }, [filmClipOf, toast, t]);
+  const askPasteAttrs = React.useCallback((blocks: readonly TimelineBlock[]) => {
+    if (!copiedAttrs) { toast.show(t('clipAttrs.nothing')); return; }
+    if (!blocks.some((b) => b.clipId && b.loc)) { toast.show(t('clipAttrs.selectFirst')); return; }
+    setPasteAttrsOpen(true);
+  }, [copiedAttrs, toast, t]);
+  const doPasteAttrs = React.useCallback((groups: ReadonlySet<AttrGroup>) => {
+    setPasteAttrsOpen(false);
+    if (!copiedAttrs) return;
+    const targets = selectedBlocks.flatMap((b) => {
+      const clip = b.clipId && b.loc ? filmClipOf(b.clipId) : null;
+      return clip ? [{ loc: b.loc!, clip, lengthS: (b.endMs - b.startMs) / 1000 }] : [];
+    });
+    const edits = pasteAttrs(copiedAttrs, groups, targets);
+    if (edits.length) void editBlocks(edits).then((err) => { if (err) toast.showError(err); });
+  }, [copiedAttrs, selectedBlocks, filmClipOf, editBlocks, toast]);
+
   /* ── fades and transitions: each clip's fades (its `overrides`' own entry), and the transitions they make ── */
   const clipFades = React.useMemo(() => new Map<string, FadeMs>((film.film?.tracks ?? []).flatMap((tr) => tr.clips.flatMap((c) => {
     const fade = fadeMsOf(c);
@@ -733,7 +763,7 @@ export function ProjectView({ projectId, onProject, onLeave }: {
     /* the magnet acts on the main track: there a transition's overlap closes up what follows */
     const cutClip = ask.kind === 'add' ? ask.cut.a : filmTransitions.find((x) => x.key === ask.key)?.a;
     const cutTrack = model.find((tr) => tr.clips.some((c) => c.id === cutClip))?.index;
-    const opts = { ripple: magnetOn(model, cutTrack, prefs.magnet), ...followOf(prefs), linked: prefs.linked, whiteSrc: WHITE_SRC };
+    const opts = { ripple: magnetOn(model, cutTrack, prefs.magnet), ...followOf(prefs), linked: true, whiteSrc: WHITE_SRC };
     let plan: TransitionPlan;
     let label: string;
     if (ask.kind === 'add') {
@@ -764,7 +794,7 @@ export function ProjectView({ projectId, onProject, onLeave }: {
     /* the magnet acts on the main track alone */
     const magnet = magnetOn(model, model.find((tr) => tr.clips.some((c) => c.id === block?.clipId))?.index, prefs.magnet);
     if (!block?.clipId || (one!.prop !== 'speed' && one!.prop !== 'at' && !(one!.prop === 'end' && magnet))) return editBlocks(edits, true);
-    const ids = prefs.linked ? [block.clipId, ...linkedIds(model, [block.clipId]).filter((id) => id !== block.clipId)] : [block.clipId];
+    const ids = [block.clipId, ...linkedIds(model, [block.clipId]).filter((id) => id !== block.clipId)];
     if (one!.prop === 'at') {
       /* a start typed in: the clip (and those linked to it) moves as a drag would, in the timeline's mode: with the
          magnet it goes in at the insert point there and pushes what follows on; without it, it lands there and covers
@@ -971,8 +1001,8 @@ export function ProjectView({ projectId, onProject, onLeave }: {
   }, [removeBlocks]);
   /* markers, solo, track heights, loudness, freeze frame, replace (use-editor-tools) */
   const tools = useEditorTools({
-    projectId, tracks: timelineTracks, film: film.film, settings, patchSettings, player, timeRef, seek, edit: editOps, editModel,
-    selectedClipIds: selectedKeys, listing, toast,
+    projectId, tracks: timelineTracks, film: film.film, settings, patchSettings, player, timeRef, seek, edit: editOps, record: film.record,
+    editModel, selectedClipIds: selectedKeys, listing, toast,
   });
 
   /* how many of the person's edits an outside write undid: edits inside pages it left out, and clip edits it changed */
@@ -1374,9 +1404,9 @@ export function ProjectView({ projectId, onProject, onLeave }: {
   const duplicateRef = React.useRef<(blocks: readonly TimelineBlock[]) => Promise<string | null>>(async () => null);
   /* the whole clip's actions in the picture's menu: the timeline's own */
   const blockAt = (clipLoc: string) => blocksRef.current.find((b) => b.loc === clipLoc) ?? null;
-  /* a clip with the clips linked to it (when the timeline's Linked switch is on), as the timeline acts on them */
+  /* a clip with the clips linked to it, as the timeline acts on them */
   const withLinkedBlocks = (b: TimelineBlock): TimelineBlock[] => {
-    if (!b.clipId || !readTimelinePrefs().linked) return [b];
+    if (!b.clipId) return [b];
     const ids = new Set(linkedIds(editModel(), [b.clipId]));
     return blocksRef.current.filter((x) => x === b || (x.clipId != null && ids.has(x.clipId)));
   };
@@ -1441,7 +1471,12 @@ export function ProjectView({ projectId, onProject, onLeave }: {
   }, [stageMenuFor, t]);
   /** Two groups of menu entries, a line between them when both have some. */
   const menuGroups = (a: ContextMenuEntry[], b: ContextMenuEntry[]): ContextMenuEntry[] => (a.length && b.length ? [...a, { id: 'tools-sep', separator: true }, ...b] : [...a, ...b]);
-  const timelineMenuExtra = React.useCallback((blocks: readonly TimelineBlock[]) => (blocks.length ? menuGroups(referEntry(() => blocks.map(refOfBlock)), tools.menuExtra(blocks)) : []), [t, tools.menuExtra]); // eslint-disable-line react-hooks/exhaustive-deps
+  /* copy and paste attributes, as CapCut's clip menu has them */
+  const attrsEntries = (blocks: readonly TimelineBlock[]): ContextMenuEntry[] => [
+    { id: 'copy-attrs', label: t('clipAttrs.copy'), icon: <ClipboardCopy size={14} />, shortcut: shortcutHint('C', { mod: true, shift: true }), disabled: blocks.length !== 1, onSelect: () => copyAttrs(blocks) },
+    { id: 'paste-attrs', label: t('clipAttrs.pasteMenu'), icon: <ClipboardPaste size={14} />, shortcut: shortcutHint('V', { mod: true, shift: true }), disabled: !copiedAttrs, hint: t('clipAttrs.nothing'), onSelect: () => askPasteAttrs(blocks) },
+  ];
+  const timelineMenuExtra = React.useCallback((blocks: readonly TimelineBlock[]) => (blocks.length ? menuGroups(menuGroups(referEntry(() => blocks.map(refOfBlock)), tools.menuExtra(blocks)), attrsEntries(blocks)) : []), [t, tools.menuExtra, copiedAttrs, copyAttrs, askPasteAttrs]); // eslint-disable-line react-hooks/exhaustive-deps
   const trackMenuExtra = React.useCallback((track: TimelineTrack) => {
     const docIndex = track.docIndex;
     const refer = docIndex == null || !studioHost?.refer ? [] : referEntry(() => { const ref = trackRef(tracksRef.current, docIndex); return ref ? [ref] : []; }, false);
@@ -1597,6 +1632,13 @@ export function ProjectView({ projectId, onProject, onLeave }: {
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rawListing, timelineTracks]);
+  /** The file of a clip under the playhead that is gone (on a track that is seen), for the viewer to say. */
+  const missingHere = React.useMemo(() => {
+    if (!mediaTrouble.size) return null;
+    const hit = timelineTracks.filter((tr) => !tr.hidden).flatMap((tr) => tr.blocks)
+      .find((b) => b.src && mediaTrouble.get(b.src) === 'missing' && timeMs >= b.startMs && timeMs < b.endMs);
+    return hit?.src ? hit.src.split('/').pop() ?? hit.src : null;
+  }, [mediaTrouble, timelineTracks, timeMs]);
   const relinkCandidates = React.useCallback((src: string): string[] => {
     const name = src.split('/').pop()?.toLowerCase();
     return name ? (rawListing?.files ?? []).filter((f) => f.path.split('/').pop()?.toLowerCase() === name && f.path !== src).map((f) => f.path) : [];
@@ -2001,11 +2043,11 @@ export function ProjectView({ projectId, onProject, onLeave }: {
         if (!once) return;
         if (markedRange) playRange(markedRange); else toggle();
         return;
-      case 'frame-back': case 'frame-forward': case 'second-back': case 'second-forward': case 'start': case 'end': {
+      case 'frame-back': case 'frame-forward': case 'jump-back': case 'jump-forward': case 'start': case 'end': {
         if (!(totalMs > 0)) return;
         take();
-        /* a frame (or a second) on from the frame the playhead is on, so stepping never drifts */
-        const frames = (cmd.endsWith('back') ? -1 : 1) * (cmd.startsWith('second') ? secondFrames() : 1);
+        /* a frame (or ten, ⇧) on from the frame the playhead is on, so stepping never drifts */
+        const frames = (cmd.endsWith('back') ? -1 : 1) * (cmd.startsWith('jump') ? JUMP_FRAMES : 1);
         const next = cmd === 'start' ? 0 : cmd === 'end' ? totalMs : stepFrames(now, frames);
         pause();
         seek(Math.max(0, Math.min(totalMs, next)));
@@ -2032,6 +2074,32 @@ export function ProjectView({ projectId, onProject, onLeave }: {
       case 'insert-source': case 'overwrite-source':
         /* the source viewer's keys (it takes them first while it is up) */
         return;
+      case 'range-clip': {
+        /* ⇧X: the range is the selected clips' span (CapCut's 以片段选定区域) */
+        if (!selectedBlocks.length) return;
+        take();
+        setMarkedRange({ startMs: Math.min(...selectedBlocks.map((b) => b.startMs)), endMs: Math.max(...selectedBlocks.map((b) => b.endMs)) });
+        return;
+      }
+      case 'copy-attrs': if (!selectedBlocks.length) return; take(); if (once) copyAttrs(selectedBlocks); return;
+      case 'paste-attrs': if (!selectedBlocks.length) return; take(); if (once) askPasteAttrs(selectedBlocks); return;
+      case 'speed': {
+        /* ⌘R: the selected clip's speed, in the inspector (CapCut's 变速 panel) */
+        if (selectedBlocks.length !== 1 || !once) return;
+        take();
+        setInspectorContent('selection');
+        setInspectorOpen(true);
+        window.setTimeout(() => document.querySelector<HTMLInputElement>(`input[aria-label="${t('inspector.speed')}"]`)?.focus(), 80);
+        return;
+      }
+      case 'detach-audio': {
+        /* ⇧⌃S: the selected video's sound on a track of its own (CapCut's 分离音频) */
+        const video = selectedBlocks.find((b) => b.kind === 'video' && b.clipId);
+        if (!video || !once) return;
+        take();
+        void detachAudio(video).then((err) => { if (err) toast.showError(err); });
+        return;
+      }
       default:
         break;
     }
@@ -2046,14 +2114,15 @@ export function ProjectView({ projectId, onProject, onLeave }: {
         commands.nudge(cmd === 'nudge-back' ? -1 : 1);
         return;
       case 'zoom-fit': take(); commands.zoomFit(); return;
+      case 'select-left': case 'select-right': take(); if (once) commands.selectSide(cmd === 'select-left' ? -1 : 1); return;
       case 'ripple-start': take(); if (once) commands.rippleTrimStart(); return;
       case 'ripple-end': take(); if (once) commands.rippleTrimEnd(); return;
-      case 'toggle-snap': case 'toggle-magnet': {
+      case 'toggle-snap': case 'toggle-magnet': case 'toggle-linkage': {
         take();
         if (!once) return;
-        const pref = cmd === 'toggle-snap' ? 'snap' : 'magnet';
+        const pref = cmd === 'toggle-snap' ? 'snap' : cmd === 'toggle-magnet' ? 'magnet' : 'linkage';
         const on = !readTimelinePrefs()[pref];
-        if (pref === 'snap') commands.toggleSnap(); else commands.toggleMagnet();
+        if (pref === 'snap') commands.toggleSnap(); else if (pref === 'magnet') commands.toggleMagnet(); else commands.toggleLinkage();
         toast.show(`${t(`timeline.${pref}`)} · ${t(`timeline.${pref}${on ? 'On' : 'Off'}`)}`);
         return;
       }
@@ -2406,6 +2475,13 @@ export function ProjectView({ projectId, onProject, onLeave }: {
                             ) : null}
                           </Preview>
                         </div>
+                        {/* a clip under the playhead whose file is gone plays as nothing (src/timeline.mjs, film-missing):
+                            said here, over the picture, with what to do */}
+                        {missingHere && !fullscreen ? (
+                          <div data-preview-missing="" className="pointer-events-none absolute left-2 top-2 z-10 max-w-[80%] truncate rounded-[4px] bg-black/75 px-2 py-1 text-[11px] text-white">
+                            {t('project.previewMissing').replace('{file}', missingHere)}
+                          </div>
+                        ) : null}
                         {!viewerReady && !empty && !previewError ? (
                           <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-black">
                             <span role="status" className="text-sweep relative text-[13px] text-white/60">{t('project.previewStageMount')}</span>
@@ -2627,7 +2703,9 @@ export function ProjectView({ projectId, onProject, onLeave }: {
         {...(exportClipId ? { focusClipId: exportClipId } : {})}
         onQueued={(jobs) => exportTrayRef.current?.push(jobs)}
         projectFps={projectFps}
+        missingFiles={[...mediaTrouble].flatMap(([src, why]) => (why === 'missing' ? [src] : []))}
       />
+      <PasteAttrsDialog attrs={pasteAttrsOpen ? copiedAttrs : null} onPaste={doPasteAttrs} onCancel={() => setPasteAttrsOpen(false)} />
       <ExportTray ref={exportTrayRef} projectId={projectId} onError={toast.showError} inset={hostPanel?.open ? hostPanel.width : 0} />
       <SpendAsks projectId={projectId} />
       <Toast toast={toast.current} />

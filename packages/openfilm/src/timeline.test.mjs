@@ -192,6 +192,37 @@ test('a film that cannot load says why when its host awaits `ready`, and is no u
 });
 
 
+test('a missing file stops a film, said by its name; an editor\'s preview (film-missing=skip) plays on past it', { timeout: 60_000 }, async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'of-missing-'));
+  writeFileSync(join(dir, 'here.html'), page('here', 2));
+  writeFileSync(join(dir, 'film.html'), filmHtml({ stage: { w: 320, h: 180 }, tracks: [{ clips: [
+    { src: 'gone.html', id: 'gone', time: [0, 2] },
+    { src: 'here.html', id: 'here', at: 2 },
+  ] }] }));
+  const site = await serve(dir);
+  const browser = await launch();
+  try {
+    const strict = await browser.newPage();
+    await strict.goto(`${site.url}/film.html`);
+    await strict.waitForFunction(() => Boolean(window.film));
+    assert.equal(await strict.evaluate(() => window.film.ready.then(() => null, (e) => e.message)), 'gone.html: there is no such file');
+    const preview = await browser.newPage();
+    await preview.goto(`${site.url}/film.html?film-missing=skip`);
+    await preview.waitForFunction(() => Boolean(window.film));
+    assert.equal(await preview.evaluate(() => window.film.ready.then(() => null, (e) => e.message)), null);
+    /* the missing clip keeps its time and the film its length; it is never shown, the clip after it is */
+    assert.deepEqual(await preview.evaluate(() => window.__filmSpans().map((c) => [c.id, c.at, c.end])), [['gone', 0, 2], ['here', 2, 4]]);
+    assert.equal(await preview.evaluate(() => window.film.duration), 4);
+    await preview.evaluate(() => window.film.frame(1));
+    assert.deepEqual(await preview.evaluate(() => [...document.querySelectorAll('iframe')].map((el) => el.style.visibility)), ['hidden', 'hidden']);
+    await preview.evaluate(() => window.film.frame(3));
+    assert.deepEqual(await preview.evaluate(() => [...document.querySelectorAll('iframe')].map((el) => el.style.visibility)), ['hidden', 'visible']);
+  } finally {
+    await browser.close();
+    await site.close();
+  }
+});
+
 const hasFfmpeg = (() => { try { execFileSync('ffmpeg', ['-version'], { stdio: 'ignore' }); return true; } catch { return false; } })();
 
 /** A folder with two short videos (a numbered test picture, `seconds` long at 10 fps) and a sound. */
@@ -493,6 +524,38 @@ test('a text override with line breaks: all the words of an element of <br>s, a 
     assert.equal(await s.film.page.evaluate((v) => window.__filmEditor.update(v), film), true);
     await s.film.seek(1);
     assert.deepEqual(await html(), ['Start here,<br>make your film.', 'One line', 'Quiet <em>you</em>']);
+  } finally {
+    await s.close();
+  }
+});
+
+test('a film of many pages keeps only a few open: one far from the playhead is closed, and opened again draws as before', { timeout: 60_000 }, async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'of-pages-'));
+  const clips = [];
+  for (let i = 0; i < 12; i++) {
+    writeFileSync(join(dir, `p${i}.html`), `<!doctype html><body style="margin:0"><p id="w"></p><p id="o">own</p>
+<script>window.film={duration:1,frame(t){document.getElementById('w').textContent='p${i} '+t.toFixed(2)}}</script></body>`);
+    clips.push({ id: `p${i}`, src: `p${i}.html`, at: i, ...(i === 11 ? { overrides: [{ at: '#o', text: 'tweaked' }] } : {}) });
+  }
+  writeFileSync(join(dir, 'film.html'), filmHtml({ stage: { w: 320, h: 180 }, tracks: [{ clips }] }));
+  const s = await open(dir);
+  const now = () => s.film.page.evaluate(() => [...document.querySelectorAll('iframe')].map((f) => {
+    const doc = f.contentWindow?.film ? f.contentDocument : null;
+    return doc ? `${doc.getElementById('w').textContent}|${doc.getElementById('o').textContent}` : null;
+  }));
+  try {
+    assert.equal(s.film.meta.duration, 12, 'every page\'s length is known, the closed ones\' too');
+    assert.ok((await now()).filter(Boolean).length <= 8, 'loaded: no more than 8 open');
+    await s.film.seek(11.5);
+    let pages = await now();
+    assert.equal(pages[11], 'p11 0.50|tweaked', 'opened, drawn at its moment, its tweak on it');
+    assert.ok(pages.filter(Boolean).length <= 8, `no more than 8 open: ${pages}`);
+    await s.film.seek(0.25);
+    pages = await now();
+    assert.equal(pages[0], 'p0 0.25|own');
+    assert.ok(pages.filter(Boolean).length <= 8, `${pages}`);
+    await s.film.seek(11.75);
+    assert.equal((await now())[11], 'p11 0.75|tweaked', 'closed and opened again: the same page');
   } finally {
     await s.close();
   }

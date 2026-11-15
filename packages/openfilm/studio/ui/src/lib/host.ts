@@ -6,6 +6,9 @@ import React from 'react';
  * editor in, served with `startStudio({ editorDir })`); Studio then leaves out what only makes sense in a browser,
  * such as the button that introduces the desktop app.
  */
+/** Settings → Developer, as the app keeps it (`developer` below). */
+export interface HostDeveloper { logs: boolean; changes: boolean }
+
 export interface StudioHost {
   /** the version of this interface the app speaks */
   version: 1;
@@ -61,13 +64,20 @@ export interface StudioHost {
   /**
    * The agents the app's chat can use, for Settings → Agents: connected or not, shown in the chat's menu or not, and
    * the person's own key for the one that takes one. `onChange` tells of every change (a sign-in finished, a key set up)
-   * and returns a way to stop listening.
+   * and returns a way to stop listening. One of the person's own agents not found can be pointed at (`locate`: the
+   * system's file dialog, with Studio's words; `{ ok: false }` and no error when cancelled) and set back to being
+   * found (`useAutomatic`); `diagnose` says what was searched (an older app has none of these).
    */
   agents?: {
     list: () => Promise<HostAgent[]>;
     connect: (id: HostAgentId) => Promise<{ ok: boolean; error?: string }>;
     disconnect: (id: HostAgentId) => Promise<unknown>;
+    /** Codex: what is left of its plan, as it says for the account signed in (null: it can't say; other agents, null) */
+    usage?: (id: HostAgentId, fresh?: boolean) => Promise<HostAgentUsage | null>;
     setShown: (id: HostAgentId, shown: boolean) => Promise<unknown>;
+    locate?: (id: HostAgentId, words?: { title?: string; button?: string }) => Promise<{ ok: boolean; error?: string; code?: 'not-a-program' | 'did-not-start' | string }>;
+    useAutomatic?: (id: HostAgentId) => Promise<unknown>;
+    diagnose?: (id: HostAgentId) => Promise<HostAgentDiagnosis | null>;
     configureByok: (config: { format: HostByokFormat; baseUrl?: string; models: string[]; key?: string }) => Promise<{ ok: boolean; error?: string; code?: string }>;
     onChange: (listener: (agents: HostAgent[]) => void) => () => void;
   };
@@ -87,15 +97,19 @@ export interface StudioHost {
   update?: {
     onChange: (listener: (update: HostUpdate | null) => void) => () => void;
     restart: () => Promise<{ ok: boolean; error?: string }>;
+    /** Settings → About: the whole state now and on every change, and a check made now (it resolves when it ends) */
+    onState?: (listener: (state: HostUpdateState) => void) => () => void;
+    check?: () => Promise<HostUpdateState | null>;
   };
   /**
-   * The app's developer mode, for Settings → Developer: on, its chat shows each turn's full log (everything the agent
-   * sent and was answered, as it happened). `onChange` tells of a change from anywhere and returns a way to stop.
+   * The app's chat, for Settings → Developer: `logs`, each turn's full log (everything the agent sent and was
+   * answered, as it happened); `changes`, what each turn changed in the project's files, under its reply. `onChange`
+   * tells of a change from anywhere and returns a way to stop.
    */
   developer?: {
-    get: () => Promise<boolean>;
-    set: (on: boolean) => Promise<unknown>;
-    onChange: (listener: (on: boolean) => void) => () => void;
+    get: () => Promise<HostDeveloper>;
+    set: (next: Partial<HostDeveloper>) => Promise<unknown>;
+    onChange: (listener: (prefs: HostDeveloper) => void) => () => void;
   };
   /**
    * The app picks folders, and knows where a dropped one is: the Projects list gets "Open…", which asks the app for a
@@ -112,17 +126,41 @@ export interface StudioHost {
 /** A question about spending, worded for the person (see `asks`). */
 export interface HostAsk { id: string; title: string; body: string | null; allowLabel: string; denyLabel: string }
 
+/**
+ * Where the app's update is: `off` (this build never updates) · idle · checking · current · available · downloading
+ * (`progress` 0–100) · staging (macOS unpacks it) · ready · installing · error. `availableVersion`: the newer version
+ * found; `checkedAt`: when a check last answered (ms); `error`: offline · unavailable · failed (a check or download),
+ * agent-busy · exporting · install-failed (a Restart not done).
+ */
+export interface HostUpdateState {
+  status: 'off' | 'idle' | 'checking' | 'current' | 'available' | 'downloading' | 'staging' | 'ready' | 'installing' | 'error';
+  version: string;
+  channel: 'stable' | 'beta';
+  availableVersion: string | null;
+  progress: number;
+  checkedAt: number | null;
+  error: string | null;
+}
+
 /** An update of the app, ready to install or installing; `waiting`: why the last Restart did not go ahead. */
 export type HostUpdate = { status: 'ready' | 'installing'; version: string; waiting?: 'agent-busy' | 'exporting' | 'install-failed' | null };
 
 export type HostAgentId = 'codex' | 'claude' | 'gemini' | 'copilot' | 'cursor' | 'opencode' | 'codebuddy' | 'qwen' | 'kimi' | 'byok';
+/**
+ * What was searched for an agent (`agents.diagnose`): the report to copy, the program's name, where it was found, and
+ * when it was not, why: chosen-missing (the program chosen is gone) · wsl (only inside WSL, which the app cannot use) ·
+ * unusable (files with its name, none that starts) · none.
+ */
+export interface HostAgentDiagnosis { found: string | null; program?: string; hint: 'chosen-missing' | 'wsl' | 'unusable' | 'none' | null; text: string }
+
 /** The API a person's own key is for: OpenAI's Responses or Chat Completions, or Anthropic's Messages. */
 export type HostByokFormat = 'responses' | 'chat' | 'anthropic';
 
 /**
  * One agent as the app has it. `status`: ready · off (disconnected in the app; its own sign-in is kept) · sign-in (its
  * own sign-in is needed) · waiting (signing in, in Terminal) · missing (not installed: `install` says where from) ·
- * key (no key set up) · unavailable (not offered yet) · checking.
+ * key (no key set up) · unavailable (not offered yet) · checking. `account`: whose sign-in it uses, as the program says
+ * (no key or token).
  */
 export interface HostAgent {
   id: HostAgentId;
@@ -132,9 +170,27 @@ export interface HostAgent {
   install?: string | null;
   /** What installing it takes, when `install` is not a download: 'code-tab', Claude Code comes with the Claude app (its Code tab). */
   setupRequired?: string | null;
+  /** The program used (the person's own agents), and the one the person chose for it, if they did. */
+  path?: string | null;
+  chosen?: string | null;
   error?: string;
+  account?: HostAgentAccount;
   byok?: { format: HostByokFormat; baseUrl: string; model: string; models?: string[]; last4: string };
 }
+
+/**
+ * What is left of an agent's plan: each window's share used (0–100), how long it is (minutes) and when it resets (ms);
+ * `kind`: five_hour · seven_day · window (another length).
+ * `account`: whose it is, when the program says it here (Codex's email and plan).
+ */
+export interface HostAgentUsage {
+  plan: string | null;
+  windows: Array<{ kind: 'five_hour' | 'seven_day' | 'window'; minutes: number | null; usedPercent: number; resetsAt: number | null }>;
+  account?: { email?: string; plan?: string };
+}
+
+/** Whose sign-in an agent uses: how (a claude.ai or ChatGPT account, an API key…), and what the program tells of it. */
+export interface HostAgentAccount { method: 'claude.ai' | 'console' | 'api-key' | 'chatgpt' | 'other'; email?: string; org?: string; plan?: string }
 
 /** A box on the picture, in the film's stage pixels (the stage is `stage.w` × `stage.h`, film.html's stage). */
 export interface StageBox { x: number; y: number; w: number; h: number }

@@ -31,8 +31,8 @@ export interface LocalAgentState {
   setupRequired?: 'code-tab' | null;
   id: LocalAgentId;
   label: string;
-  /** The executable it uses: the user's own install, or in development the official one among the adapter's dependencies. null = not installed. */
-  cli: { path: string; source: 'installed' | 'bundled' } | null;
+  /** The executable it uses: the one the person chose, one found on the PATH or in installers' folders, or the copy inside the maker's app. null = not installed. */
+  cli: { path: string; source: 'chosen' | 'path' | 'app' } | null;
   /** Its own reported sign-in state; null when it cannot be asked. */
   signedIn: boolean | null;
   /** The official install page. When it is missing the UI points there; the app does not install it for the user. */
@@ -40,7 +40,14 @@ export interface LocalAgentState {
 }
 
 export interface LocalAgentSessionInfo {
+  /** the agent's own id of the conversation: what `start` takes back as `resume` */
   sessionId: string;
+  /** taken up where it stopped (the agent's own record, or the session still open), not a new one */
+  resumed?: boolean;
+  /** a message sent while it works can join the running turn (`steer`) */
+  steering?: boolean;
+  /** its commands, as a session opened only to ask said them (`probe`): ACP's availableCommands */
+  commands?: unknown[];
   agentInfo: { name: string; title?: string; version?: string } | null;
   authMethods: Array<{ id: string; name: string; description?: string }>;
   /** Whether our MCP tools were handed over (not when the agent does not take HTTP). */
@@ -182,7 +189,8 @@ export interface DesktopBridge {
     signIn(agent: LocalAgentId): Promise<{ ok: true } | { ok: false; error: string }>;
     /** Opens a session and closes it at once, only for its options. Sends no message, so costs nothing. */
     probe(agent: LocalAgentId): Promise<{ ok: true; info: LocalAgentSessionInfo } | { ok: false; error: string; code?: string }>;
-    start(agent: LocalAgentId, cwd: string): Promise<
+    /** `resume`: the agent's own id of a conversation it had (an earlier start's info.sessionId), to go on with */
+    start(agent: LocalAgentId, cwd: string, resume?: string | null): Promise<
       | { ok: true; key: string; info: LocalAgentSessionInfo }
       | { ok: false; error: string; code?: string; install?: string }
     >;
@@ -193,6 +201,10 @@ export interface DesktopBridge {
     running?(): Promise<LocalAgentRunningTurn[]>;
     /** The page has put this finished turn back: the shell forgets it. */
     ack?(key: string, turnId: string): Promise<{ ok: true }>;
+    /** A message sent while a turn runs, into that turn; ok: false when it did not join it. Older shells lack it. */
+    steer?(key: string, text: string, images?: PromptImage[]): Promise<{ ok: boolean; outcome: string }>;
+    /** What the agent does with nobody having written is the turn `turnId` (null: no longer), in its log. */
+    adopt?(key: string, turnId: string | null, meta?: LocalAgentTurnMeta): Promise<{ ok: boolean }>;
     cancel(key: string): Promise<{ ok: true }>;
     setOption(key: string, configId: string, value: unknown): Promise<{ ok: boolean; error?: string }>;
     answerPermission(key: string, requestId: string, optionId: string | null): Promise<{ ok: boolean }>;

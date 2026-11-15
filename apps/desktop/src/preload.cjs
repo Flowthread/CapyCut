@@ -31,7 +31,11 @@ contextBridge.exposeInMainWorld('openfilmNative', {
     list: () => ipcRenderer.invoke('desktop:agents:list'),
     connect: (id) => ipcRenderer.invoke('desktop:agents:connect', { id }),
     disconnect: (id) => ipcRenderer.invoke('desktop:agents:disconnect', { id }),
+    usage: (id, fresh) => ipcRenderer.invoke('desktop:agents:usage', { id, fresh: fresh === true }),
     setShown: (id, shown) => ipcRenderer.invoke('desktop:agents:shown', { id, shown: shown === true }),
+    locate: (id, words) => ipcRenderer.invoke('desktop:agents:locate', { id, words }),
+    useAutomatic: (id) => ipcRenderer.invoke('desktop:agents:automatic', { id }),
+    diagnose: (id) => ipcRenderer.invoke('desktop:agents:diagnose', { id }),
     configureByok: (config) => ipcRenderer.invoke('desktop:agents:byok', { config }),
     onChange: on('desktop:agents'),
   },
@@ -41,10 +45,12 @@ contextBridge.exposeInMainWorld('openfilmNative', {
     signIn: (agent) => invoke('desktop:local-agents:sign-in')({ agent }),
     disconnect: (agent) => invoke('desktop:local-agents:disconnect')({ agent }),
     probe: (agent) => invoke('desktop:local-agents:probe')({ agent }),
-    start: (agent, cwd) => invoke('desktop:local-agents:start')({ agent, cwd }),
+    start: (agent, cwd, resume) => invoke('desktop:local-agents:start')({ agent, cwd, resume }),
     prompt: (key, text, meta, images) => invoke('desktop:local-agents:prompt')({ key, text, meta, images }),
     running: () => ipcRenderer.invoke('desktop:local-agents:running'),
     ack: (key, turnId) => invoke('desktop:local-agents:ack')({ key, turnId }),
+    steer: (key, text, images) => invoke('desktop:local-agents:steer')({ key, text, images }),
+    adopt: (key, turnId, meta) => invoke('desktop:local-agents:adopt')({ key, turnId, meta }),
     cancel: (key) => invoke('desktop:local-agents:cancel')({ key }),
     setOption: (key, configId, value) => invoke('desktop:local-agents:set-option')({ key, configId, value }),
     answerPermission: (key, requestId, optionId) => invoke('desktop:local-agents:permission')({ key, requestId, optionId }),
@@ -58,9 +64,12 @@ contextBridge.exposeInMainWorld('openfilmNative', {
     load: (project) => ipcRenderer.invoke('desktop:chat:load', { project }),
     saveSessions: (project, sessions, last) => ipcRenderer.invoke('desktop:chat:sessions', { project, sessions, last }),
     saveTurn: (project, turn, items) => ipcRenderer.invoke('desktop:chat:turn', { project, turn, items }),
-    log: (project, turnId) => ipcRenderer.invoke('desktop:chat:log', { project, turnId }),
+    log: (project, turnId, unless) => ipcRenderer.invoke('desktop:chat:log', { project, turnId, unless }),
     reveal: (project, turnId) => ipcRenderer.invoke('desktop:chat:reveal', { project, turnId }),
     saveRefImage: (project, turnId, n, bytes) => ipcRenderer.invoke('desktop:chat:ref-image', { project, turnId, n, bytes }),
+    unsaved: (project, except) => ipcRenderer.invoke('desktop:chat:unsaved', { project, except }),
+    snapshot: (project, turnId) => ipcRenderer.invoke('desktop:chat:snapshot', { project, turnId }),
+    changes: (project, turnId) => ipcRenderer.invoke('desktop:chat:changes', { project, turnId }),
   },
   /* the app's own preferences (Settings → Developer) */
   prefs: {
@@ -82,4 +91,7 @@ contextBridge.exposeInMainWorld('openfilmNative', {
   onUpdate: on('desktop:update'),
   /* → { ok } | { ok: false, error }: refused while an agent works or Studio exports (the update stays ready) */
   restartToUpdate: () => ipcRenderer.invoke('desktop:update-restart'),
+  /* → the update's state (update-controller.mjs), now / after a check made now */
+  updateState: () => ipcRenderer.invoke('desktop:update-state'),
+  checkForUpdate: () => ipcRenderer.invoke('desktop:update-check'),
 });

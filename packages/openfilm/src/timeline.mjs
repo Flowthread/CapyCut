@@ -24,18 +24,23 @@ const CLIP_TAGS = new Set(['iframe', 'video', 'img', 'audio']);
 const sections = [...document.body.children].filter((el) => el.localName === 'section');
 const elements = sections.map((s) => { s.style.display = 'contents'; return [...s.children].filter((el) => CLIP_TAGS.has(el.localName)); });
 const url = (src) => new URL(src, location.href);
+/* an editor's preview (`?film-missing=skip`) plays on past a clip whose file is not there: the clip keeps its time,
+   but is neither loaded, drawn nor heard. Anything else (a check, an export) says the missing file and stops */
+const SKIP_MISSING = new URL(location.href).searchParams.get('film-missing') === 'skip';
 const ready = (a) => Promise.resolve(typeof a.ready === 'function' ? a.ready() : a.ready);
 
-/* a browser opens about six connections to one server: more files asked at once only wait behind each other */
-const LOADS = 6;
-let loadsBusy = 0;
-const loadsWaiting = [];
-/** Run `fn` when fewer than LOADS files are loading. */
-async function limited(fn) {
-  if (loadsBusy >= LOADS) await new Promise((go) => loadsWaiting.push(go));
-  loadsBusy++;
-  try { return await fn(); } finally { loadsBusy--; loadsWaiting.shift()?.(); }
+/** A gate that runs what is given to it when fewer than `most` of its runs are going. */
+function gate(most) {
+  let busy = 0;
+  const waiting = [];
+  return async (fn) => {
+    if (busy >= most) await new Promise((go) => waiting.push(go));
+    busy++;
+    try { return await fn(); } finally { busy--; waiting.shift()?.(); }
+  };
 }
+/* a browser opens about six connections to one server: more files asked at once only wait behind each other */
+const limited = gate(6);
 
 /**
  * Each media file's own length and picture size, read once (the clips of one recording share it); null: unreadable.
@@ -138,6 +143,7 @@ function unfade(c) {
  */
 function override(c, list = []) {
   const win = c.win;
+  if (!win) return;
   const touch = (el, prop) => {
     let saved = c.touched.get(el);
     if (!saved) { saved = { props: new Map(), texts: null }; c.touched.set(el, saved); }
@@ -372,10 +378,11 @@ const LOAD_MS = 30_000; // how long an export's frame waits for a video's file b
 
 /**
  * Give a video its file; for an exact frame, to start at its source second `from`. Resolves once its first frame is
- * there (or it failed: a frame of it then shows nothing).
+ * there (or it failed: a frame of it then shows nothing). A page is opened (see wakePage).
  */
 function wake(c, from = null) {
   if (c.awake) return c.awake;
+  if (c.kind === 'page') return wakePage(c);
   const v = c.el;
   v.preload = 'auto';
   /* without the fragment: which seconds play is the film's to keep (a browser would stop the video at its end) */
@@ -390,8 +397,9 @@ function wake(c, from = null) {
   return c.awake;
 }
 
-/** Let a video's file go: its decoder and buffers are freed. */
+/** Let a video's file go: its decoder and buffers are freed. A page is closed (see restPage). */
 function rest(c) {
+  if (c.kind === 'page') { restPage(c); return; }
   const v = c.el;
   if (!v.paused) v.pause();
   v.preload = 'none';
@@ -401,28 +409,102 @@ function rest(c) {
   c.held = false;
 }
 
+/*
+ * A page is open only near the playhead too, once a film has more of them than PAGES_AWAKE: each open page keeps its
+ * document, its libraries and its canvases, and a browser keeps only 16 WebGL contexts at once (more, and the oldest
+ * page's 3D goes blank). A film of fewer pages keeps them all open, as loaded. A page opened again is the same page:
+ * a frame is a function of t (SPEC §3), so it draws what it drew before.
+ */
+const PAGES_AWAKE = 8;
+/* pages opening at once: with PAGES_AWAKE open, no more WebGL contexts than a browser keeps */
+const pageLimited = gate(4);
+/** the pages open now (or opening) */
+const pagesAwake = new Set();
+
 /**
- * Wake the videos near t (those on at t always), and let those far from it rest. `only`: wake only those on at t, and
- * let none rest unless far too many hold their files (a scrub: the rest is done once it stops, see draw). `exact`:
- * for an exact frame (an export's), each woken at the frame it is wanted at.
+ * Open a page clip's file and wait for its window.film to be ready. Rejects when the page is not a film; resolves
+ * without opening when it was let go meanwhile (see restPage).
+ */
+function wakePage(c) {
+  const mine = c.waking = {};
+  c.awake = pageLimited(async () => {
+    if (c.waking !== mine) return;
+    const el = c.el;
+    /* a film is a picture, never scrolled: a page a little larger than its frame shows no scrollbars (some browsers
+       always draw them; exports draw none) */
+    el.setAttribute('scrolling', 'no');
+    /* still open (closed while it loaded, see restPage): taken up again as it is; else the document there now
+       (blank) is not the page's, and its window.film, if any, is gone once the page commits */
+    const href = url(c.row.src).href;
+    const before = el.getAttribute('src') === href ? null : el.contentDocument;
+    if (before) el.src = href;
+    const t0 = performance.now();
+    const film = () => (el.contentDocument !== before ? el.contentWindow?.film : null);
+    while (!(film() && typeof film().frame === 'function')) {
+      if (c.waking !== mine) return;
+      if (performance.now() - t0 > 10000) throw new Error(`${c.row.src}: window.film with a frame() function did not appear`);
+      await new Promise((r) => setTimeout(r, 20));
+    }
+    const win = el.contentWindow;
+    await ready(win.film);
+    if (c.waking !== mine) return;
+    c.win = win;
+    c.child = win.film;
+    c.touched = new Map();
+    c.drawn = false;
+    /* its own size, when it says one (else its clip's size, or the stage's: see settle) */
+    if (c.child.width > 0 && c.child.height > 0) c.own = { w: c.child.width, h: c.child.height };
+    window.__filmEditor.stage.woke?.();
+  });
+  pagesAwake.add(c);
+  /* one woken ahead and not waited for: its failure is said when a frame of it is drawn */
+  c.awake.catch(() => {});
+  return c.awake;
+}
+
+/**
+ * Close a page clip's document: its length and size stay known, its tweaks are put on again when it opens. Closed once
+ * its own files are in: a request cut short is a failed one, which a host reports.
+ */
+function restPage(c) {
+  pagesAwake.delete(c);
+  c.awake = c.waking = null;
+  c.win = c.child = null;
+  c.drawn = false;
+  c.touched = new Map();
+  const el = c.el;
+  const close = () => { if (!c.awake && el.isConnected) el.setAttribute('src', 'about:blank'); };
+  if (!el.hasAttribute('src') || el.contentDocument?.readyState === 'complete') close();
+  else el.addEventListener('load', close, { once: true });
+}
+
+/**
+ * Wake the videos and pages near t (those on at t always), and let those far from it rest. `only`: wake only those on
+ * at t, and let none rest unless far too many are awake (a scrub: the rest is done once it stops, see draw). `exact`:
+ * for an exact frame (an export's), each video woken at the frame it is wanted at.
  */
 function near(t, { only = false, exact = false } = {}) {
+  nearOf('video', AWAKE_MAX, t, only, exact);
+  nearOf('page', PAGES_AWAKE, t, only, exact);
+}
+function nearOf(kind, max, t, only, exact) {
   const off = (c) => (t < c.at ? c.at - t : t >= c.end ? t - c.end : 0);
-  const videos = clips.filter((c) => c.kind === 'video');
-  const wanted = videos
-    .filter((c) => !c.hidden && (only ? off(c) === 0 : t < c.at ? c.at - t <= WAKE_AHEAD : t - c.end <= WAKE_BEHIND))
+  const all = clips.filter((c) => c.kind === kind);
+  const wanted = all
+    .filter((c) => !c.hidden && !c.missing && (only ? off(c) === 0 : t < c.at ? c.at - t <= WAKE_AHEAD : t - c.end <= WAKE_BEHIND))
     .sort((a, b) => off(a) - off(b));
   const on = wanted.filter((c) => off(c) === 0).length;
-  const keep = new Set(wanted.slice(0, Math.max(on, AWAKE_MAX)));
-  for (const c of keep) wake(c, exact ? sourceAt(c.span, Math.min(Math.max(0, t - c.at), c.span.length), c.row) : null);
-  /* the rest: those far off rest, and the farthest while too many hold their files */
-  const most = only ? 2 * AWAKE_MAX : AWAKE_MAX;
-  const awake = videos.filter((c) => c.awake && !keep.has(c)).sort((a, b) => off(b) - off(a));
+  const keep = new Set(wanted.slice(0, Math.max(on, max)));
+  for (const c of keep) wake(c, exact && kind === 'video' ? sourceAt(c.span, Math.min(Math.max(0, t - c.at), c.span.length), c.row) : null);
+  /* the rest: videos far off rest, and the farthest while too many are awake (pages: only then, and never more than
+     max, a scrub's included) */
+  const most = only && kind === 'video' ? 2 * max : max;
+  const awake = all.filter((c) => c.awake && !keep.has(c)).sort((a, b) => off(b) - off(a));
   let over = keep.size + awake.length - most;
   for (const c of awake) {
-    /* one an edit is putting on screen (see cue) keeps its file, wherever it is now */
+    /* one an edit is putting on screen (see cue) stays awake, wherever it is now */
     if (cueing.has(c)) continue;
-    if ((!only && (c.hidden || off(c) > KEEP)) || over > 0) { rest(c); over--; }
+    if ((kind === 'video' && !only && (c.hidden || off(c) > KEEP)) || over > 0) { rest(c); over--; }
   }
 }
 /** a scrub's last moment, its neighbors woken (and the far ones let go) once it stops */
@@ -477,7 +559,7 @@ function settle(c, row, track, ti) {
   c.at = row.at ?? 0;
   /* a hidden track's clips are loaded (an editor shows them, grayed) but neither drawn nor heard */
   c.hidden = Boolean(track.hidden);
-  c.volume = track.muted || c.hidden ? 0 : (row.volume ?? 1);
+  c.volume = track.muted || c.hidden || c.missing ? 0 : (row.volume ?? 1);
   c.span = clipSpan(row, c.native, where);
   c.end = c.at + c.span.length;
   c.fade = fittedFade(clipFade(row), c.span.length);
@@ -502,10 +584,15 @@ function hear() {
   }
 }
 
-/** A clip's file has to be there: a missing one is said at once, by its name (not as a page that never answered). */
+/**
+ * A clip's file has to be there: a missing one is said at once, by its name (not as a page that never answered).
+ * In an editor's preview (SKIP_MISSING) it is not an error: false, and the clip is played as missing.
+ */
 async function mustBeThere(src) {
   const res = await fetch(url(src), { method: 'HEAD' }).catch(() => null);
-  if (res && res.status === 404) throw new Error(`${src}: there is no such file`);
+  if (!(res && res.status === 404)) return true;
+  if (SKIP_MISSING) return false;
+  throw new Error(`${src}: there is no such file`);
 }
 
 /** Clips loaded so far: what a host waiting for `ready` sees moving (see host.mjs). */
@@ -525,37 +612,32 @@ async function load(row, track, ti, el) {
     el.preload = 'none';
     c.el = null;
     const facts = await factsOf(row.src);
-    if (!facts) await mustBeThere(row.src);
+    if (!facts && !(await mustBeThere(row.src))) c.missing = true;
     c.native = facts?.duration ?? 0;
   } else if (kind === 'still') {
     await el.decode().catch(() => {});
+    if (!el.naturalWidth && !(await mustBeThere(row.src))) c.missing = true;
     c.nw = el.naturalWidth || stage.w; c.nh = el.naturalHeight || stage.h;
   } else if (kind === 'video') {
     el.muted = true; el.playsInline = true;
     rest(c);
     const facts = await factsOf(row.src);
-    if (!facts) await mustBeThere(row.src);
+    if (!facts && !(await mustBeThere(row.src))) c.missing = true;
     c.native = facts?.duration ?? NaN;
     c.nw = facts?.w || stage.w; c.nh = facts?.h || stage.h;
+  } else if (!(await mustBeThere(row.src))) {
+    /* a page that is not there: its clip keeps its time, at the stage's size */
+    c.missing = true;
+    c.nw = stage.w; c.nh = stage.h;
   } else {
-    /* a film is a picture, never scrolled: a page a little larger than its frame shows no scrollbars (some browsers
-       always draw them; exports draw none) */
-    el.setAttribute('scrolling', 'no');
-    await mustBeThere(row.src);
-    const t0 = performance.now();
-    /* the page is loading since the file was read (filmStart in host.mjs gave it the stage's size to lay itself out for) */
-    while (!(el.contentWindow?.film && typeof el.contentWindow.film.frame === 'function')) {
-      if (performance.now() - t0 > 10000) throw new Error(`${row.src}: window.film with a frame() function did not appear`);
-      await new Promise((r) => setTimeout(r, 20));
-    }
-    const win = c.win = el.contentWindow;
-    c.child = win.film;
-    /* its own size, when it says one (else its clip's size, or the stage's: see settle) */
-    if (c.child.width > 0 && c.child.height > 0) c.own = { w: c.child.width, h: c.child.height };
-    await ready(c.child);
+    /* opened to read its length (the host serves it unopened, see holdPages; filmStart gives it the stage's size) */
+    c.row = row;
+    await wakePage(c);
     /* a page without a duration has no end: its clip's #t= is its length, as a still's */
     const length = c.child.duration;
     c.native = Number.isFinite(length) && length > 0 ? length : undefined;
+    /* more pages than are kept open: the ones read later close again until the playhead comes near (see near) */
+    if ([...pagesAwake].filter((p) => p.child).length > PAGES_AWAKE) restPage(c);
   }
   settle(c, row, track, ti);
   progress++;
@@ -602,7 +684,7 @@ async function draw(t, live) {
   if (live && !playing) { near(t, { only: true }); settleNear = setTimeout(() => near(t), 250); } else near(t, { exact: !live });
   await Promise.all(clips.map(async (c) => {
     if (c.kind === 'sound') return;
-    const on = !c.hidden && t >= c.at && t < c.end;
+    const on = !c.hidden && !c.missing && t >= c.at && t < c.end;
     c.shown = on;
     const appears = on && c.el.style.visibility !== 'visible';
     c.el.style.visibility = on ? 'visible' : 'hidden';
@@ -628,6 +710,12 @@ async function draw(t, live) {
       if (appears) await frames(2);
       await showVideoAt(c.el, want, await frameOf(c));
       return;
+    }
+    /* a page closed while the playhead was far (see near): opened again, then drawn; one that will not open is the
+       film's error in an exact frame, and shows nothing to a person watching */
+    if (!c.child) {
+      try { await wake(c); } catch (e) { if (live) return; throw new Error(`clip "${c.id}" (${c.src}): ${e?.message ?? e}`); }
+      if (!c.child || !c.shown) return;
     }
     const local = sourceAt(c.span, t - c.at, c.row, c.native);
     c.win.filmHost?.time?.(local);
@@ -689,6 +777,8 @@ function element(row) {
   shell.innerHTML = clipTag(row);
   const el = document.importNode(shell.content.firstElementChild, true);
   if (el.localName === 'video' || el.localName === 'audio') el.preload = 'none';
+  /* a page opens when it is loaded (see wakePage), a few at a time */
+  if (el.localName === 'iframe') el.removeAttribute('src');
   /* out of sight until it is placed and drawn: a page loading would show at its own size in the corner */
   el.style.visibility = 'hidden';
   return el;
@@ -748,15 +838,15 @@ async function change(value, look) {
      picture changes at once, not first without them until that moment is drawn again */
   if (shownT != null) {
     for (const c of records) {
-      const on = c.el && !c.hidden && shownT >= c.at && shownT < c.end;
-      const ready = c.kind === 'still' || (c.kind === 'video' && c.el.readyState >= 2) || (c.kind === 'page' && made.has(c.id));
+      const on = c.el && !c.hidden && !c.missing && shownT >= c.at && shownT < c.end;
+      const ready = c.kind === 'still' || (c.kind === 'video' && c.el.readyState >= 2) || (c.kind === 'page' && made.has(c.id) && c.drawn);
       if (on && !c.shown && ready) { c.shown = true; c.el.style.visibility = 'visible'; fadeAt(c, shownT); }
     }
   }
   const now = new Set(records);
   for (const c of clips) {
     if (now.has(c)) continue;
-    if (c.kind === 'video') rest(c);
+    if (c.kind === 'video' || c.kind === 'page') rest(c);
     c.node.remove();
   }
   clips.splice(0, clips.length, ...records);
@@ -786,22 +876,24 @@ let changing = Promise.resolve(true);
  * state before its frame. A video on screen already keeps its picture until its new frame is drawn.
  */
 async function cue(c, row, track, t, fresh) {
-  if (track.hidden || (c.kind !== 'video' && !(fresh && c.kind === 'page'))) return;
+  if (track.hidden || c.missing || (c.kind !== 'video' && !(fresh && c.kind === 'page'))) return;
   if (c.kind === 'video' && c.shown && c.el.readyState >= 2) return;
   let span;
   try { span = clipSpan(row, c.native, row.id); } catch { return; }
   const at = row.at ?? 0;
   if (t < at || t >= at + span.length) return;
-  if (c.kind === 'page') {
+  cueing.add(c);
+  try {
+    if (c.kind === 'video') { await glance(c, sourceAt(span, t - at, row)); return; }
+    await wake(c);
+    if (!c.child) return;
     const local = sourceAt(span, t - at, row, c.native);
     c.win.filmHost?.time?.(local);
     await c.child.frame(local);
     c.win.filmHost?.settle?.(local);
+    c.drawn = true;
     override(c, c.overrides);
-    return;
-  }
-  cueing.add(c);
-  try { await glance(c, sourceAt(span, t - at, row)); } finally { cueing.delete(c); }
+  } finally { cueing.delete(c); }
 }
 
 /** Where a clip's own pixel (x, y) is on the stage: its placement, as the browser applies it. */
@@ -856,7 +948,8 @@ window.__filmEditor = {
   watch: (t) => draw(t, true),
   /**
    * For Studio's stage (studio/server/stage.js): the clips as loaded, a clip placed by a box not kept yet (null: by
-   * its own again), and `updated`, which the stage sets to hear of each update made in place.
+   * its own again), `updated`, which the stage sets to hear of each update made in place, and `woke`, to hear of a page
+   * opened again (see wakePage).
    */
   stage: {
     clips: () => clips,
@@ -872,6 +965,7 @@ window.__filmEditor = {
       place(c, c.row.box);
     },
     updated: null,
+    woke: null,
   },
   /**
    * The film after an edit (`look`: its file's filmHead, when the edit came from the file; another one than this film
@@ -896,7 +990,7 @@ window.__filmEditor = {
     for (const c of shown) {
       const local = matrixOf(c).inverse().transformPoint(new DOMPoint(x, y));
       if (local.x < 0 || local.y < 0 || local.x > c.w || local.y > c.h) continue;
-      if (c.kind !== 'page') return describe(c, null);
+      if (c.kind !== 'page' || !c.win) return describe(c, null);
       /* the topmost element a person can see there: one faded out or hidden (a line still to come) is passed over */
       const page = c.win.document;
       const el = page.elementsFromPoint(local.x, local.y).find((e) => e !== page.body && e !== page.documentElement && seen(c.win, e));

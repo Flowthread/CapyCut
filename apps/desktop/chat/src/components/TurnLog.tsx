@@ -7,6 +7,8 @@
  * with the model, provider and thinking level that made it, its tokens, or its error. The messages new in that
  * request are open; the ones carried over from before, and the system prompt, are one line each until opened.
  * Events: every event the agent sent, each a line opening to the event exactly as it was.
+ *
+ * Opened while the turn runs, it reads the log again every moment until the turn ends, so it shows the turn so far.
  */
 import React from 'react';
 import { createPortal } from 'react-dom';
@@ -21,7 +23,7 @@ import { BrandLogo } from './BrandLogo';
 type LogEvent = TurnLogData['events'][number];
 type T = (key: string) => string;
 
-export function TurnLogButton({ project, turnId }: { project: string; turnId: string }) {
+export function TurnLogButton({ project, turnId, live = false }: { project: string; turnId: string; live?: boolean }) {
   const t = useT();
   const [open, setOpen] = React.useState(false);
   return (
@@ -31,7 +33,7 @@ export function TurnLogButton({ project, turnId }: { project: string; turnId: st
         <ScrollText size={12} aria-hidden />
         {t('turnLog.open')}
       </button>
-      {open ? <TurnLogViewer project={project} turnId={turnId} onClose={() => setOpen(false)} /> : null}
+      {open ? <TurnLogViewer project={project} turnId={turnId} live={live} onClose={() => setOpen(false)} /> : null}
     </>
   );
 }
@@ -40,13 +42,33 @@ const seconds = (ms: number) => (ms < 60_000 ? `${(ms / 1000).toFixed(1)}s` : `$
 const fill = (template: string, values: Record<string, string | number>) => template.replace(/\{(\w+)\}/g, (_, k) => String(values[k] ?? ''));
 const k = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(n >= 100_000 ? 0 : 1)}k` : String(n));
 
-function TurnLogViewer({ project, turnId, onClose }: { project: string; turnId: string; onClose: () => void }) {
+/** how often a running turn's log is read again */
+const LIVE_READ_MS = 1500;
+
+function TurnLogViewer({ project, turnId, live, onClose }: { project: string; turnId: string; live: boolean; onClose: () => void }) {
   const t = useT();
   const [log, setLog] = React.useState<TurnLogData | null | undefined>(undefined);
   const [tab, setTab] = React.useState<'calls' | 'events' | null>(null);
   const [copied, setCopied] = React.useState(false);
-  const load = React.useCallback(() => { void app.chat.log(project, turnId).then(setLog).catch(() => setLog(null)); }, [project, turnId]);
-  React.useEffect(load, [load]);
+  const load = React.useCallback(() => {
+    void app.chat.log(project, turnId).then((next) => setLog(next && 'same' in next ? undefined : next)).catch(() => setLog(null));
+  }, [project, turnId]);
+  const known = React.useRef<{ size: number; callsSize: number } | null>(null);
+  known.current = log ? { size: log.size, callsSize: log.callsSize ?? 0 } : null;
+  /* read on opening and once more as the turn ends (its last events); while it runs, again and again, one read at a time */
+  React.useEffect(load, [load, live]);
+  React.useEffect(() => {
+    if (!live) return undefined;
+    let reading = false;
+    const timer = window.setInterval(() => {
+      if (reading) return;
+      reading = true;
+      /* read again only once it has grown */
+      void app.chat.log(project, turnId, known.current ?? undefined)
+        .then((next) => { if (next && !('same' in next)) setLog(next); }).catch(() => {}).finally(() => { reading = false; });
+    }, LIVE_READ_MS);
+    return () => window.clearInterval(timer);
+  }, [live, project, turnId]);
   React.useEffect(() => {
     const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') { event.preventDefault(); onClose(); } };
     window.addEventListener('keydown', onKey, true);
@@ -89,6 +111,8 @@ function TurnLogViewer({ project, turnId, onClose }: { project: string; turnId: 
                 <span className={`rounded-[6px] px-1.5 py-0.5 text-[11.5px] font-medium ${done.ok ? 'bg-[var(--bg-hover)] text-[var(--chat-hint)]' : 'bg-[var(--err)]/15 text-[var(--err)]'}`}>
                   {done.ok ? String(done.stopReason ?? t('turnLog.ended')) : t('turnLog.failed')}
                 </span>
+              ) : live ? (
+                <span className="rounded-[6px] bg-[var(--bg-hover)] px-1.5 py-0.5 text-[11.5px] font-medium"><span className="text-sweep">{t('turnLog.running')}</span></span>
               ) : null}
             </div>
             <div className="mt-1 flex min-w-0 items-center gap-1.5 text-[12.5px] text-[var(--chat-hint)]">
@@ -112,7 +136,7 @@ function TurnLogViewer({ project, turnId, onClose }: { project: string; turnId: 
           <button type="button" aria-label={t('turnLog.close')} onClick={onClose}
             className="flex h-8 w-8 items-center justify-center rounded-[8px] text-[var(--chat-hint)] transition hover:bg-[var(--bg-hover)] hover:text-[var(--chat-text)]"><X size={16} /></button>
         </div>
-        {log === undefined ? <p className="px-5 py-4 text-[13px] text-[var(--chat-hint)]">{t('turnLog.loading')}</p>
+        {log === undefined || (log === null && live) ? <p className="px-5 py-4 text-[13px] text-[var(--chat-hint)]">{t('turnLog.loading')}</p>
           : log === null ? <p className="px-5 py-4 text-[13px] text-[var(--chat-hint)]">{t('turnLog.none')}</p> : (
             <>
               <div className="flex shrink-0 items-center gap-4 border-b border-[var(--border)] px-5">
@@ -213,10 +237,11 @@ function MessageRow({ message, index, fresh, open: initial, t }: { message: Item
 }
 
 function Calls({ calls, start, t }: { calls: ModelCall[]; start: number; t: T }) {
-  const [picked, setPicked] = React.useState(calls.length);
+  /* the latest until one is picked: while the turn runs, the newest request as it comes */
+  const [picked, setPicked] = React.useState<number | null>(null);
   const [raw, setRaw] = React.useState(false);
   const [version, setVersion] = React.useState({ all: null as boolean | null, n: 0 });
-  const call = calls[Math.min(picked, calls.length) - 1]!;
+  const call = calls[Math.min(picked ?? calls.length, calls.length) - 1]!;
   const u = usageOf(call);
   const answer = call.answer;
   const failed = answer?.stopReason === 'error';
@@ -233,7 +258,7 @@ function Calls({ calls, start, t }: { calls: ModelCall[]; start: number; t: T })
           const asked = (c.answer?.content ?? []).filter((p: Item) => p.type === 'toolCall').map((p: Item) => p.name);
           const error = c.answer?.stopReason === 'error';
           return (
-            <button key={c.no} type="button" onClick={() => setPicked(c.no)}
+            <button key={c.no} type="button" onClick={() => setPicked(c.no === calls.length ? null : c.no)}
               className={`block w-full px-4 py-2 text-left text-[12px] ${c.no === call.no ? 'bg-[var(--bg-hover)]' : 'hover:bg-[var(--bg-hover)]'}`}>
               <div className="flex items-baseline gap-2">
                 <b className={`text-[12.5px] ${error ? 'text-[var(--err)]' : 'text-[var(--chat-text)]'}`}>#{c.no}</b>
@@ -344,6 +369,8 @@ function rowOf(event: LogEvent, titles: Map<string, string>): Omit<Row, 'at' | '
     case 'permission-answer': return { kind: 'ask', label: 'permission · answer', summary: str(event.optionId ?? 'cancelled') };
     case 'question': return { kind: 'ask', label: 'question', summary: str(event.message ?? event.questions, 300) };
     case 'question-answer': return { kind: 'ask', label: 'question · answer', summary: str(event.answers ?? 'skipped', 300) };
+    case 'steer': return { kind: 'prompt', label: 'steer', summary: str(event.text, 600) };
+    case 'steer-answer': return { kind: 'prompt', label: 'steer · answer', summary: str(event.outcome), tone: event.outcome === 'injected' ? undefined : 'error' };
     case 'cancel': return { kind: 'end', label: 'cancel', summary: '' };
     case 'set-option': return { kind: 'update', label: 'set option', summary: `${str(event.configId)} = ${str(event.value)}`, tone: 'quiet' };
     case 'exit': return { kind: 'end', label: 'exit', summary: `code ${str(event.code)}${event.stderr ? `  ${str(event.stderr, 300)}` : ''}`, tone: event.code ? 'error' : undefined };

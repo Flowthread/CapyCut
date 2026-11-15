@@ -2,16 +2,20 @@
  * The agents the chat can use, as Settings → Agents shows them, and the person's choices about them:
  *
  *   · codex, claude, gemini, copilot, cursor, opencode, codebuddy, qwen, kimi — the person's own agents (agents.mjs):
- *     Codex, Claude Code, Gemini CLI, GitHub Copilot, Cursor, OpenCode, CodeBuddy, Qwen Code and Kimi. Their sign-in
- *     is their own: connecting uses it as it is, and opens Terminal for their own sign-in command only when they are
- *     not signed in; disconnecting only stops OpenFilm using them (their sign-in is shared with the makers' own apps,
- *     and stays). Codex and Claude Code are shown in the chat's menu from the start; the others once the person
- *     connects one or switches it on.
+ *     Codex, Claude Code, Gemini CLI, GitHub Copilot, Cursor, OpenCode, CodeBuddy, Qwen Code and Kimi. Each uses the
+ *     account signed in on the computer as it is: connecting opens Terminal for its own sign-in command only when it
+ *     is signed out, disconnecting only stops OpenFilm using it, and connecting again uses whichever account is signed
+ *     in then (one switched in the agent or its maker's app). `account` says whose it is. Codex and Claude Code are
+ *     shown in the chat's menu from the start; the others once the person connects one or switches it on.
  *   · byok — the app's own agent (Pi, pi-agent.mjs) on the person's own key, on a standard API in one of three formats: the OpenAI
  *     Responses API (…/v1/responses), the OpenAI Chat Completions API (…/v1/chat/completions) or the Anthropic Messages
  *     API (…/v1/messages); Pi speaks each. It may name several models (the chat's menu switches between them, the first
  *     one to begin with). Each has to read pictures (the agent looks at its own frames): setting it up sends one small
  *     request with a picture to each, and a model that cannot take it is refused.
+ *
+ * One of the person's own agents not found where it is looked for can be pointed at (`locate`): the program they choose
+ * is tried (it has to answer `--version`) and used from then on, until they go back to finding it (`useAutomatic`).
+ * `diagnose` says what was searched, for them to read or send with an issue.
  *
  * Each has a switch for whether the chat's menu shows it. Kept in the app's data folder: agents.json (the choices) and
  * byok.key (the key, sealed with the system's keychain by the caller's `seal`/`unseal`).
@@ -63,10 +67,13 @@ export function readChoices(dataDir) {
   const byok = raw.byok && typeof raw.byok === 'object' && Object.hasOwn(BYOK_FORMATS, raw.byok.format)
     ? byokChoice(raw.byok)
     : null;
+  const paths = {};
+  for (const id of OWN_AGENT_IDS) if (typeof raw.paths?.[id] === 'string' && raw.paths[id]) paths[id] = raw.paths[id];
   return {
     shown,
     disconnected: Array.isArray(raw.disconnected) ? raw.disconnected.filter((id) => AGENT_IDS.includes(id)) : [],
     byok,
+    paths,
   };
 }
 
@@ -142,8 +149,12 @@ export async function probeModel({ format, baseUrl, key, model, fetch: fetchImpl
  *
  * @param {{
  *   dataDir: string,
- *   localAgents: () => Promise<Array<{ id: string, cli: unknown, signedIn: boolean | null, install: string | null, setupRequired: string | null }>>,
+ *   localAgents: () => Promise<Array<{ id: string, cli: { path: string } | null, signedIn: boolean | null, account?: object | null, install: string | null, setupRequired: string | null }>>,
  *   openSignIn: (id: string) => Promise<{ ok: boolean, error?: string }>,
+ *   usePaths?: (paths: Record<string, string>) => void,
+ *   pickProgram?: (id: string, words?: { title?: string, button?: string }) => Promise<string | null>,
+ *   checkProgram?: (id: string, path: string) => Promise<{ ok: boolean, error?: string, code?: string }>,
+ *   diagnose?: (id: string) => Promise<{ found: string | null, hint: string | null, text: string } | null>,
  *   closeSessions: (id: string) => void,
  *   seal: (text: string) => Buffer, unseal: (data: Buffer) => string,
  *   onChange: (list: any[]) => void,
@@ -153,6 +164,7 @@ export async function probeModel({ format, baseUrl, key, model, fetch: fetchImpl
 export function createRoster(deps) {
   const { dataDir } = deps;
   let choices = readChoices(dataDir);
+  deps.usePaths?.(choices.paths);
   /** what is happening now, beyond what is kept: a sign-in waited for, an error to show */
   const live = { waiting: {}, errors: {} };
   let local = null;
@@ -166,10 +178,11 @@ export function createRoster(deps) {
     if (isOwn(id)) {
       const found = local?.find((a) => a.id === id);
       if (!found) return { status: 'checking' };
-      if (!found.cli) return { status: 'missing', install: found.install ?? null, setupRequired: found.setupRequired ?? null };
-      if (choices.disconnected.includes(id)) return { status: 'off' };
-      if (found.signedIn === false) return { status: live.waiting[id] ? 'waiting' : 'sign-in' };
-      return { status: 'ready' };
+      const where = { path: found.cli?.path ?? null, chosen: choices.paths[id] ?? null };
+      if (!found.cli) return { status: 'missing', install: found.install ?? null, setupRequired: found.setupRequired ?? null, ...where };
+      if (choices.disconnected.includes(id)) return { status: 'off', ...where };
+      if (found.signedIn === false) return { status: live.waiting[id] ? 'waiting' : 'sign-in', ...where };
+      return { status: 'ready', ...where, ...(found.account ? { account: { ...found.account } } : {}) };
     }
     if (choices.disconnected.includes(id)) return { status: 'off' };
     if (!choices.byok || !byokKey()) return { status: 'key' };
@@ -239,12 +252,52 @@ export function createRoster(deps) {
       }
     },
 
-    /** Disconnect here only: its sessions close; an agent's own sign-in stays as it is. */
+    /** Disconnect here only: its sessions close; its own sign-in stays as it is (connecting again uses it as it is then). */
     disconnect(id) {
       if (!AGENT_IDS.includes(id)) return;
       delete live.waiting[id];
       deps.closeSessions(id);
       save({ ...choices, disconnected: [...new Set([...choices.disconnected, id])] });
+    },
+
+    /**
+     * Point at the program for one of the person's own agents: they choose it, it is tried (`--version`), and it is
+     * used from then on. `words`: the dialog's title and button, in Studio's language. `{ ok: false }` without an
+     * error when they cancelled.
+     */
+    async locate(id, words) {
+      if (!isOwn(id) || !deps.pickProgram || !deps.checkProgram) return { ok: false, error: `No agent ${id}` };
+      const path = await deps.pickProgram(id, words);
+      if (!path) return { ok: false };
+      const checked = await deps.checkProgram(id, path);
+      if (!checked.ok) return { ok: false, error: checked.error ?? '', ...(checked.code ? { code: checked.code } : {}) };
+      delete live.errors[id];
+      deps.closeSessions(id);
+      choices = { ...choices, paths: { ...choices.paths, [id]: path }, shown: { ...choices.shown, [id]: true } };
+      deps.usePaths?.(choices.paths);
+      save(choices);
+      await refresh();
+      return { ok: true };
+    },
+
+    /** Back to finding the program where it is installed. */
+    async useAutomatic(id) {
+      if (!Object.hasOwn(choices.paths, id)) return { ok: true };
+      const { [id]: _gone, ...paths } = choices.paths;
+      deps.closeSessions(id);
+      choices = { ...choices, paths };
+      deps.usePaths?.(choices.paths);
+      save(choices);
+      await refresh();
+      return { ok: true };
+    },
+
+    /** What was searched for one of the person's own agents, and why it is not found (see agents.mjs diagnoseAgent). */
+    async diagnose(id) {
+      if (!isOwn(id) || !deps.diagnose) return null;
+      const report = await deps.diagnose(id);
+      void refresh();
+      return report;
     },
 
     setShown(id, shown) {

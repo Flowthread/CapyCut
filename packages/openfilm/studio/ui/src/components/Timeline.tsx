@@ -45,7 +45,6 @@ import {
   Link2,
   Link2Off,
   Mic,
-  Rows3,
   SeparatorVertical,
   BetweenHorizontalStart,
   ArrowLeftToLine,
@@ -89,12 +88,14 @@ import {
 import {
   editModelOf,
   gapAt,
+  gapsOf,
   insertPointOn,
   linkedIds,
   magnetOn,
   mainTrackOf,
   planCloseGap,
   planCloseMainGaps,
+  planCloseTrackGaps,
   planLink,
   planRemove,
   planRippleTrimTo,
@@ -111,7 +112,7 @@ import { STUDIO_REF_TYPE, type StudioRef } from '@/lib/host';
 import { orderedRange, rangeLabel, type FilmRange } from '@/lib/studio-refs';
 import { draftNumbersOf, sameClip, type ChatPoint, type DraftMarks } from '@/lib/chat-marks';
 import { formatRulerLabel, formatTimecode, frameAt, frameMs, secondFrames, snapToFrame, stepFrames, useTimecodeFps } from '@/lib/timecode';
-import { planNudge, splitAllTargets, splitTargets } from '@/lib/timeline-nav';
+import { planNudge, sideTargets, splitAllTargets, splitTargets } from '@/lib/timeline-nav';
 import {
   VIEW_SPAN_MIN_MS,
   ZOOM_DEFAULT,
@@ -684,9 +685,10 @@ export interface TimelineCommands {
   unlink: () => void;
   /** The switches (see lib/timeline-prefs). */
   toggleMagnet: () => void;
+  toggleLinkage: () => void;
+  /** [ / ]: every clip before / after the playhead selected (lib/timeline-nav sideTargets). */
+  selectSide: (dir: -1 | 1) => void;
   toggleSnap: () => void;
-  toggleSync: () => void;
-  toggleLinked: () => void;
   /**
    * ⌘B: split the selected clips at the playhead; with nothing selected, the clip under it on the targeted track (the
    * one last pressed), else on the topmost track seen. The clips linked to them go too.
@@ -985,9 +987,9 @@ export const Timeline = React.memo(function Timeline({
   const mainDoc = React.useMemo(() => mainTrackOf(model), [model]);
   const modelRef = React.useRef(model);
   modelRef.current = model;
-  /** Block ids → the same clips with every clip linked to them, unless the Linked switch is off (or `alone`). */
+  /** Block ids → the same clips with every clip linked to them, unless `alone` (⌥). */
   const withLinked = React.useCallback((ids: readonly string[], alone = false): string[] => {
-    if (alone || !prefsRef.current.linked) return [...ids];
+    if (alone) return [...ids];
     const blocks = tracks.flatMap((tr) => tr.blocks);
     const clipIds = blocks.filter((b) => ids.includes(b.id) && b.clipId).map((b) => b.clipId!);
     if (!clipIds.length) return [...ids];
@@ -2601,16 +2603,18 @@ export const Timeline = React.memo(function Timeline({
                   if (mode === 'split') {
                     if (!inGroup) setSelected(own);
                     if (track.locked) return;
+                    const at = msAtClientX(e.clientX);
+                    /* ⇧: every track is cut there, as CapCut's */
+                    if (e.shiftKey) { void runSplit(splitAllTargets(tracks, at), at); return; }
                     const cut = new Set(own);
-                    void runSplit(tracks.flatMap((tr) => tr.blocks).filter((b) => cut.has(b.id)), msAtClientX(e.clientX));
+                    void runSplit(tracks.flatMap((tr) => tr.blocks).filter((b) => cut.has(b.id)), at);
                     return;
                   }
-                  /* ⌥-drag slips the content inside the clip, ⌥⇧-drag slides the clip between its neighbors; a ⌥-click
-                     picks this clip alone */
+                  /* ⌥-drag copies (this clip alone, or the group it is in), as CapCut's; a ⌥-click picks this clip alone */
                   if (e.altKey) {
                     if (!inGroup) setSelected(withLinked([block.id]));
                     collapseIfClick(e, block.id, true);
-                    if (e.shiftKey ? able.move : able.resize) drag.start(e, block, e.shiftKey ? 'slide' : 'slip');
+                    if (able.move) drag.start(e, block, 'move', inGroup ? current : [block.id], undefined, undefined, true);
                     return;
                   }
                   if (!inGroup) setSelected(own);
@@ -3041,7 +3045,7 @@ export const Timeline = React.memo(function Timeline({
     const onMain = tracks.filter((tr) => tr.docIndex != null && tr.docIndex === mainIndex).flatMap((tr) => tr.blocks);
     const main = (given ?? all.filter((b) => selectedRef.current.includes(b.id))).find(inside) ?? onMain.find(inside) ?? all.find(inside);
     if (!main?.clipId) return;
-    const ids = prefsRef.current.linked ? [main.clipId, ...linkedIds(modelRef.current, [main.clipId]).filter((id) => id !== main.clipId)] : [main.clipId];
+    const ids = [main.clipId, ...linkedIds(modelRef.current, [main.clipId]).filter((id) => id !== main.clipId)];
     const plan = planRippleTrimTo(modelRef.current, ids, edge, atMs, followOf(prefsRef.current));
     void runPlan(plan, `history.stepRippleTrimmed|${main.clipId}`).then((done) => { if (done && edge === 'start') onSeek(main.startMs); });
   }, [tracks, runPlan, onSeek]);
@@ -3068,9 +3072,9 @@ export const Timeline = React.memo(function Timeline({
       link: () => linkBlocks(picked()),
       unlink: () => unlinkBlocks(picked()),
       toggleMagnet: () => togglePref('magnet'),
+      toggleLinkage: () => togglePref('linkage'),
+      selectSide: (dir) => { setSelected(sideTargets(tracks, timeMsRef.current, dir).map((b) => b.id)); },
       toggleSnap: () => togglePref('snap'),
-      toggleSync: () => togglePref('sync'),
-      toggleLinked: () => togglePref('linked'),
       split: () => {
         const atMs = timeMsRef.current;
         const found = splitTargets(tracks, selectedRef.current, atMs, targetLaneRef.current);
@@ -3153,6 +3157,17 @@ export const Timeline = React.memo(function Timeline({
           icon: <BetweenHorizontalStart size={14} />,
           shortcut: '⌫',
           onSelect: () => closeGapOn(found),
+        });
+      }
+      /* every gap on this track at once (CapCut's 批量闭合空隙) */
+      const row = tracks.find((tr) => tr.lane === menu.lane);
+      if (onEditOps && row?.docIndex != null && !laneLocked && gapsOf(modelRef.current, row.docIndex).length) {
+        const doc = row.docIndex;
+        entries.push({
+          id: 'close-gaps',
+          label: t('timeline.menuCloseGaps'),
+          icon: <BetweenHorizontalStart size={14} />,
+          onSelect: () => { void runPlan(planCloseTrackGaps(modelRef.current, doc, followOf(prefsRef.current)), 'history.stepGapsClosed'); },
         });
       }
       return entries;
@@ -3552,8 +3567,7 @@ export const Timeline = React.memo(function Timeline({
           ) : null}
         </div>
 
-        {/* the switches (lib/timeline-prefs): the main-track magnet (insert, ripple there; off: overwrite), linkage (the
-            main track carries what rides on it), sync lock (ripples move every unlocked track), linked clips, snapping */}
+        {/* the switches (lib/timeline-prefs), in CapCut's order: the main-track magnet, snapping, linkage */}
         {onEditOps ? <>
           <span data-timeline-magnet={prefs.magnet ? '1' : '0'}>
             <ToolButton onClick={() => togglePref('magnet')} active={prefs.magnet} label={t('timeline.magnet')}
@@ -3561,28 +3575,16 @@ export const Timeline = React.memo(function Timeline({
               <Magnet size={15} />
             </ToolButton>
           </span>
-          <span data-timeline-linkage={prefs.linkage ? '1' : '0'}>
-            <ToolButton onClick={() => togglePref('linkage')} active={prefs.linkage} label={t('timeline.linkage')}
-              hint={prefs.linkage ? t('timeline.linkageOn') : t('timeline.linkageOff')}>
-              <Paperclip size={15} />
-            </ToolButton>
-          </span>
-          <span data-timeline-sync={prefs.sync ? '1' : '0'}>
-            <ToolButton onClick={() => togglePref('sync')} active={prefs.sync} label={t('timeline.sync')}
-              hint={prefs.sync ? t('timeline.syncOn') : t('timeline.syncOff')}>
-              <Rows3 size={15} />
-            </ToolButton>
-          </span>
-          <span data-timeline-linked={prefs.linked ? '1' : '0'}>
-            <ToolButton onClick={() => togglePref('linked')} active={prefs.linked} label={t('timeline.linked')}
-              hint={prefs.linked ? t('timeline.linkedOn') : t('timeline.linkedOff')}>
-              {prefs.linked ? <Link2 size={15} /> : <Link2Off size={15} />}
-            </ToolButton>
-          </span>
           <span data-timeline-snap={snap ? '1' : '0'}>
             <ToolButton onClick={() => togglePref('snap')} active={snap} label={t('timeline.snap')}
               hint={snap ? t('timeline.snapOn') : t('timeline.snapOff')}>
               <SeparatorVertical size={15} />
+            </ToolButton>
+          </span>
+          <span data-timeline-linkage={prefs.linkage ? '1' : '0'}>
+            <ToolButton onClick={() => togglePref('linkage')} active={prefs.linkage} label={t('timeline.linkage')}
+              hint={prefs.linkage ? t('timeline.linkageOn') : t('timeline.linkageOff')}>
+              <Paperclip size={15} />
             </ToolButton>
           </span>
         </> : null}

@@ -4,14 +4,15 @@
  * Runs the user's own Codex / Claude Code in the chat panel (see apps/desktop/src/local-agents-ipc.mjs).
  *
  * These turns never touch the server: no progress stream, nothing stored there. The shell starts the
- * agent's ACP adapter on this machine and hands it our MCP tools; what it says and does arrives event by
- * event on `desktop:local-agents:event`. Here those events are projected onto the three the chat panel
- * knows (agent-text / agent-act / agent-act-done) and fed to the same `reduceTranscript`, so the panel
- * has one rendering path whoever is thinking.
+ * agent's ACP adapter on this machine; what it says and does arrives event by event on
+ * `desktop:local-agents:event`. Here those events are projected onto the three the chat panel knows
+ * (agent-text / agent-act / agent-act-done) and fed to the same `reduceTranscript`, so the panel has one
+ * rendering path whoever is thinking.
  *
- * One project + one agent = one ACP session, reused across turns: it remembers the last turn, as when
- * chatting on in its own interface. The session restarts only when the window closes (shell side) or
- * the agent changes.
+ * One conversation of the chat + one agent = one session of the agent's own, reused across turns: it
+ * remembers the conversation, as when chatting on in its own interface. Its id is kept with the
+ * conversation, so after a restart, a reload or an idle session closed, the next turn takes it up where
+ * it stopped (the agent's own resume), and a new conversation is a new session.
  */
 import React from 'react';
 import {
@@ -26,6 +27,7 @@ import {
 import type { Turn } from '@openfilm/shared';
 import type { Balance } from '@/lib/balance';
 import { chatTurns, putChatTurn, type SavedTurn } from '@/lib/chat-store';
+import { app } from '../app-bridge';
 import { reduceTranscript, type TranscriptItem, type TranscriptPlanEntry } from '@/lib/agent-transcript';
 import {
   desktopBridge,
@@ -370,7 +372,8 @@ export class LocalAgentTurn {
       const act = this.items.find((item) => item.id === `act:${event.callId}`)?.act;
       if (!act || !LOOK_ONLY.has(act)) revision += 1;
     }
-    this.state = { ...this.state, thinking: false, revision };
+    /* the state is a new object only when it changed: the chat around the turn re-renders on it, the words do not */
+    if (this.state.thinking || this.state.revision !== revision) this.state = { ...this.state, thinking: false, revision };
     this.emit();
   }
 
@@ -402,7 +405,7 @@ export class LocalAgentTurn {
       const prev = this.items.find((item) => item.id === this.openThought);
       this.patchItem(this.openThought, { text: (prev?.text ?? '') + text });
     }
-    this.state = { ...this.state, thinking: true };
+    if (!this.state.thinking) this.state = { ...this.state, thinking: true };
     this.emit();
   }
 
@@ -504,12 +507,15 @@ export class LocalAgentTurn {
   private synthetic = new Set<string>();
 }
 
-/** The ACP session of one project + one agent (`key` is the shell's). Reused across turns. */
+/** The ACP session of one conversation + one agent (`key` is the shell's). Reused across turns. */
 interface LiveSession {
   key: string;
   agent: LocalAgentId;
   cwd: string;
   info: LocalAgentSessionInfo;
+  /** the project and the conversation it is the session of */
+  projectId: string;
+  conversation: string;
 }
 
 const sessions = new Map<string, LiveSession>();
@@ -521,6 +527,134 @@ const sessions = new Map<string, LiveSession>();
 export function forgetLocalAgentSessions(agent: LocalAgentId): void {
   for (const [k, s] of sessions) if (s.agent === agent) sessions.delete(k);
 }
+/* ── the agent's own commands (its `/` menu: built-in ones, the person's skills and custom commands), as its sessions
+   say them (ACP available_commands_update). Kept by agent: the last list any of its sessions gave, so a new
+   conversation has them before its first message. A list that comes before its session is known here waits for it. */
+
+export interface AgentCommand { name: string; description: string; hint: string | null }
+
+/* kept between launches (this page's storage), so the menu has them before the agent's first session */
+const COMMANDS_KEY = 'openfilm.agent-commands.v1';
+const commandsByAgent = new Map<LocalAgentId, AgentCommand[]>((() => {
+  try { return Object.entries(JSON.parse(localStorage.getItem(COMMANDS_KEY) ?? '{}')) as Array<[LocalAgentId, AgentCommand[]]>; } catch { return []; }
+})());
+const unclaimedCommands = new Map<string, AgentCommand[]>();
+const commandListeners = new Set<() => void>();
+const NO_COMMANDS: AgentCommand[] = [];
+
+/** The commands as ACP lists them (`availableCommands`: { name, description, input?.hint }). */
+export function readCommands(update: Record<string, unknown>): AgentCommand[] {
+  const list = Array.isArray(update.availableCommands) ? update.availableCommands as Array<Record<string, unknown>> : [];
+  return list.flatMap((c) => (typeof c?.name === 'string' && c.name ? [{
+    name: c.name.replace(/^\//, ''),
+    description: typeof c.description === 'string' ? c.description : '',
+    hint: typeof (c.input as { hint?: unknown } | null)?.hint === 'string' ? (c.input as { hint: string }).hint : null,
+  }] : []));
+}
+
+/** The agent's commands as one of its sessions said them (the menu's probe too). */
+export function keepCommands(agent: LocalAgentId, list: AgentCommand[]): void {
+  commandsByAgent.set(agent, list);
+  try { localStorage.setItem(COMMANDS_KEY, JSON.stringify(Object.fromEntries(commandsByAgent))); } catch { /* kept for this launch */ }
+  for (const listener of commandListeners) listener();
+}
+
+/** The agent's commands, for the composer's `/` menu (empty until one of its sessions has said them). */
+export function useAgentCommands(agent: LocalAgentId): AgentCommand[] {
+  return React.useSyncExternalStore(
+    (listener) => { commandListeners.add(listener); return () => { commandListeners.delete(listener); }; },
+    () => commandsByAgent.get(agent) ?? NO_COMMANDS,
+    () => NO_COMMANDS,
+  );
+}
+
+/* ── how full the agent's context is (ACP usage_update): tokens in the conversation now, of its context window, as
+   the agent's own chat shows it. By session: each conversation has its own. ── */
+
+export interface AgentContext { used: number; size: number }
+
+const contextByKey = new Map<string, AgentContext>();
+const contextListeners = new Set<() => void>();
+const tellContext = () => { for (const listener of contextListeners) listener(); };
+
+/** How full the agent's context is in this conversation, once its session has said; null before. */
+export function useAgentContext(projectId: string, conversation: string, agent: LocalAgentId): AgentContext | null {
+  return React.useSyncExternalStore(
+    (listener) => { contextListeners.add(listener); return () => { contextListeners.delete(listener); }; },
+    () => {
+      const session = sessions.get(`${projectId}:${conversation}:${agent}`);
+      return session ? contextByKey.get(session.key) ?? null : null;
+    },
+    () => null,
+  );
+}
+
+/* ── the agent working with nobody having written: a background task of its own that ended after its turn (a
+   command it ran in the background, a subagent), which it takes up by itself, as in its own chat. Its work is shown
+   as a turn of its own in its conversation (`onUnpromptedTurn`, from the page showing the project), which ends with
+   the agent's own result for it (a usage_update saying where it came from) or after UNPROMPTED_QUIET_MS of quiet,
+   and as soon as the person writes. ── */
+
+/** What a turn the agent started by itself needs from the page: the turn to fill, the page's way to settle it, and
+    what the turn's log keeps of it (its conversation), so the log can make it again (recoverLoggedTurns). */
+export interface UnpromptedTurn { turn: LocalAgentTurn; done: () => void; meta?: LocalAgentTurnMeta }
+type UnpromptedHandler = (where: { projectId: string; conversation: string; agent: LocalAgentId }) => UnpromptedTurn | null;
+
+const UNPROMPTED_QUIET_MS = 30_000;
+/** words of a turn just ended can come a moment after it: not a turn of the agent's own until this long after */
+const AFTER_TURN_MS = 2000;
+const turnEndedAt = new Map<string, number>();
+/** the updates that mean the agent is working (not a list or a setting changing) */
+const WORK_UPDATES = new Set(['agent_message_chunk', 'agent_thought_chunk', 'tool_call', 'tool_call_update', 'plan']);
+const unpromptedHandlers = new Set<UnpromptedHandler>();
+const unprompted = new Map<string, UnpromptedTurn & { timer: ReturnType<typeof setTimeout> }>();
+
+/** The page showing a project opens the turns the agent starts by itself in it. Returns a way to stop. */
+export function onUnpromptedTurn(handler: UnpromptedHandler): () => void {
+  unpromptedHandlers.add(handler);
+  return () => { unpromptedHandlers.delete(handler); };
+}
+
+function openUnprompted(key: string): LocalAgentTurn | null {
+  const session = [...sessions.values()].find((s) => s.key === key);
+  if (!session || Date.now() - (turnEndedAt.get(key) ?? 0) < AFTER_TURN_MS) return null;
+  let opened: UnpromptedTurn | null = null;
+  for (const handler of unpromptedHandlers) {
+    opened = handler({ projectId: session.projectId, conversation: session.conversation, agent: session.agent });
+    if (opened) break;
+  }
+  if (!opened) return null;
+  turns.set(opened.turn.turnId, opened.turn);
+  turnByKey.set(key, opened.turn);
+  unprompted.set(key, { ...opened, timer: setTimeout(() => endUnprompted(key), UNPROMPTED_QUIET_MS) });
+  void desktopBridge()?.localAgents?.adopt?.(key, opened.turn.turnId, opened.meta);
+  return opened.turn;
+}
+
+function stillUnprompted(key: string): void {
+  const open = unprompted.get(key);
+  if (!open) return;
+  clearTimeout(open.timer);
+  open.timer = setTimeout(() => endUnprompted(key), UNPROMPTED_QUIET_MS);
+}
+
+function endUnprompted(key: string): void {
+  const open = unprompted.get(key);
+  if (!open) return;
+  unprompted.delete(key);
+  clearTimeout(open.timer);
+  open.turn.seal();
+  if (turnByKey.get(key) === open.turn) turnByKey.delete(key);
+  if (current === open.turn) current = null;
+  void desktopBridge()?.localAgents?.adopt?.(key, null);
+  open.done();
+}
+
+/** Whether this turn is one the agent started by itself (it has no run of the page's to wait on). */
+export function isUnpromptedTurn(turnId: string): boolean {
+  return [...unprompted.values()].some((open) => open.turn.turnId === turnId);
+}
+
 const turns = new Map<string, LocalAgentTurn>();
 let current: LocalAgentTurn | null = null;
 let unlisten: (() => void) | null = null;
@@ -550,6 +684,21 @@ function listen(): void {
   const bridge = desktopBridge()?.localAgents;
   if (!bridge) return;
   unlisten = bridge.onEvent((event) => {
+    if (event.kind === 'update' && event.update.sessionUpdate === 'usage_update') {
+      const { used, size, _meta } = event.update as { used?: unknown; size?: unknown; _meta?: Record<string, unknown> };
+      if (typeof used === 'number' && typeof size === 'number' && size > 0) { contextByKey.set(event.key, { used, size }); tellContext(); }
+      /* the agent's result for work it took up by itself (Claude Code says where it came from): that turn is done */
+      const origin = _meta?.['_claude/origin'] as { kind?: unknown } | undefined;
+      if (origin && origin.kind !== 'human' && unprompted.has(event.key)) endUnprompted(event.key);
+      return;
+    }
+    if (event.kind === 'update' && event.update.sessionUpdate === 'available_commands_update') {
+      const list = readCommands(event.update);
+      const agent = [...sessions.values()].find((s) => s.key === event.key)?.agent;
+      if (agent) keepCommands(agent, list);
+      else unclaimedCommands.set(event.key, list);
+      return;
+    }
     const turn = turnByKey.get(event.key);
     if (event.kind === 'done') {
       const waiter = doneWaiters.get(event.key);
@@ -561,12 +710,17 @@ function listen(): void {
       return;
     }
     if (event.kind === 'exit') {
+      endUnprompted(event.key);
       for (const [k, s] of sessions) if (s.key === event.key) sessions.delete(k);
       if (turn && !turn.state.error && turn === current) turn.patch({ error: 'The agent stopped unexpectedly.' });
       const waiter = doneWaiters.get(event.key);
       if (waiter) { doneWaiters.delete(event.key); waiter({ ok: false, error: 'The agent stopped unexpectedly.' }); }
       return;
     }
+    if (turn && unprompted.has(event.key)) stillUnprompted(event.key);
+    /* working with nobody having written: a background task of its own came back */
+    const taken = turn ?? (event.kind === 'update' && WORK_UPDATES.has(event.update.sessionUpdate) ? openUnprompted(event.key) : null);
+    if (taken && !turn) { dispatch(taken, event as Record<string, unknown> & { kind: string }); return; }
     if (!turn) {
       /* The turn has ended or belongs to another window: a permission request must not hang, so deny it,
          unless it is a turn still running from before this page reloaded (the shell still holds it): then
@@ -615,17 +769,14 @@ export function useLocalAgentTurn(turnId: string | null): { turn: LocalAgentTurn
   return turn ? { turn, state } : null;
 }
 
-/** The session's options (model, reasoning effort…) as last reported; null before any session. */
-export function localAgentSessionInfo(projectId: string, agent: LocalAgentId): LocalAgentSessionInfo | null {
-  return sessions.get(`${projectId}:${agent}`)?.info ?? null;
-}
-
 /**
- * Runs a turn. The first time it opens a session (starts the adapter, handshakes, hands over MCP); after
- * that the same project reuses it.
+ * Runs a turn. The first time in a conversation it opens a session (starts the adapter, handshakes), going
+ * on with the agent's own one when `resume` names it; after that the same conversation reuses it.
  */
 export async function runLocalAgentTurn({
   projectId,
+  conversation,
+  resume = null,
   agent,
   cwd,
   text,
@@ -636,6 +787,10 @@ export async function runLocalAgentTurn({
   images,
 }: {
   projectId: string;
+  /** the chat's conversation: each has its own session of the agent's */
+  conversation: string;
+  /** the agent's own id of this conversation, from a turn before (ProjectSessionItem.agentSessions) */
+  resume?: string | null;
   agent: LocalAgentId;
   cwd: string;
   text: string;
@@ -647,52 +802,96 @@ export async function runLocalAgentTurn({
   /** Options the user picked in the model menu (configId → value), set one by one once the session is open. */
   options?: Record<string, unknown>;
   onSessionInfo?: (info: LocalAgentSessionInfo) => void;
-}): Promise<{ stopReason: string }> {
+}): Promise<{ stopReason: string; lastTurnId: string }> {
   const bridge = desktopBridge()?.localAgents;
   if (!bridge) throw new Error('This needs the OpenFilm Mac app.');
   listen();
   turns.set(turn.turnId, turn);
   current = turn;
 
-  const sessionKey = `${projectId}:${agent}`;
+  const sessionKey = `${projectId}:${conversation}:${agent}`;
   let session = sessions.get(sessionKey);
-  let first = false;
   if (!session || session.cwd !== cwd) {
-    const started = await bridge.start(agent, cwd);
+    const started = await bridge.start(agent, cwd, resume);
     if (!started.ok) {
       throw Object.assign(new Error(started.error), { code: started.code, install: started.install });
     }
-    session = { key: started.key, agent, cwd, info: started.info };
+    session = { key: started.key, agent, cwd, info: started.info, projectId, conversation };
     sessions.set(sessionKey, session);
-    first = true;
+    tellContext();
+    const said = unclaimedCommands.get(started.key);
+    if (said) { unclaimedCommands.delete(started.key); keepCommands(agent, said); }
     onSessionInfo?.(started.info);
   }
+  /* a turn the agent was working on by itself ends as the person writes */
+  endUnprompted(session.key);
   turnByKey.set(session.key, turn);
 
-  /* Picked options: set only when they differ from the session's current value, saving a round trip */
-  for (const [configId, value] of Object.entries(options)) {
-    const option = session.info.configOptions?.find((o) => o.id === configId);
-    if (!option || option.currentValue === value) continue;
-    const r = await bridge.setOption(session.key, configId, value);
+  /* Picked options: set only when they differ from the session's current value, saving a round trip. The model
+     first (it decides which efforts there are), then the rest at once */
+  const live = session;
+  const setOption = async ([configId, value]: [string, unknown]) => {
+    const option = live.info.configOptions?.find((o) => o.id === configId);
+    if (!option || option.currentValue === value) return;
+    const r = await bridge.setOption(live.key, configId, value);
     if (r.ok) option.currentValue = value;
-  }
+  };
+  const picked = Object.entries(options);
+  const isModel = ([configId]: [string, unknown]) => live.info.configOptions?.find((o) => o.id === configId)?.category === 'model';
+  for (const entry of picked.filter(isModel)) await setOption(entry);
+  await Promise.all(picked.filter((entry) => !isModel(entry)).map(setOption));
 
   /* where it is and how to work (the project, the `openfilm` manual, Studio already open) it was told when the
-     session started (apps/desktop src/agents.mjs INSTRUCTIONS); the first message only adds the language */
-  const prompt = first ? `Reply in the language of the request below.\n\n${text}` : text;
+     session started (apps/desktop src/agents.mjs INSTRUCTIONS): the message goes as the person wrote it */
+  const key = session.key;
+  /* the turn the agent's words go to at the end: this one, or the last message sent into it while it ran (steer) */
+  const last = () => turnByKey.get(key) ?? turn;
   try {
-    const r = await bridge.prompt(session.key, prompt, meta, images?.length ? images : undefined);
+    const r = await bridge.prompt(key, text, meta, images?.length ? images : undefined);
     /* The answer to the prompt can overtake its last updates (the closing words of its reply): stop
        listening only once they have stopped coming, or the saved reply ends mid-sentence. */
-    await drain(turn);
-    if (!r.ok) throw Object.assign(new Error(r.error), r.balance ? { balance: r.balance } : {});
-    return { stopReason: r.stopReason };
+    await drain(last());
+    if (!r.ok) throw Object.assign(new Error(r.error), { lastTurnId: last().turnId }, r.balance ? { balance: r.balance } : {});
+    return { stopReason: r.stopReason, lastTurnId: last().turnId };
   } finally {
+    const ended = last();
     turn.seal();
-    turnByKey.delete(session.key);
-    if (current === turn) current = null;
-    if (meta) void bridge.ack?.(session.key, meta.turnId);
+    ended.seal();
+    turnByKey.delete(key);
+    turnEndedAt.set(key, Date.now());
+    if (current === turn || current === ended) current = null;
+    if (meta) void bridge.ack?.(key, meta.turnId);
   }
+}
+
+/** Whether a message sent while this turn runs can join it (the agent takes steering), rather than wait for its end. */
+export function canSteer(turnId: string): boolean {
+  if (!desktopBridge()?.localAgents?.steer) return false;
+  for (const [key, t] of turnByKey) {
+    if (t.turnId !== turnId) continue;
+    for (const s of sessions.values()) if (s.key === key) return s.info.steering === true;
+  }
+  return false;
+}
+
+/**
+ * A message sent while `fromTurnId` runs, into that turn, as in the agent's own chat: once it has joined, what the
+ * agent says and does from then on goes to `next` (the message's own turn in the conversation), and `from` is done.
+ * False when it did not join (the turn ended meanwhile, the agent refused): the caller sends it as a turn of its own.
+ */
+export async function steerLocalAgentTurn(fromTurnId: string, next: LocalAgentTurn, text: string, images?: PromptImage[]): Promise<boolean> {
+  const bridge = desktopBridge()?.localAgents;
+  const key = [...turnByKey].find(([, t]) => t.turnId === fromTurnId)?.[0];
+  if (!bridge?.steer || !key) return false;
+  turns.set(next.turnId, next);
+  const r = await bridge.steer(key, text, images?.length ? images : undefined).catch(() => null);
+  const from = turnByKey.get(key);
+  if (!r?.ok || !from || from.turnId !== fromTurnId) return false;
+  await drain(from, 150, 1000);
+  from.seal();
+  turnByKey.set(key, next);
+  current = next;
+  return true;
 }
 
 export interface RecoveredLocalTurn {
@@ -728,8 +927,8 @@ export async function recoverLocalAgentTurns(projectId: string): Promise<Recover
     const turn = new LocalAgentTurn(meta.turnId, r.agent, meta.turnNo ?? 0);
     turns.set(meta.turnId, turn);
     for (const event of r.events) dispatch(turn, event);
-    const sessionKey = `${projectId}:${r.agent}`;
-    if (!sessions.has(sessionKey)) sessions.set(sessionKey, { key: r.key, agent: r.agent, cwd: r.cwd, info: { sessionId: '', agentInfo: null, authMethods: [], mcp: true, models: null, modes: null, configOptions: null } });
+    const sessionKey = `${projectId}:${meta.sessionId}:${r.agent}`;
+    if (!sessions.has(sessionKey)) sessions.set(sessionKey, { key: r.key, agent: r.agent, cwd: r.cwd, projectId, conversation: meta.sessionId, info: { sessionId: '', agentInfo: null, authMethods: [], mcp: true, models: null, modes: null, configOptions: null } });
     let finished: RecoveredLocalTurn['finished'];
     if (r.done) {
       turn.seal();
@@ -823,10 +1022,56 @@ export function saveLocalAgentTurn(projectId: string, turn: Turn, items: Transcr
   putChatTurn(projectId, { turn, items });
 }
 
-/** The turns run with a local agent in this project (this session). */
+/** A running turn's rows as they are kept while it runs: as read back after the app closed on it, nothing still going. */
+export function restingItems(items: TranscriptItem[]): TranscriptItem[] {
+  return items.some((item) => item.pending) ? items.map((item) => (item.pending ? { ...item, pending: false } : item)) : items;
+}
+
+/** what a turn the app closed on (or crashed in) says, kept while it ran and read back with it not running */
+export const INTERRUPTED = 'OpenFilm closed while the agent was working on this.';
+const ACTIVE_STATUSES = new Set<Turn['status']>(['generating', 'failing', 'canceling']);
+
+/**
+ * The turns run with a local agent in this project (this session). One kept while it ran (the page saves a running
+ * turn as it goes) and running no more, the app having closed on it, reads as interrupted: what it did so far stays,
+ * and the next message goes on from there.
+ */
 export function loadLocalAgentTurns(projectId: string, sessionId: string | null): SavedLocalTurn[] {
   if (typeof window === 'undefined') return [];
-  return readSaved(projectId).filter((x) => !sessionId || x.turn.sessionId === sessionId);
+  return readSaved(projectId)
+    .filter((x) => !sessionId || x.turn.sessionId === sessionId)
+    .map((x) => (ACTIVE_STATUSES.has(x.turn.status) && !runningTurns.has(x.turn.id)
+      ? { ...x, turn: { ...x.turn, status: 'error' as const, error: INTERRUPTED } }
+      : x));
+}
+
+/**
+ * The turns of this project that have a log and were never kept (the app closed or crashed before it kept them, or a
+ * version from before running turns were kept): each made again from its log, as it went, and kept from now on. One
+ * that ended says how; one that did not, interrupted. Not the turns running now (this page's, or the app's after a
+ * reload). Resolves with how many it made.
+ */
+export async function recoverLoggedTurns(projectId: string): Promise<number> {
+  const held = await desktopBridge()?.localAgents?.running?.().catch(() => []) ?? [];
+  const except = [...turns.keys(), ...runningTurns.keys(), ...held.flatMap((r) => (r.meta?.turnId ? [r.meta.turnId] : []))];
+  const found = await app.chat.unsaved?.(projectId, except).catch(() => []) ?? [];
+  let made = 0;
+  for (const { turnId, events } of found) {
+    const prompt = events.find((e) => e.kind === 'prompt') as { meta?: LocalAgentTurnMeta; agent?: LocalAgentId } | undefined;
+    const meta = prompt?.meta;
+    if (!meta?.turn || !meta.sessionId) continue;
+    const turn = new LocalAgentTurn(turnId, meta.agent ?? prompt?.agent ?? 'claude', meta.turnNo ?? 0);
+    for (const event of events) if (event.kind === 'update' || event.kind === 'question' || event.kind === 'permission') dispatch(turn, event);
+    turn.seal();
+    const done = [...events].reverse().find((e) => e.kind === 'done') as { ok?: boolean; stopReason?: string; error?: string; t: number } | undefined;
+    const patch: Partial<Turn> = !done ? { status: 'error', error: INTERRUPTED }
+      : done.ok === false ? { status: 'error', error: String(done.error ?? INTERRUPTED) }
+        : done.stopReason === 'cancelled' ? { status: 'cancelled' } : { status: 'ready' };
+    const last = events.at(-1)?.t;
+    putChatTurn(projectId, { turn: { ...(meta.turn as Turn), ...patch, ...(last ? { updatedAt: new Date(last).toISOString() } : {}) }, items: turn.items });
+    made += 1;
+  }
+  return made;
 }
 
 /* ── Running local turns (across projects) ─────────────────────────────────────────

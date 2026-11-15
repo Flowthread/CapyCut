@@ -1,80 +1,63 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { launch } from '../../src/host.mjs';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { createServer } from 'node:http';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { HOST_FLAG, folderFiles, launch } from '../../src/host.mjs';
+import { filmHtml } from '../../src/film-doc.mjs';
 
-/* the stage script in a page of its own, one page clip on it: asked as the editor asks, from the page's own origin */
-const ORIGIN = 'http://stage.test';
-const STAGE = readFileSync(new URL('./stage.js', import.meta.url), 'utf8').replace('__EDITOR__', JSON.stringify(ORIGIN));
-const PAGE = `<!doctype html><body style="margin:0;background:#000">
-<div id="a" style="position:absolute;left:20px;top:20px;width:100px;height:100px;background:#f00"></div>
-<div id="b" style="position:absolute;left:150px;top:50px;width:100px;height:100px;background:#0f0">
-<div id="c" style="position:absolute;left:80px;top:0;width:100px;height:100px"></div></div></body>`;
-const HOST = `<!doctype html><body style="margin:0">
-<iframe id="p" style="position:absolute;left:0;top:0;width:400px;height:200px;border:0;visibility:visible" srcdoc="${PAGE.replace(/"/g, '&quot;')}"></iframe>
-<script>
-  const el = document.getElementById('p');
-  const clips = [{ id: 'p', kind: 'page', el, w: 400, h: 200, ti: 0, overrides: [], get win() { return el.contentWindow; } }];
-  window.__filmEditor = { stage: { clips: () => clips } };
-  window.film = { ready: new Promise((r) => el.addEventListener('load', r)) };
-</script>
-<script>${STAGE}</script></body>`;
+const STAGE = readFileSync(new URL('./stage.js', import.meta.url), 'utf8');
 
-async function stage() {
+/** A film served with Studio's stage in it, the page itself standing in for the editor (its own origin). */
+async function stageOf(dir) {
+  let files = null;
+  const server = createServer((req, res) => {
+    const url = new URL(req.url, 'http://x');
+    if (!files(req, res, url.pathname, url.searchParams)) res.writeHead(403).end();
+  });
+  await new Promise((ok) => server.listen(0, '127.0.0.1', ok));
+  const origin = `http://127.0.0.1:${server.address().port}`;
+  files = folderFiles(dir, { timelineInject: `<script>${HOST_FLAG}</script><script>${STAGE.replaceAll('__EDITOR__', JSON.stringify(origin))}</script>` });
   const browser = await launch();
-  const page = await browser.newPage();
-  await page.route(`${ORIGIN}/**`, (route) => route.fulfill({ contentType: 'text/html', body: HOST }));
-  await page.goto(`${ORIGIN}/`);
-  await page.evaluate(() => window.film.ready);
-  const ask = (op, args) => page.evaluate(([op, args]) => new Promise((resolve) => {
-    const seq = Math.random();
-    addEventListener('message', function on(e) {
-      if (e.data?.source !== 'openfilm-film' || e.data.seq !== seq) return;
-      removeEventListener('message', on);
-      resolve(e.data.result);
-    });
-    postMessage({ source: 'openfilm-studio', type: 'stage', seq, op, ...args }, '*');
-  }), [op, args]);
-  const style = (sel, css) => page.evaluate(([sel, css]) => {
-    const el = sel === 'clip' ? document.getElementById('p') : document.getElementById('p').contentDocument.querySelector(sel);
-    el.style.cssText += css;
-  }, [sel, css]);
-  const layer = async (x, y) => (await ask('hit', { x, y, detail: true }))?.at ?? null;
-  return { browser, ask, style, layer };
+  const page = await browser.newPage({ viewport: { width: 320, height: 180 } });
+  await page.goto(`${origin}/film.html`);
+  await page.evaluate(async () => { await window.film.ready; await window.film.frame(0.5); });
+  let seq = 0;
+  /** Ask the stage what the editor asks it. */
+  const ask = (op, args) => page.evaluate(({ op, args, seq }) => new Promise((done) => {
+    const hear = (e) => {
+      if (e.data?.source !== 'openfilm-film' || e.data.type !== 'stage' || e.data.seq !== seq) return;
+      window.removeEventListener('message', hear);
+      done(e.data.error ? { error: e.data.error } : e.data.result);
+    };
+    window.addEventListener('message', hear);
+    window.postMessage({ source: 'openfilm-studio', type: 'stage', seq, op, ...args }, '*');
+  }), { op, args, seq: ++seq });
+  return { ask, close: async () => { await browser.close(); server.closeAllConnections?.(); server.close(); } };
 }
 
-test('what a mask or a crop cuts away is not found: the clip and its layers', { timeout: 60_000 }, async () => {
-  const { browser, ask, style, layer } = await stage();
+test('a click on a page\'s backdrop (a box filling the page) takes the clip, not the box; a smaller box is taken', { timeout: 60_000 }, async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'of-stage-backdrop-'));
+  writeFileSync(join(dir, 'logistics.html'), `<!doctype html><body style="margin:0">
+<div id="root" style="position:absolute;inset:0;background:#f7f1e9">
+  <h1 id="title" style="position:absolute;left:20px;top:20px;margin:0;font:700 24px sans-serif">Every parcel</h1>
+  <div id="card" style="position:absolute;left:200px;top:100px;width:80px;height:50px;background:#f60"></div>
+</div>
+<script>window.film={duration:2,frame(){}}</script></body>`);
+  writeFileSync(join(dir, 'film.html'), filmHtml({ stage: { w: 320, h: 180 }, tracks: [{ clips: [{ id: 'logistics', src: 'logistics.html' }] }] }));
+  const stage = await stageOf(dir);
   try {
-    assert.equal(await ask('clipAt', { x: 10, y: 10 }), 'p');
-    assert.equal(await layer(30, 30), '#a');
-
-    /* the clip's circle: its corners are not the clip, nor its layers */
-    await style('clip', 'mask-image: radial-gradient(25% 50% at 50% 50%, #000 99%, transparent 100%)');
-    assert.equal(await ask('clipAt', { x: 10, y: 10 }), null);
-    assert.equal(await layer(30, 30), null);
-    assert.equal(await ask('clipAt', { x: 200, y: 100 }), 'p');
-    assert.equal(await layer(200, 100), '#b');
-    assert.equal(await layer(115, 100), '#a');
-
-    /* a crop (clip-path) cuts the same way */
-    await style('clip', 'mask-image: none; clip-path: inset(0 50% 0 0)');
-    assert.equal(await ask('clipAt', { x: 300, y: 100 }), null);
-    assert.equal(await ask('clipAt', { x: 100, y: 100 }), 'p');
-
-    /* a layer's own mask, two layers intersected: only where both show */
-    await style('clip', 'clip-path: none');
-    await style('#a', 'mask-image: linear-gradient(to right, #000 50%, transparent 50%), linear-gradient(#000 50%, transparent 50%); mask-composite: intersect');
-    assert.equal(await layer(40, 40), '#a');
-    assert.equal(await layer(100, 40), null);
-    assert.equal(await layer(40, 100), null);
-
-    /* a parent that clips what overflows it: its child past its edge is not found there */
-    await style('#b', 'overflow: hidden');
-    await style('#c', 'background: #00f');
-    assert.equal(await layer(240, 100), '#c');
-    assert.equal(await layer(300, 100), null);
+    assert.equal(await stage.ask('hit', { x: 150, y: 160, detail: true }), null, 'the empty part: no layer, so the clip is taken');
+    assert.equal((await stage.ask('hit', { x: 40, y: 30, detail: true }))?.label, 'Every parcel');
+    const card = await stage.ask('hit', { x: 240, y: 125, detail: true });
+    assert.equal(card?.kind, 'box', 'a box smaller than the page is a layer');
+    /* with Alt, the layers under the point in turn: the backdrop is one of them, and once in hand a click keeps it */
+    const root = await stage.ask('hit', { x: 240, y: 125, cycleFrom: card.handle, detail: true });
+    assert.equal(root?.kind, 'box');
+    assert.notEqual(root.handle, card.handle);
+    assert.equal((await stage.ask('hit', { x: 150, y: 160, from: root.handle, detail: true }))?.handle, root.handle);
   } finally {
-    await browser.close();
+    await stage.close();
   }
 });

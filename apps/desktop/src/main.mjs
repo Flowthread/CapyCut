@@ -13,7 +13,7 @@ import { basename, join } from 'node:path';
 import { Readable } from 'node:stream';
 import { fileURLToPath } from 'node:url';
 import { FLAVOR, IDENTITY, PRODUCT_NAME } from './flavor.mjs';
-import { folderDialogOptions } from './folder-dialog.mjs';
+import { folderDialogOptions, programDialogOptions } from './folder-dialog.mjs';
 import { childEnvironment, loginShellEnvironment } from './environment.mjs';
 import { startWindowStudio } from './studio.mjs';
 import { CHAT_MIN, STUDIO_MIN, WINDOW_MIN, placeOnDisplays, readWindowState, writeWindowState } from './window-state.mjs';
@@ -21,7 +21,8 @@ import { applicationMenu } from './menu.mjs';
 import { registerLocalAgentIpc } from './local-agents-ipc.mjs';
 import { registerChatIpc } from './chat-ipc.mjs';
 import { createRoster } from './agent-roster.mjs';
-import { listAgents, openAgentSignIn } from './agents.mjs';
+import { checkAgentProgram, diagnoseAgent, listAgents, openAgentSignIn, setChosenPaths } from './agents.mjs';
+import { agentUsage, forgetAgentUsage } from './agent-usage.mjs';
 import { installOpenfilmCommand } from './openfilm-command.mjs';
 import { startUpdates } from './updates.mjs';
 import { ensureFfmpeg, ffmpegDir, ffmpegDownloadable, ffmpegIn, ffmpegOnPath } from './ffmpeg-runtime.mjs';
@@ -212,10 +213,10 @@ async function start() {
   });
 
 
-  /* what the installer brings (scripts/release.mjs): ffmpeg and ffprobe, first on the PATH of Studio and the agents,
-     and the headless browser Studio and `openfilm` draw pages in. A build without them (from source): no ffmpeg on
-     this computer, the app's own goes first on the PATH and is downloaded once the window is up (they find it the
-     moment it lands); the browser, Studio downloads the first time (studio-process.mjs) */
+  /* what the installer brings (scripts/release.mjs): ffmpeg and ffprobe, first on the PATH of Studio and of the
+     agents' `openfilm` command, and the headless browser Studio and `openfilm` draw pages in. A build without them
+     (from source): no ffmpeg on this computer, the app's own goes first on the PATH and is downloaded once the window
+     is up (they find it the moment it lands); the browser, Studio downloads the first time (studio-process.mjs) */
   const runtime = app.isPackaged ? join(process.resourcesPath, 'runtime') : null;
   const ownFfmpeg = runtime && ffmpegIn(join(runtime, 'ffmpeg')) ? join(runtime, 'ffmpeg') : null;
   const needFfmpeg = !ownFfmpeg && !ffmpegOnPath(env.PATH) && ffmpegDownloadable();
@@ -301,9 +302,11 @@ async function start() {
     log,
     /* Studio refuses to delete a project an agent is working in */
     onWorking: tellWorking,
-    /* the `openfilm` command, and the app's ffmpeg (several folders, PATH-joined) */
-    binDir: [installOpenfilmCommand(DATA), ...(ffmpegHere ? [ffmpegHere] : [])].join(PATH_SEP),
-    env: { OPENFILM_HOME: env.OPENFILM_HOME, ...(env.OPENFILM_LIBRARY ? { OPENFILM_LIBRARY: env.OPENFILM_LIBRARY } : {}), ...browsers },
+    /* the `openfilm` command first (with the app's ffmpeg and browser in it); the app's ffmpeg last, for a computer
+       that has none of its own: the person's own ffmpeg and browsers are what the agent's commands use */
+    binDir: installOpenfilmCommand(DATA, { ffmpeg: ffmpegHere, env: browsers }),
+    fallbackDir: ffmpegHere,
+    env: { OPENFILM_HOME: env.OPENFILM_HOME, ...(env.OPENFILM_LIBRARY ? { OPENFILM_LIBRARY: env.OPENFILM_LIBRARY } : {}) },
     harness: async (id) => roster?.harness(id) ?? null,
   });
   /* Settings → Agents (in Studio's page) and the chat's agent menu: one roster, both told of every change */
@@ -311,10 +314,19 @@ async function start() {
     dataDir: DATA,
     localAgents: listAgents,
     openSignIn: openAgentSignIn,
-    closeSessions: (id) => localAgents?.closeAgent(id),
+    /* sessions closed on connecting and disconnecting: the next look at its usage is for whichever account is used now */
+    closeSessions: (id) => { forgetAgentUsage(id); localAgents?.closeAgent(id); },
     seal,
     unseal,
     onChange: (list) => view?.webContents.send('desktop:agents', list),
+    /* the program the person points at, for an agent not found where it is looked for */
+    usePaths: setChosenPaths,
+    pickProgram: async (_id, words) => {
+      const { canceled, filePaths } = await dialog.showOpenDialog(win, programDialogOptions(words));
+      return canceled || !filePaths[0] ? null : filePaths[0];
+    },
+    checkProgram: checkAgentProgram,
+    diagnose: (id) => diagnoseAgent(id, { appVersion: app.getVersion() }),
   });
   const agentHandle = (channel, fn) => ipcMain.handle(channel, (event, opts) => {
     if (!fromPage(event)) throw new Error('not the window\'s page');
@@ -323,6 +335,11 @@ async function start() {
   agentHandle('desktop:agents:list', () => { void roster.refresh(); return roster.list(); });
   agentHandle('desktop:agents:connect', ({ id }) => roster.connect(String(id)));
   agentHandle('desktop:agents:disconnect', ({ id }) => { roster.disconnect(String(id)); return { ok: true }; });
+  /* what is left of Claude Code's and Codex's plan, on OpenFilm's sign-in (agent-usage.mjs); null when it can't say */
+  agentHandle('desktop:agents:usage', ({ id, fresh }) => agentUsage(String(id), { fresh: fresh === true }));
+  agentHandle('desktop:agents:locate', ({ id, words }) => roster.locate(String(id), words));
+  agentHandle('desktop:agents:automatic', ({ id }) => roster.useAutomatic(String(id)));
+  agentHandle('desktop:agents:diagnose', ({ id }) => roster.diagnose(String(id)));
   agentHandle('desktop:agents:shown', ({ id, shown }) => { roster.setShown(String(id), shown === true); return { ok: true }; });
   agentHandle('desktop:agents:byok', ({ config }) => roster.configureByok(config));
   /* a file on the disk brought into the chat goes into the project the page names, through Studio's own import (it
@@ -380,6 +397,9 @@ async function start() {
     },
   });
   ipcMain.handle('desktop:update-restart', (event) => (fromPage(event) ? updates?.restart() : { ok: false }));
+  /* Settings → About: the state now, and a check that answers with the state it ends in (no dialog) */
+  ipcMain.handle('desktop:update-state', (event) => (fromPage(event) ? updates?.snapshot() ?? null : null));
+  ipcMain.handle('desktop:update-check', (event) => (fromPage(event) ? updates?.check() ?? null : null));
 
   Menu.setApplicationMenu(applicationMenu({
     productName: PRODUCT_NAME,

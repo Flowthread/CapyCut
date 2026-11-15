@@ -10,7 +10,7 @@
  * (src/preload.cjs). Imported before Studio's modules and the chat's: Studio reads its host as it loads.
  */
 import { flushSync } from 'react-dom';
-import type { HostAgent, HostAsk, HostUpdate, StudioCommand, StudioHost, StudioRef, StudioSelection } from 'openfilm/studio-ui/lib/host.ts';
+import type { HostAgent, HostAsk, HostUpdate, HostUpdateState, StudioCommand, StudioHost, StudioRef, StudioSelection } from 'openfilm/studio-ui/lib/host.ts';
 
 type Listener<T> = (value: T) => void;
 type Stop = () => void;
@@ -28,7 +28,7 @@ interface Native {
   localAgents: Record<string, unknown>;
   importFile(request: { projectId: string; path: string; name: string }): Promise<{ ok: true; path: string } | { ok: false; error: string }>;
   chat: Record<string, (...args: never[]) => Promise<unknown>>;
-  prefs: { get(): Promise<{ developer: boolean }>; set(next: { developer?: boolean }): Promise<unknown>; onChange(listener: Listener<{ developer: boolean }>): Stop };
+  prefs: { get(): Promise<AppPrefs>; set(next: Partial<AppPrefs>): Promise<unknown>; onChange(listener: Listener<AppPrefs>): Stop };
   saveLayout(layout: { chatOpen: boolean; chatWidth: number }): void;
   setTheme(theme: Theme): void;
   onFullScreen(listener: Listener<boolean>): Stop;
@@ -37,6 +37,8 @@ interface Native {
   onFfmpeg(listener: Listener<unknown>): Stop;
   onUpdate(listener: Listener<unknown>): Stop;
   restartToUpdate(): Promise<{ ok: boolean; error?: string }>;
+  updateState(): Promise<unknown>;
+  checkForUpdate(): Promise<unknown>;
 }
 
 const native = (window as unknown as { openfilmNative: Native }).openfilmNative;
@@ -195,11 +197,16 @@ async function withPicture(ref: StudioRef): Promise<StudioRef> {
 const asks = signal<HostAsk[]>([]);
 let answerAsk: (id: string, allow: boolean) => void = () => {};
 
-/* ── the app's developer mode (Settings → Developer, kept by the app): Studio switches it, the chat shows logs by it ── */
+/* ── Settings → Developer (kept by the app): Studio switches it, the chat shows each turn's log and changes by it ── */
+interface AppPrefs { developer: boolean; changes: boolean }
+const developerOf = (prefs: AppPrefs) => ({ logs: prefs.developer === true, changes: prefs.changes !== false });
 const developer = {
-  get: async () => (await native.prefs.get()).developer,
-  set: (on: boolean) => native.prefs.set({ developer: on }),
-  onChange: (listener: Listener<boolean>) => native.prefs.onChange((prefs) => listener(prefs.developer)),
+  get: async () => developerOf(await native.prefs.get()),
+  set: (next: { logs?: boolean; changes?: boolean }) => native.prefs.set({
+    ...(typeof next.logs === 'boolean' ? { developer: next.logs } : {}),
+    ...(typeof next.changes === 'boolean' ? { changes: next.changes } : {}),
+  }),
+  onChange: (listener: Listener<{ logs: boolean; changes: boolean }>) => native.prefs.onChange((prefs) => listener(developerOf(prefs))),
 };
 
 /* ── the app's update, for Studio's top bar: a version downloaded and ready (src/updates.mjs), Restart to install it ── */
@@ -218,6 +225,13 @@ const update: NonNullable<StudioHost['update']> = {
     return native.onUpdate((state) => { told = true; listener(shownUpdate(state)); });
   },
   restart: native.restartToUpdate,
+  /* the whole state, for Settings → About: now, then every change */
+  onState(listener) {
+    let told = false;
+    void native.updateState().then((s) => { if (!told && s) listener(s as HostUpdateState); });
+    return native.onUpdate((s) => { told = true; if (s) listener(s as HostUpdateState); });
+  },
+  check: async () => (await native.checkForUpdate()) as HostUpdateState | null,
 };
 
 /* ── Studio's host ── */

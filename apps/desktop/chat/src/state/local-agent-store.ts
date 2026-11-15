@@ -16,7 +16,7 @@ import {
   type LocalAgentSessionInfo,
   type RosterAgent,
 } from '@/lib/desktop-bridge';
-import { forgetLocalAgentSessions } from '@/lib/local-agent-run';
+import { forgetLocalAgentSessions, keepCommands, readCommands } from '@/lib/local-agent-run';
 
 export type AgentPick = LocalAgentId;
 
@@ -44,10 +44,14 @@ interface LocalAgentStore extends Persisted {
   /** The option list a session reported, kept for the menu. */
   noteOptions(agent: LocalAgentId, options: ConfigOptions | null): void;
   /** No option list yet: ask for one (a session opened and closed, nothing said, nothing spent). */
-  ensureOptions(agent: LocalAgentId): Promise<void>;
+  /** Ask the agent for its options once; one that failed is asked again only on `retry` (the menu opened, Retry). */
+  ensureOptions(agent: LocalAgentId, opts?: { retry?: boolean }): Promise<void>;
 }
 
 const probing = new Set<LocalAgentId>();
+/** the agents asked for their options since the app started: the ones kept from before are shown until then, but an
+    agent updated since (Claude Code with new models) has other options, so each is asked once a launch */
+const askedThisLaunch = new Set<LocalAgentId>();
 
 const KEY = 'openfilm.local-agents.v2';
 
@@ -159,17 +163,24 @@ export const useLocalAgents = create<LocalAgentStore>((set, get) => ({
     set({ options: { ...get().options, [agent]: options } });
     save(get());
   },
-  async ensureOptions(agent) {
-    /* the own key's are known from Settings (agentOptions) */
-    if (agent === 'byok' || get().options[agent] || probing.has(agent)) return;
+  async ensureOptions(agent, { retry = false } = {}) {
+    /* the own key's are known from Settings (agentOptions); a failed probe is not tried again on every render, each
+       try being a whole session of the agent's */
+    if (agent === 'byok' || probing.has(agent)) return;
+    const kept = Boolean(get().options[agent]);
+    if (kept && askedThisLaunch.has(agent)) return;
+    if (get().optionsError[agent] && !retry) return;
     const api = desktopBridge()?.localAgents;
     if (!api) return;
     probing.add(agent);
+    askedThisLaunch.add(agent);
     set({ optionsError: { ...get().optionsError, [agent]: undefined } });
     try {
       const r = await api.probe(agent).catch((e: unknown) => ({ ok: false as const, error: e instanceof Error ? e.message : String(e) }));
+      if (r.ok && r.info.commands?.length) keepCommands(agent, readCommands({ availableCommands: r.info.commands }));
       if (r.ok && r.info.configOptions?.length) get().noteOptions(agent, r.info.configOptions);
-      else set({ optionsError: { ...get().optionsError, [agent]: r.ok ? 'no options' : r.error } });
+      /* the ones kept from before stay when this launch's ask fails */
+      else if (!kept) set({ optionsError: { ...get().optionsError, [agent]: r.ok ? 'no options' : r.error } });
     } finally {
       probing.delete(agent);
     }
@@ -189,22 +200,29 @@ const AGENT_FORCED_PREFS: Partial<Record<LocalAgentId, Record<string, unknown>>>
   byok: { mode: 'agent-full-access' },
 };
 
+/** picks the menu no longer offers: plan mode (Claude Code's `plan`, Codex's collaboration mode) */
+const DROPPED_PREFS = new Set(['plan', 'collaboration_mode']);
+
 /**
  * The options in effect for an agent: the person's picks, then the ones the app sets. The own key on the Anthropic API
- * runs Claude Code, whose options are Claude Code's (`roster` says which). With the agent's `options` known, an effort
- * the person never picked is High, for every model that has one.
+ * runs Claude Code, whose options are Claude Code's (`roster` says which). What the person never picked here is the
+ * agent's own, as their config has it: the same model and effort as in their terminal.
  */
 export function effectivePrefs(prefs: Persisted['prefs'], agent: LocalAgentId, roster?: RosterAgent[] | null, options?: ConfigOptions): Record<string, unknown> {
   const claudeHarness = agent === 'byok' && roster?.find((a) => a.id === 'byok')?.byok?.format === 'anthropic';
   /* "default" was a row the menu no longer offers (the agents name their default for what it is): the agent's own
-     current value stands instead */
-  /* a model the own key no longer names: its first one stands instead */
+     current value stands instead. A mode picked once (plan mode, offered for a while) is not kept: every agent works
+     with full access. A pick the agent no longer offers (a model gone in its update, one the own key no longer names)
+     is not kept either: the agent's own stands instead */
+  const offers = (id: string, value: unknown) => {
+    const option = options?.find((o) => o.id === id);
+    return !option?.options?.length || option.options.some((o) => o.value === value);
+  };
   const models = agent === 'byok' ? byokModels(roster ?? null) : null;
   const kept = Object.fromEntries(Object.entries(prefs[agent] ?? {})
-    .filter(([id, value]) => value !== 'default' && !(models && id === 'model' && !models.includes(String(value)))));
-  const effort = options?.find((o) => o.category === 'thought_level');
-  const high = effort && !(effort.id in kept) && effort.options?.some((o) => o.value === 'high') ? { [effort.id]: 'high' } : {};
-  return { ...high, ...kept, ...(AGENT_FORCED_PREFS[claudeHarness ? 'claude' : agent] ?? {}) };
+    .filter(([id, value]) => value !== 'default' && !DROPPED_PREFS.has(id) && offers(id, value)
+      && !(models && id === 'model' && !models.includes(String(value)))));
+  return { ...kept, ...(AGENT_FORCED_PREFS[claudeHarness ? 'claude' : agent] ?? {}) };
 }
 
 /** An option's current value (the person's pick first, else the value the session reports). */

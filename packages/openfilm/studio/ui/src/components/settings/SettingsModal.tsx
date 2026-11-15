@@ -2,15 +2,18 @@
  * Settings, opened from the logo at the top left: a search and the sections in groups on the left, the section on the
  * right as a page of titled groups. General (the theme and the language), Agents (in an app with a chat: the agents
  * it can use), Providers (the person's own keys for media services), Models (which provider and model makes each kind
- * of media) and the keyboard shortcuts; the search finds a section by any phrase on it.
+ * of media), the keyboard shortcuts and Developer; the search finds a section by any phrase on it. At the foot of the
+ * nav, quietly, where OpenFilm lives: its code, the examples and the website.
  */
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { X, Settings2, Keyboard, Sun, Moon, Monitor, Plug, Boxes, Bot, Search, SquareTerminal } from 'lucide-react';
+import { X, Settings2, Keyboard, Sun, Moon, Monitor, Plug, Boxes, Bot, Search, SquareTerminal, Loader2 } from 'lucide-react';
 import { LANGUAGES, phrasesUnder, useLanguage, useLanguageChoice, useT, type LanguageChoice } from '@/i18n';
 import { shortcutHint } from '@/lib/shortcut-hint';
 import { SHORTCUTS, type ShortcutKey } from '@/lib/timeline-keys';
-import { studioHost } from '@/lib/host';
+import { studioHost, type HostDeveloper, type HostUpdateState } from '@/lib/host';
+import { showWhatsNew } from '@/lib/whats-new';
+import { hasNotes, newestVersion } from '../WhatsNew';
 import { api, type StudioPrefs, type StudioVersion } from '@/api';
 import { AgentsSection } from './AgentsSection';
 import { ModelsSection } from './ModelsSection';
@@ -21,11 +24,18 @@ import { useThemeMode, type ThemeMode } from './theme';
 
 export type SettingsSection = 'general' | 'agents' | 'providers' | 'models' | 'developer' | 'shortcuts';
 
-/* the nav, in groups: what OpenFilm does (Agents and Developer only inside an app with a chat: lib/host.ts `agents`,
-   `developer`), then help */
+/* the nav, in groups: what OpenFilm does, then help (Agents and Developer only inside an app with a chat:
+   lib/host.ts `agents`, `developer`) */
 const NAV: Array<{ group: 'settings' | 'help'; sections: SettingsSection[] }> = [
-  { group: 'settings', sections: ['general', ...(studioHost?.agents ? ['agents' as const] : []), 'providers', 'models', ...(studioHost?.developer ? ['developer' as const] : [])] },
-  { group: 'help', sections: ['shortcuts'] },
+  { group: 'settings', sections: ['general', ...(studioHost?.agents ? ['agents' as const] : []), 'providers', 'models'] },
+  { group: 'help', sections: ['shortcuts', ...(studioHost?.developer ? ['developer' as const] : [])] },
+];
+
+/** where OpenFilm lives, linked at the foot of the nav */
+const LINKS = [
+  { label: 'settings.links.github', href: 'https://github.com/openfilm/openfilm' },
+  { label: 'settings.links.examples', href: 'https://github.com/openfilm/examples' },
+  { label: 'settings.links.site', href: 'https://openfilm.dev' },
 ];
 
 const SECTION_ICON: Record<SettingsSection, React.ReactNode> = {
@@ -158,6 +168,11 @@ export function SettingsModal({ open, onClose, section: opening }: SettingsModal
             </div>
           ))}
           {found.length === 0 ? <p className="px-2.5 pt-4 text-[14px] text-[var(--text-faint)]">{t('settings.noResults')}</p> : null}
+          <div className="mt-auto flex flex-wrap gap-x-4 gap-y-1 px-2.5 pt-6 text-[13px] text-[var(--text-faint)]">
+            {LINKS.map((link) => (
+              <a key={link.href} href={link.href} target="_blank" rel="noreferrer" className="rounded-[4px] transition hover:text-[var(--text)]">{t(link.label)}</a>
+            ))}
+          </div>
         </nav>
 
         <div className="relative flex min-w-0 flex-1 flex-col">
@@ -223,7 +238,7 @@ function GeneralSection() {
         />
       </SettingsGroup>
       <PlaybackGroup />
-      <AboutGroup />
+      {studioHost?.update?.onState ? <AppAboutGroup /> : <AboutGroup />}
     </SettingsPage>
   );
 }
@@ -238,7 +253,7 @@ function PlaybackGroup() {
   React.useEffect(() => { void api.prefs().then(setPrefs).catch(() => {}); }, []);
   if (!prefs) return null;
   const change = (proxies: Partial<StudioPrefs['proxies']>) => {
-    setPrefs({ proxies: { ...prefs.proxies, ...proxies } });
+    setPrefs({ ...prefs, proxies: { ...prefs.proxies, ...proxies } });
     void api.setPrefs({ proxies }).then(setPrefs).catch(() => {});
   };
   return (
@@ -299,7 +314,9 @@ function AboutGroup() {
         control={inApp || !info?.checking ? null : (
           <SettingsButton disabled={state === 'checking'} onClick={check}>{t('settings.about.check')}</SettingsButton>
         )}
-      />
+      >
+        {hasNotes(info?.version) ? <WhatsNewLink version={info!.version} /> : null}
+      </SettingsItem>
       {!inApp && !info?.source && info?.newer ? (
         <SettingsItem
           title={t('settings.about.howTitle')}
@@ -311,26 +328,129 @@ function AboutGroup() {
   );
 }
 
-/** The app's developer mode: each turn's full log in its chat (lib/host.ts `developer`). */
+/** This release's notes again (components/WhatsNew). */
+function WhatsNewLink({ version }: { version: string }) {
+  const t = useT();
+  return (
+    <button type="button" onClick={() => showWhatsNew([version])}
+      className="mb-2 text-[13.5px] text-[var(--text-muted)] underline underline-offset-2 transition hover:text-[var(--text)]">
+      {t('settings.about.whatsNew')}
+    </button>
+  );
+}
+
+/** A check that answered this long ago is still news: opening About within it looks again only on a click. */
+const CHECKED_FRESH_MS = 10 * 60_000;
+
+/**
+ * The app's version and its update (lib/host.ts `update`), as an app's About shows them: looked for on opening (unless
+ * a check answered a few minutes ago), downloaded by itself with its progress, Restart when it is ready (it installs at
+ * the next quit too). The menu's Check for Updates… stays.
+ */
+function AppAboutGroup() {
+  const t = useT();
+  const language = useLanguage();
+  const update = studioHost?.update;
+  const [state, setState] = React.useState<HostUpdateState | null>(null);
+  const [refused, setRefused] = React.useState<string | null>(null);
+  React.useEffect(() => update?.onState?.(setState), [update]);
+  /* looked for once on opening, when the last answer is old or there is none */
+  const looked = React.useRef(false);
+  React.useEffect(() => {
+    if (!state || looked.current) return;
+    looked.current = true;
+    const stale = state.checkedAt == null || Date.now() - state.checkedAt > CHECKED_FRESH_MS;
+    if (stale && ['idle', 'current', 'error'].includes(state.status)) void update?.check?.();
+  }, [state, update]);
+  const check = () => { setRefused(null); void update?.check?.(); };
+  const restart = () => {
+    setRefused(null);
+    void update?.restart().then((r) => { if (!r.ok && r.error) setRefused(r.error); });
+  };
+  const ago = (at: number) => {
+    const minutes = Math.round((Date.now() - at) / 60_000);
+    const rtf = new Intl.RelativeTimeFormat(language, { numeric: 'auto' });
+    return minutes < 60 ? rtf.format(-minutes, 'minute') : minutes < 48 * 60 ? rtf.format(-Math.round(minutes / 60), 'hour') : rtf.format(-Math.round(minutes / 1440), 'day');
+  };
+  const s = state;
+  const next = s?.availableVersion ?? '';
+  const waiting = refused ?? (s?.status === 'ready' ? s.error : null);
+  const why = waiting === 'agent-busy' ? t('update.agentBusy') : waiting === 'exporting' ? t('update.exporting')
+    : waiting === 'install-failed' ? t('update.installFailed').replace('{version}', next) : null;
+  const errorText = s?.error === 'offline' ? t('settings.about.appOffline') : s?.error === 'unavailable' ? t('settings.about.appUnavailable') : t('settings.about.appFailed');
+  const busy = (text: string) => <span className="inline-flex items-center gap-1.5"><Loader2 size={13} className="animate-spin" aria-hidden />{text}</span>;
+  const description = !s ? null
+    : s.status === 'off' ? t('settings.about.appOff')
+    : s.status === 'idle' || s.status === 'checking' ? busy(t('settings.about.checking'))
+    : s.status === 'current' ? `${t('settings.about.upToDate')}${s.checkedAt ? ` ${t('settings.about.appChecked').replace('{time}', ago(s.checkedAt))}` : ''}`
+    : s.status === 'available' || s.status === 'downloading' ? busy(`${t('settings.about.appDownloading').replace('{version}', next)}${s.status === 'downloading' ? ` ${Math.round(s.progress)}%` : ''}`)
+    : s.status === 'staging' ? busy(t('settings.about.appStaging').replace('{version}', next))
+    : s.status === 'ready' ? (why ?? t('update.ready').replace('{version}', next))
+    : s.status === 'installing' ? busy(t('update.installing'))
+    : errorText;
+  const control = !s ? null
+    : s.status === 'current' ? <SettingsButton onClick={check}>{t('settings.about.check')}</SettingsButton>
+    : s.status === 'error' ? <SettingsButton onClick={check}>{t('settings.about.appRetry')}</SettingsButton>
+    : s.status === 'ready' ? <SettingsButton variant="primary" onClick={restart}>{t('update.restart')}</SettingsButton>
+    : null;
+  return (
+    <SettingsGroup title={t('settings.about.group')}>
+      <SettingsItem
+        title={`OpenFilm ${s?.version ?? ''}`.trim()}
+        badge={s?.channel === 'beta' ? <span className="rounded-full bg-[var(--fill-tsp)] px-2 py-0.5 text-[11.5px] text-[var(--text-muted)]">beta</span> : null}
+        description={description}
+        control={control}
+      >
+        {hasNotes(s?.version) ? <WhatsNewLink version={s!.version} /> : null}
+        {s?.status === 'downloading' ? (
+          <div className="h-1 overflow-hidden rounded-full bg-[var(--fill-tsp)]" role="progressbar" aria-valuenow={Math.round(s.progress)} aria-valuemin={0} aria-valuemax={100}>
+            <div className="h-full rounded-full bg-[var(--text)] transition-[width]" style={{ width: `${Math.max(2, s.progress)}%` }} />
+          </div>
+        ) : null}
+      </SettingsItem>
+    </SettingsGroup>
+  );
+}
+
+/** What the app's chat shows of each turn: what it changed in the files, and its full log (lib/host.ts `developer`). */
 function DeveloperSection() {
   const t = useT();
   const developer = studioHost?.developer;
-  const [on, setOn] = React.useState<boolean | null>(null);
+  const [prefs, setPrefs] = React.useState<HostDeveloper | null>(null);
   React.useEffect(() => {
     if (!developer) return undefined;
-    void developer.get().then(setOn);
-    return developer.onChange(setOn);
+    void developer.get().then(setPrefs);
+    return developer.onChange(setPrefs);
   }, [developer]);
   if (!developer) return null;
+  const change = (next: Partial<HostDeveloper>) => {
+    setPrefs((was) => (was ? { ...was, ...next } : was));
+    void developer.set(next);
+  };
   return (
     <SettingsPage note={t('settings.developer.intro')}>
       <SettingsGroup title={t('settings.developer.group')} footnote={t('settings.developer.where')}>
+        {/* drawn once the app has said whether each is on: drawn off first, a switch slid on each time the page opened */}
+        <SettingsItem
+          title={t('settings.developer.changes')}
+          description={t('settings.developer.changesHint')}
+          control={prefs ? <SettingsSwitch checked={prefs.changes} label={t('settings.developer.changes')} onChange={(on) => change({ changes: on })} /> : null}
+        />
         <SettingsItem
           title={t('settings.developer.logs')}
           description={t('settings.developer.logsHint')}
-          control={<SettingsSwitch checked={on === true} disabled={on === null} label={t('settings.developer.logs')} onChange={(next) => { setOn(next); void developer.set(next); }} />}
+          control={prefs ? <SettingsSwitch checked={prefs.logs} label={t('settings.developer.logs')} onChange={(on) => change({ logs: on })} /> : null}
         />
       </SettingsGroup>
+      {newestVersion() ? (
+        <SettingsGroup title={t('settings.developer.releaseGroup')}>
+          <SettingsItem
+            title={t('settings.developer.previewWhatsNew')}
+            description={t('settings.developer.previewWhatsNewHint').replace('{version}', newestVersion()!)}
+            control={<SettingsButton onClick={() => showWhatsNew([newestVersion()!])}>{t('settings.developer.preview')}</SettingsButton>}
+          />
+        </SettingsGroup>
+      ) : null}
     </SettingsPage>
   );
 }
@@ -347,7 +467,7 @@ function ShortcutsSection() {
   /* a key as this platform writes it: ⌘⇧B on a Mac, Ctrl+Shift+B elsewhere; ⌫ is Backspace off a Mac */
   const keyText = (key: ShortcutKey): string => {
     const name = !mac && key.key === '⌫' ? 'Backspace' : key.key;
-    const mods = [key.mod ? (mac ? '⌘' : 'Ctrl') : '', key.alt ? alt : '', key.shift ? (mac ? '⇧' : 'Shift') : ''].filter(Boolean);
+    const mods = [key.ctrl ? (mac ? '⌃' : 'Ctrl') : '', key.mod ? (mac ? '⌘' : 'Ctrl') : '', key.alt ? alt : '', key.shift ? (mac ? '⇧' : 'Shift') : ''].filter(Boolean);
     return mac ? `${mods.join('')}${name}` : [...mods, name].filter(Boolean).join('+');
   };
 

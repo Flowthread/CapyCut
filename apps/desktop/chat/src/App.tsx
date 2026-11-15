@@ -6,13 +6,14 @@
  * (lib/local-agent-run's saved turns).
  */
 import React from 'react';
-import { ArrowDown, Coins, CornerDownLeft, LibraryBig, Loader2, Play, Plus, ShieldQuestion, Square, X } from 'lucide-react';
+import { ArrowDown, Coins, CornerDownLeft, LibraryBig, Loader2, Play, Plus, ShieldQuestion, Square, SquareSlash, X } from 'lucide-react';
 import { buildPromptDisplay, type Turn } from '@openfilm/shared';
 import { useT } from '@/i18n';
 import { ConversationSessionBar } from '@/components/ConversationSessionBar';
 import { ProjectConversation, primeStoredTranscript } from '@/components/ProjectConversation';
 import { ProjectStarters } from '@/components/ProjectStarters';
 import { ModelPopover } from '@/components/ModelPopover';
+import { ContextMeter } from '@/components/ContextMeter';
 import { CardActions, CardButton, ComposerCard } from '@/components/ComposerCard';
 import { LocalAgentQuestionCard } from '@/components/TurnQuestionCard';
 import { Tooltip } from '@/components/Tooltip';
@@ -20,29 +21,37 @@ import { StickToBottomContext, useStickToBottom, useTailSpacer } from '@/compone
 import { PromptEditor, PromptPill, PromptPillHoverContext, PromptPillRevealContext, fileReferenceId, fileReferencePath, promptReferenceToken, resolvePromptReferences, splitPromptReferenceText, type MentionProvider, type PromptEditorHandle, type PromptEditorState, type PromptPillHover, type PromptReference } from '@/components/prompt-editor';
 import { filesFromTransfer, transferHasFiles } from '@/lib/composer-attachments';
 import { attachmentIcon } from '@/lib/project-resources';
-import { attachedText, attachmentBlocker, formatFileSize, turnAttachments, useDesktopAttachments } from '@/lib/desktop-attachments';
+import { attachedPictures, attachedText, attachmentBlocker, formatFileSize, turnAttachments, useDesktopAttachments } from '@/lib/desktop-attachments';
 import { deriveProjectTurns } from '@/lib/project-versions';
 import { makePlaceholder, mergeAssetLists } from '@/lib/asset-lists';
 import {
   answerLocalAgentPermission,
   answerLocalAgentQuestion,
   cancelLocalAgentTurn,
+  canSteer,
   createLocalAgentTurn,
   finishRunningLocalTurn,
   loadLocalAgentTurns,
+  localAgentTurn,
   makeLocalAgentTurnId,
+  onUnpromptedTurn,
   recoverLocalAgentTurns,
   registerRunningLocalTurn,
   runLocalAgentTurn,
   runningLocalTurns,
+  recoverLoggedTurns,
+  restingItems,
   saveLocalAgentTurn,
+  steerLocalAgentTurn,
+  useAgentCommands,
+  useAgentContext,
   useLocalAgentTurn,
   type LocalAgentTurn,
   type LocalTranscriptStore,
 } from '@/lib/local-agent-run';
-import type { LocalAgentTurnMeta, PromptImage } from '@/lib/desktop-bridge';
+import type { LocalAgentId, LocalAgentTurnMeta, PromptImage } from '@/lib/desktop-bridge';
 import { referencePictures } from '@/lib/ref-pictures';
-import { diffFilms, type TurnFilmChanges } from '@/lib/film-changes';
+import type { TurnFileChanges } from '@/lib/file-changes';
 import { readBalance, type TurnBalance } from '@/lib/balance';
 import { BalanceNotice } from '@/components/BalanceNotice';
 import { readStudioFilm } from '@/lib/studio-film';
@@ -63,6 +72,9 @@ const NO_ITEMS: TranscriptItem[] = [];
 const EMPTY_STORE: LocalTranscriptStore = { get: () => NO_ITEMS, subscribe: () => () => {} };
 
 const isActive = (turn: Turn | undefined) => turn?.status === 'generating' || turn?.status === 'failing' || turn?.status === 'canceling';
+
+/** how often a running turn is kept, at most (it changes with every word) */
+const KEEP_RUNNING_MS = 1500;
 
 /** On a video's thumbnail: it plays, it is not a picture. */
 function PlayMark() {
@@ -196,6 +208,8 @@ function ChatPane({ project, banners, selection, assetsOpen }: { project: Projec
           }
         }).finally(() => { r.ack(); bump(); });
       }
+      /* then the turns only the logs have (the app closed on them before they were kept): made again, and shown */
+      return recoverLoggedTurns(projectKey).then((made) => { if (made) bump(); });
     });
     // settleLocalTurn only reads stable setters
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -222,6 +236,8 @@ function ChatPane({ project, banners, selection, assetsOpen }: { project: Projec
 
   /* ── the composer ── */
   const thread = useStickToBottom();
+  /* scrolled away from the conversation's start: what passes under the session bar fades into it */
+  const [scrolled, setScrolled] = React.useState(false);
   const tail = useTailSpacer(thread.viewport, thread.pinIfFollowing, active);
   const composerRef = React.useRef<PromptEditorHandle>(null);
   /* the composer and what stands on it (a question, a permission): its height, with the 6 px under the pane, is all
@@ -248,6 +264,8 @@ function ChatPane({ project, banners, selection, assetsOpen }: { project: Projec
   /** files of the project pointed at with @ (their pills turn back into their paths when sent) */
   const [fileRefs, setFileRefs] = React.useState<PromptReference[]>([]);
   const followUpFilled = followUp.trim().length > 0;
+  /* the composer's button stops the turn while it runs, until something is written to send */
+  const stopping = active && !followUpFilled;
   const composerPills = React.useMemo(
     () => [...[...studioRefs.entries()].map(([id, ref]) => refPill(id, ref)), ...fileRefs],
     [studioRefs, fileRefs],
@@ -277,6 +295,28 @@ function ChatPane({ project, banners, selection, assetsOpen }: { project: Projec
     });
     return pills;
   }, []);
+  /* how full the agent's context is in this conversation */
+  const agentContext = useAgentContext(projectKey, sessionId, agent);
+  /* the agent's own commands, a `/` at the start of the message, as in its own chat: they go as typed */
+  const agentCommands = useAgentCommands(agent);
+  const commandMenu = React.useMemo(() => (agentCommands.length ? {
+    label: t('composer.commands'),
+    providers: [{
+      id: 'commands',
+      groupLabel: t('composer.commands'),
+      items: agentCommands.map((c) => ({
+        id: `command:${c.name}`,
+        kind: 'file' as const,
+        icon: SquareSlash,
+        label: `/${c.name}`,
+        /* what it does, cut to the row */
+        ...(c.description ? { detail: c.description, describes: true } : {}),
+        /* found by its name, as in the agent's own chat (its description would put a word in it first) */
+        keywords: [c.name],
+        select: () => ({ text: `/${c.name}` }),
+      })),
+    }],
+  } : undefined), [agentCommands, t]);
   const mentionProviders = React.useMemo<MentionProvider[]>(() => {
     const picked = selection?.refs ?? [];
     const range = selection ? selectionRange(selection) : null;
@@ -396,11 +436,37 @@ function ChatPane({ project, banners, selection, assetsOpen }: { project: Projec
   React.useEffect(() => { app.draftRefsInStudio(draft); }, [draftKey]); // eslint-disable-line react-hooks/exhaustive-deps
   React.useEffect(() => () => { app.draftRefsInStudio([]); app.highlightInStudio(null); }, []);
 
+  /** each open turn's way to settle (by turn id), and the agent's run each running turn belongs to */
+  const settlers = React.useRef(new Map<string, (patch: Partial<Turn & TurnBalance>) => void>());
+  const runs = React.useRef(new Map<string, Promise<unknown>>());
+  /** the conversation shown now (a turn opened in another is kept, not shown) */
+  const shownSession = React.useRef(sessionId);
+  shownSession.current = sessionId;
+
+  /* the agent working with nobody having written, in a conversation of this project: a background task of its own came
+     back, and it takes it up, as in its own chat. A turn of its own, under a line saying so */
+  const openTurnNow = React.useRef(openTurn);
+  openTurnNow.current = openTurn;
+  React.useEffect(() => onUnpromptedTurn(({ projectId, conversation, agent: by }) => {
+    if (projectId !== projectKey) return null;
+    const id = makeLocalAgentTurnId();
+    const opened = openTurnNow.current(id, '', null, [], { conversation, by, origin: 'background' });
+    return { turn: opened.turn, meta: opened.meta, done: () => settlers.current.get(id)?.({ status: 'ready' }) };
+  }), [projectKey]);
+
   /**
-   * Start one turn with the person's own agent. The turn shows at
-   * once; what the agent is sent (`prepared`: the text, and the references' pictures) may take a moment to make.
+   * One turn of the conversation: shown at once, kept, and settled by `settlers` when the agent is done with it. The
+   * project's files are read as it opens (`ready`), so what it changed in them is shown under its reply.
    */
-  function startTurn(id: string, instruction: string, prepared: Promise<{ text: string; images: PromptImage[] }>, promptDisplay: Turn['promptDisplay'] | null, attachments: Turn['attachments'] = []): void {
+  function openTurn(
+    id: string, instruction: string, promptDisplay: Turn['promptDisplay'] | null, attachments: Turn['attachments'] = [],
+    /* a turn the agent started by itself (a background task of its own came back): in its own conversation, maybe not
+       the one shown, by the agent of that session */
+    { conversation = sessionId, by = agent, origin }: { conversation?: string; by?: LocalAgentId; origin?: 'background' } = {},
+  ): { turn: LocalAgentTurn; meta: LocalAgentTurnMeta; prefs: Record<string, unknown>; ready: Promise<boolean> } {
+    const agent = by;
+    const sessionId = conversation;
+    const shown = conversation === shownSession.current;
     const turn = createLocalAgentTurn(id, agent, ordered.length);
     const agentStore = useLocalAgents.getState();
     const options = agentOptions(agentStore, agent);
@@ -415,8 +481,9 @@ function ChatPane({ project, banners, selection, assetsOpen }: { project: Projec
       ...(promptDisplay ? { promptDisplay } : {}),
       ...(attachments?.length ? { attachments } : {}),
       localAgent: { id: agent, model: modelLabel || null },
-    };
-    setTurns((list) => mergeAssetLists([started], list));
+      ...(origin ? { origin } : {}),
+    } as Turn;
+    if (shown) setTurns((list) => mergeAssetLists([started], list));
     /* the conversation is named by the words: a reference reads as its name there, not as "[1: name]" */
     const title = instruction.replace(/\[\d+: ([^\]]*)\]/g, '$1').replace(/\s+/g, ' ').trim().slice(0, 80);
     touchSession(sessionId, (s) => ({ title: s.title || title, turns: s.turns + 1 }));
@@ -425,22 +492,50 @@ function ChatPane({ project, banners, selection, assetsOpen }: { project: Projec
       turnNo: ordered.length, startedAt: Date.now(), turn: started,
     };
     registerRunningLocalTurn({ id, projectId: projectKey, projectTitle: project.name, sessionId, agent, prompt: instruction, startedAt: meta.startedAt, turn: started });
-    /* the film as the turn found it; once the turn settles, what it changed is kept with it and told under its reply.
-       The turn settles first: reading the film again is not worth keeping the person waiting for */
-    const filmBefore = readStudioFilm(project.id);
-    const settle = (patch: Partial<Turn & TurnBalance>) => {
+    /* the project's files as the turn found them (read before the agent is sent anything); once the turn settles,
+       what it changed in them is kept with it and shown under its reply. The turn settles first: comparing the files
+       is not worth keeping the person waiting for */
+    const ready = app.chat.snapshot(project.path, id).then(() => true, () => false);
+    /* kept as it goes, not only once it ends: the app closed (or crashed) on a turn, it is still there, read back as
+       interrupted, what it did so far shown and the next message going on from there */
+    let keeping: ReturnType<typeof setTimeout> | null = null;
+    const keep = () => { keeping = null; if (settlers.current.has(id)) saveLocalAgentTurn(meta.projectId, { ...started, updatedAt: new Date().toISOString() }, restingItems(turn.items)); };
+    const stopKeeping = turn.store.subscribe(() => { keeping ??= setTimeout(keep, KEEP_RUNNING_MS); });
+    settlers.current.set(id, (patch) => {
+      settlers.current.delete(id);
+      if (keeping) clearTimeout(keeping);
+      stopKeeping();
       const done = settleLocalTurn(meta, turn, patch);
-      void filmBefore.then(async (before) => {
-        const after = before ? await readStudioFilm(project.id) : null;
-        const filmChanges = before && after ? diffFilms(before, after) : [];
-        if (!filmChanges.length) return;
-        const kept: Turn & TurnFilmChanges = { ...done, filmChanges };
+      void ready.then(async (taken) => {
+        const found = taken ? await app.chat.changes(project.path, id).catch(() => null) : null;
+        const fileChanges = found?.files ?? [];
+        if (!fileChanges.length) return;
+        const kept: Turn & TurnFileChanges = { ...done, fileChanges };
         saveLocalAgentTurn(meta.projectId, kept, turn.items);
-        setTurns((list) => list.map((item) => (item.id === id ? { ...item, filmChanges } : item)));
+        setTurns((list) => list.map((item) => (item.id === id ? { ...item, fileChanges } : item)));
       });
+    });
+    keep();
+    return { turn, meta, prefs, ready };
+  }
+
+  /**
+   * Send a turn to the agent: what it is sent (`prepared`: the text, and the pictures) may take a moment to make. It
+   * settles the turn the agent's run ends on: this one, or the last message sent into it while it ran (steerTurn).
+   */
+  function runTurn(opened: ReturnType<typeof openTurn>, prepared: Promise<{ text: string; images: PromptImage[] }>): void {
+    const { turn, meta, prefs, ready } = opened;
+    const id = meta.turnId;
+    const finish = (lastTurnId: string | undefined, patch: Partial<Turn & TurnBalance>) => {
+      settlers.current.get(lastTurnId ?? id)?.(patch);
+      settlers.current.get(id)?.(patch);
     };
-    void prepared.then(({ text, images }) => runLocalAgentTurn({
+    /* the agent's own session of this conversation, gone on with (after a restart too); a new one is kept for next time */
+    const resume = sessions.find((s) => s.id === sessionId)?.agentSessions?.[agent] ?? null;
+    const run = Promise.all([prepared, ready]).then(([{ text, images }]) => runLocalAgentTurn({
       projectId: projectKey,
+      conversation: sessionId,
+      resume,
       agent,
       cwd: project.path,
       text,
@@ -448,23 +543,50 @@ function ChatPane({ project, banners, selection, assetsOpen }: { project: Projec
       turn,
       options: prefs,
       meta,
-      onSessionInfo: (info) => useLocalAgents.getState().noteOptions(agent, info.configOptions),
+      onSessionInfo: (info) => {
+        useLocalAgents.getState().noteOptions(agent, info.configOptions);
+        if (info.sessionId && info.sessionId !== resume) {
+          touchSession(sessionId, (s) => ({ agentSessions: { ...s.agentSessions, [agent]: info.sessionId } }));
+        }
+      },
     })).then(
-      ({ stopReason }) => settle(stopReason === 'cancelled' ? { status: 'cancelled', cancelReason: 'user' } : { status: 'ready' }),
+      ({ stopReason, lastTurnId }) => finish(lastTurnId, stopReason === 'cancelled' ? { status: 'cancelled', cancelReason: 'user' } : { status: 'ready' }),
       (error: unknown) => {
         /* the ACP adapter wraps the agent's own message as JSON-RPC "Internal error: …": the message is the reason */
         const reason = (error instanceof Error ? error.message : String(error)).replace(/^Internal error:\s*/i, '').trim() || String(error);
         /* the service the app's own agent runs on has no balance left: said as such, with its page, not as an error */
         const balance = readBalance((error as { balance?: unknown } | null)?.balance);
-        turn.patch(balance ? { balance } : { error: reason });
-        settle({ status: 'error', error: reason, ...(balance ? { balance } : {}) });
+        const lastTurnId = (error as { lastTurnId?: string } | null)?.lastTurnId;
+        (localAgentTurn(lastTurnId ?? id) ?? turn).patch(balance ? { balance } : { error: reason });
+        finish(lastTurnId, { status: 'error', error: reason, ...(balance ? { balance } : {}) });
       },
-    );
+    ).finally(() => { runs.current.delete(id); });
+    runs.current.set(id, run);
+  }
+
+  /**
+   * A message sent while a turn runs, as in the agent's own chat: into that turn, the agent reading it at its next step
+   * (an agent that takes steering). It shows as a turn of its own, what the agent says from then on under it, and the
+   * running one is done. One that did not join (the turn ended meanwhile) is sent once that run ends.
+   */
+  function steerTurn(fromId: string, opened: ReturnType<typeof openTurn>, prepared: Promise<{ text: string; images: PromptImage[] }>): void {
+    /* the agent's run going now (one at a time in a conversation): a message that did not join waits for it */
+    const run = [...runs.current.values()].at(-1) ?? Promise.resolve();
+    void Promise.all([prepared, opened.ready]).then(async ([{ text, images }]) => {
+      if (await steerLocalAgentTurn(fromId, opened.turn, text, images)) {
+        settlers.current.get(fromId)?.({ status: 'ready' });
+        return;
+      }
+      await run.catch(() => {});
+      runTurn(opened, Promise.resolve({ text, images }));
+    });
   }
 
   function submitFollowUp(): void {
     if (!followUpFilled) return;
-    if (active) { setQueued(true); return; }
+    /* while a turn runs: into it, for an agent that takes that; else it waits for the turn to end */
+    const steer = active && asset ? canSteer(asset.id) : false;
+    if (active && !steer) { setQueued(true); return; }
     setQueued(false);
     /* the sentence as the agent reads it: a pill becomes "[n: name]", and what each number is follows, in a block */
     const used: StudioRef[] = [];
@@ -492,11 +614,13 @@ function ChatPane({ project, banners, selection, assetsOpen }: { project: Projec
     const stage = selection?.stage ?? null;
     /* each reference's picture is kept in the project for the agent (the block names it), and sent to one that takes pictures */
     const prepared = referencePictures(refs, { project: project.path, turnId: id })
-      .then(({ pictures, images }) => ({ text: said + studioReferencesText(refs, { stage, pictures }), images }));
-    startTurn(id, instruction, prepared, promptDisplay ?? null, turnAttachments(files));
+      .then(({ pictures, images }) => ({ text: said + studioReferencesText(refs, { stage, pictures }), images: [...attachedPictures(files), ...images] }));
+    const opened = openTurn(id, instruction, promptDisplay ?? null, turnAttachments(files));
+    if (steer && asset) steerTurn(asset.id, opened, prepared);
+    else runTurn(opened, prepared);
   }
 
-  /* queued while the turn ran: sent as soon as it ends */
+  /* queued while the turn ran (an agent that cannot take a message mid-turn): sent as soon as it ends */
   React.useEffect(() => { if (queued && !active) submitFollowUp(); }, [queued, active]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const onNewSession = () => {
@@ -610,17 +734,19 @@ function ChatPane({ project, banners, selection, assetsOpen }: { project: Projec
               contentClassName="text-[14px] leading-[22px] text-[var(--chat-text)]"
               onPasteFiles={(files) => composerFiles.add(files)}
               mentions={{ providers: mentionProviders, label: t('mention.menu'), onOpen: loadMentionFiles }}
+              commands={commandMenu}
             />
           </div>
-          <Tooltip label={active ? t('project.stop') : t('project.sendFollowUp')} shortcut={active ? 'Esc' : 'Enter'}>
+          {/* while it works: Stop, or Send once something is written (it goes into the turn, or after it); Esc stops */}
+          <Tooltip label={stopping ? t('project.stop') : t('project.sendFollowUp')} shortcut={stopping ? 'Esc' : 'Enter'}>
             <button
               type="button"
-              onClick={active ? () => { if (asset) void cancelLocalAgentTurn(asset.id); } : submitFollowUp}
-              disabled={active ? false : !followUpFilled}
+              onClick={stopping ? () => { if (asset) void cancelLocalAgentTurn(asset.id); } : submitFollowUp}
+              disabled={stopping ? false : !followUpFilled}
               className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-[6px] text-[var(--text-dim)] transition-colors duration-150 hover:bg-[var(--bg-hover)] hover:text-[var(--text)] disabled:cursor-not-allowed disabled:text-[var(--text-faint)] disabled:hover:bg-transparent"
-              aria-label={active ? t('project.stop') : t('project.sendFollowUp')}
+              aria-label={stopping ? t('project.stop') : t('project.sendFollowUp')}
             >
-              {active ? <Square size={14} /> : <CornerDownLeft size={14} />}
+              {stopping ? <Square size={14} /> : <CornerDownLeft size={14} />}
             </button>
           </Tooltip>
         </div>
@@ -628,6 +754,7 @@ function ChatPane({ project, banners, selection, assetsOpen }: { project: Projec
       <div className="flex items-center gap-0.5 px-0.5">
         <ModelPopover placement="top" align="start" />
         <div className="min-w-0 flex-1" />
+        <ContextMeter context={agentContext} />
         <input
           ref={attachInputRef}
           type="file"
@@ -677,9 +804,11 @@ function ChatPane({ project, banners, selection, assetsOpen }: { project: Projec
                   busy={active}
                 />
                 <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+                  {/* the first message well below the session bar, as a chat app opens a conversation */}
                   <div
                     ref={thread.viewportRef}
-                    className={`flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden [overflow-anchor:none] [scrollbar-gutter:stable] px-4 pt-3.5${blank ? ' justify-center pb-3.5' : ' pb-10'}`}
+                    onScroll={(event) => setScrolled(event.currentTarget.scrollTop > 2)}
+                    className={`flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden [overflow-anchor:none] [scrollbar-gutter:stable] px-4${blank ? ' justify-center py-3.5' : ' pt-8 pb-10'}`}
                   >
                     {blank ? (
                       <div ref={thread.contentRef}>
@@ -703,6 +832,7 @@ function ChatPane({ project, banners, selection, assetsOpen }: { project: Projec
                       </div>
                     )}
                   </div>
+                  <div aria-hidden className={`pointer-events-none absolute inset-x-0 top-0 h-6 bg-gradient-to-b from-[var(--dock-pane)] to-transparent transition-opacity duration-150 ${scrolled && !blank ? 'opacity-100' : 'opacity-0'}`} />
                   <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-[var(--dock-pane)] to-transparent" />
                   {!blank && !thread.atBottom && (
                     <button
