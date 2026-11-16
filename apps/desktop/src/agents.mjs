@@ -28,7 +28,7 @@ import { execFile, spawn } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { arch, homedir, release, tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
-import { dirname, isAbsolute, join } from 'node:path';
+import { dirname, isAbsolute, join, win32 } from 'node:path';
 import { Readable, Writable } from 'node:stream';
 import { fileURLToPath } from 'node:url';
 import * as acp from '@agentclientprotocol/sdk';
@@ -464,6 +464,18 @@ export function powerShellLine(title, line) {
 const psq = (s) => `'${String(s).replace(/'/g, "''")}'`;
 
 /**
+ * How a PowerShell window of its own is opened on Windows for a script file: through cmd.exe's `start`, which gives
+ * it a console. Started straight from the app, `detached` makes it a DETACHED_PROCESS with no console at all, and
+ * PowerShell quits at once without running the script.
+ */
+export function powerShellWindowLaunch(file, { comSpec = process.env.ComSpec || 'cmd.exe', systemRoot = process.env.SystemRoot ?? 'C:\\Windows' } = {}) {
+  /* a Windows path wherever it is worked out (the tests run on every system) */
+  const powershell = win32.join(systemRoot, 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
+  const line = ['start', '""', ...[powershell, '-NoLogo', '-NoExit', '-ExecutionPolicy', 'Bypass', '-File', file].map(winArg)].join(' ');
+  return { cmd: comSpec, args: ['/d', '/s', '/c', `"${line}"`], options: { windowsVerbatimArguments: true, windowsHide: true } };
+}
+
+/**
  * A PowerShell window of its own running a script (a sign-in, an installer), left open so what it says can be read
  * and answered.
  */
@@ -472,10 +484,8 @@ async function powerShellWindow(name, script, env) {
   mkdirSync(dir, { recursive: true });
   const file = join(dir, name);
   writeFileSync(file, script, 'utf8');
-  const powershell = join(process.env.SystemRoot ?? 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
-  const child = spawn(powershell, ['-NoLogo', '-NoExit', '-ExecutionPolicy', 'Bypass', '-File', file], {
-    cwd: dir, detached: true, stdio: 'ignore', windowsHide: false, env,
-  });
+  const how = powerShellWindowLaunch(file);
+  const child = spawn(how.cmd, how.args, { cwd: dir, detached: true, stdio: 'ignore', env, ...how.options });
   await new Promise((done, fail) => { child.once('spawn', done); child.once('error', fail); });
   child.unref();
 }
