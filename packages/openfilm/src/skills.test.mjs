@@ -1,9 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { cpSync, mkdirSync, mkdtempSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, writeFileSync, existsSync, readFileSync, symlinkSync, lstatSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { addSkills, findSkill, listSkills, migrateMySkills, mySkillsDir, parseSkillFile, readSkill, removeSkill, skillOrigins, skillText } from './skills.mjs';
+import { addSkills, findSkill, listSkills, migrateMySkills, mySkillsDir, parseSkillFile, readSkill, removeSkill, setSkillCover, skillOrigins, skillText } from './skills.mjs';
 import { commitSkills, discardSkills, previewFolder, previewSkills, skillCommand, skillsCommand } from './skills-cli.mjs';
 
 const skill = (dir, name, description, body = 'How to make it.', extra = {}) => {
@@ -15,6 +15,68 @@ const skill = (dir, name, description, body = 'How to make it.', extra = {}) => 
   }
   return dir;
 };
+
+const coverPng = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=';
+
+test('cover edits do not follow a personal skill folder outside its library or write through metadata symlinks', () => {
+  const root = mkdtempSync(join(tmpdir(), 'of-skill-cover-links-'));
+  const mine = join(root, 'mine');
+  mkdirSync(mine);
+  const outside = skill(join(root, 'outside'), 'linked', 'Outside');
+  symlinkSync(outside, join(mine, 'linked'), 'junction');
+  assert.throws(() => setSkillCover('linked', coverPng, { mine }), /inside your skills folder/);
+  assert.equal(existsSync(join(outside, 'openfilm.json')), false);
+  const own = skill(join(mine, 'own'), 'own', 'Own');
+  const metadata = join(root, 'shared.json');
+  writeFileSync(metadata, '{"custom":"original"}');
+  /* A file symlink needs privileges on Windows; the folder-junction boundary above still runs there. */
+  if (process.platform === 'win32') return;
+  symlinkSync(metadata, join(own, 'openfilm.json'));
+  setSkillCover('own', coverPng, { mine });
+  assert.equal(readFileSync(metadata, 'utf8'), '{"custom":"original"}');
+  assert.equal(lstatSync(join(own, 'openfilm.json')).isSymbolicLink(), false);
+  setSkillCover('own', null, { mine });
+  assert.deepEqual(JSON.parse(readFileSync(join(own, 'openfilm.json'), 'utf8')), { custom: 'original' });
+});
+
+test('a chosen cover is kept with the copied skill, preserving its metadata and source', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'of-skill-cover-'));
+  const meta = { title: { en: 'A title' }, kind: 'style', custom: 'kept' };
+  const from = skill(join(root, 'source'), 'covered', 'Covered skill', 'Steps', { 'openfilm.json': JSON.stringify(meta) });
+  const [kept] = await addSkills(from, { mine: join(root, 'mine'), covers: { covered: coverPng } });
+  assert.ok(kept.cover);
+  assert.deepEqual(readFileSync(join(kept.folder, kept.cover)), Buffer.from(coverPng.split(',')[1], 'base64'));
+  const saved = JSON.parse(readFileSync(join(kept.folder, 'openfilm.json'), 'utf8'));
+  assert.deepEqual(saved, { ...meta, cover: kept.cover });
+  assert.deepEqual(JSON.parse(readFileSync(join(from, 'openfilm.json'), 'utf8')), meta);
+  assert.equal(existsSync(join(from, kept.cover)), false);
+  assert.equal(readSkill(kept.folder, 'mine').cover, kept.cover, 'cover persists when read again');
+});
+
+test('covers follow each skill through a fetched collection; unselected covers remain unchanged', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'of-skill-covers-'));
+  const mine = join(root, 'mine');
+  const { staging } = await previewSkills('https://github.com/x/y', { mine, fetch: async (_url, into) => {
+    const pack = join(into, 'pack');
+    skill(join(pack, 'one'), 'one', 'One');
+    skill(join(pack, 'two'), 'two', 'Two', 'Steps', { 'openfilm.json': '{"cover":"original.png"}', 'original.png': Buffer.from(coverPng.split(',')[1], 'base64') });
+    return pack;
+  } });
+  const kept = await commitSkills(staging, { mine, covers: { one: coverPng } });
+  assert.ok(kept.find(s => s.name === 'one').cover);
+  assert.equal(kept.find(s => s.name === 'two').cover, 'original.png');
+});
+
+test('invalid cover data is rejected before replacing an existing skill', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'of-skill-bad-cover-'));
+  const mine = join(root, 'mine');
+  const from = skill(join(root, 'from'), 'same', 'New');
+  const previous = skill(join(mine, 'same'), 'same', 'Original');
+  for (const data of ['data:image/svg+xml;base64,PHN2Zy8+', 'data:image/png;base64,bm90IGEgcG5n', `data:image/png;base64,${'A'.repeat(7 * 1024 * 1024)}`]) {
+    await assert.rejects(addSkills(from, { mine, covers: { same: data } }), /Skill cover (must|exceeds|does)/);
+    assert.equal(readSkill(previous, 'mine').description, 'Original');
+  }
+});
 
 test('a SKILL.md front matter: plain, quoted and block values; the body after it', () => {
   const { fields, body } = parseSkillFile([
@@ -233,4 +295,22 @@ test('where the person\'s skills came from: a folder, or the address commitSkill
   await removeSkill('cards', { mine });
   assert.equal(skillOrigins(mine).cards, undefined);
   assert.ok(skillOrigins(mine).lyrics);
+});
+
+test("a cover's format is what its bytes are, and a cover chosen before goes when it is replaced; the skill's own picture stays", () => {
+  const root = mkdtempSync(join(tmpdir(), 'of-skill-cover-swap-'));
+  const mine = join(root, 'mine');
+  skill(join(mine, 'own'), 'own', 'Own', 'Steps', { 'openfilm.json': '{"cover":"original.png"}', 'original.png': Buffer.from(coverPng.split(',')[1], 'base64') });
+  /* a JPEG the browser called a PNG, from its file's name */
+  const jpeg = `data:image/png;base64,${Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46]).toString('base64')}`;
+  const first = setSkillCover('own', jpeg, { mine }).cover;
+  assert.match(first, /^openfilm-cover-.+\.jpg$/);
+  const second = setSkillCover('own', coverPng, { mine }).cover;
+  assert.match(second, /\.png$/);
+  assert.equal(existsSync(join(mine, 'own', first)), false, 'the cover chosen before is gone');
+  assert.equal(existsSync(join(mine, 'own', 'original.png')), true);
+  assert.equal(setSkillCover('own', null, { mine }).cover, undefined);
+  assert.equal(existsSync(join(mine, 'own', second)), false);
+  assert.equal(existsSync(join(mine, 'own', 'original.png')), true, 'a picture of the skill\'s own stays');
+  assert.throws(() => setSkillCover('own', `data:image/png;base64,${Buffer.from('GIF89a......').toString('base64')}`, { mine }), /PNG, JPEG or WebP/);
 });

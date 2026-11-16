@@ -18,12 +18,14 @@
  * `openfilm skills` lists them and `openfilm skill <name>` prints one, as `openfilm` prints the manual: that is how any
  * agent reads a skill. The desktop app's chat offers the same list (apps/desktop).
  */
-import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { cp, mkdir, rename, rm } from 'node:fs/promises';
 import { homedir } from 'node:os';
-import { basename, dirname, join, resolve } from 'node:path';
+import { basename, dirname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { randomUUID } from 'node:crypto';
 import { moveToTrash } from '../studio/server/trash.mjs';
+import { pictureType } from '../studio/server/cover.mjs';
 import { libraryDefault } from './locations.mjs';
 
 const mkdirSyncSafe = (/** @type {string} */ dir) => mkdirSync(dir, { recursive: true });
@@ -260,15 +262,17 @@ export function skillText(skill) {
  * `from` (a GitHub or GitLab address, studio/server/fetch-repo.mjs). A folder holding several skills (each a folder
  * with a SKILL.md) adds them all. One of the same name is replaced. → the skills added.
  * Where each came from is kept beside them (skillOrigins).
- * @param {string} from @param {{ mine?: string, move?: boolean, origin?: SkillOrigin }} [opts]  `move`: the folder is a
+ * @param {string} from @param {{ mine?: string, move?: boolean, origin?: SkillOrigin, covers?: Record<string, string> }} [opts]  `move`: the folder is a
  *   download of the caller's; `origin`: where it came from (default: the folder)
  * @returns {Promise<Skill[]>}
  */
-export async function addSkills(from, { mine = mySkillsDir(), move = false, origin = { from: 'folder', address: resolve(from) } } = {}) {
+export async function addSkills(from, { mine = mySkillsDir(), move = false, origin = { from: 'folder', address: resolve(from) }, covers = {} } = {}) {
   const src = resolve(from);
   const one = readSkill(src, 'mine');
   const found = one ? [one] : skillsIn(src, 'mine').concat(skillsIn(join(src, PROJECT_SKILLS), 'mine'));
   if (!found.length) throw new Error(`There is no ${SKILL_FILE} in ${from}: it is not a skill.`);
+  /* Validate all chosen covers before moving or replacing any skill. */
+  const pictures = new Map(found.filter((s) => Object.hasOwn(covers, s.name)).map((s) => [s.name, coverPicture(covers[s.name])]));
   await mkdir(mine, { recursive: true });
   /** @type {Skill[]} */
   const added = [];
@@ -279,6 +283,8 @@ export async function addSkills(from, { mine = mySkillsDir(), move = false, orig
     await rm(staging, { recursive: true, force: true });
     if (move && found.length === 1) await rename(skill.folder, staging);
     else await cp(skill.folder, staging, { recursive: true, filter: (p) => basename(p) !== '.git' });
+    const picture = pictures.get(skill.name);
+    if (picture) writeSkillCover(staging, picture);
     /* one of the same name is replaced: the one there goes to the trash, never deleted */
     if (existsSync(to)) await moveToTrash(to);
     await rename(staging, to);
@@ -287,6 +293,62 @@ export async function addSkills(from, { mine = mySkillsDir(), move = false, orig
   }
   noteOrigins(mine, Object.fromEntries(added.map((k) => [basename(k.folder), { ...origin, added: new Date().toISOString() }])));
   return added;
+}
+
+/**
+ * A chosen raster picture, bounded before decoding; never an SVG or an arbitrary file. Its format is what its bytes
+ * are, whatever type the browser gave it from the file's name (a JPEG named .png is still a JPEG). @param {string} data
+ */
+function coverPicture(data) {
+  if (typeof data !== 'string' || data.length > 7 * 1024 * 1024) throw new Error('Skill cover exceeds 5 MB.');
+  const match = /^data:image\/[a-z0-9.+-]+;base64,([A-Za-z0-9+/]+={0,2})$/.exec(data);
+  if (!match) throw new Error('Skill cover must be a PNG, JPEG or WebP image.');
+  const bytes = Buffer.from(match[1], 'base64');
+  if (bytes.length > 5 * 1024 * 1024) throw new Error('Skill cover exceeds 5 MB.');
+  const extension = pictureType(bytes);
+  if (extension !== 'png' && extension !== 'jpg' && extension !== 'webp') throw new Error('Skill cover must be a PNG, JPEG or WebP image.');
+  return { bytes, extension };
+}
+
+/* the name a cover chosen in OpenFilm is saved under: only such a file is removed when the cover changes */
+const CHOSEN_COVER = /^openfilm-cover-[0-9a-f-]{36}\.(?:png|jpg|webp)$/;
+
+/** Replace the metadata atomically. The previous cover's file goes only when OpenFilm saved it (CHOSEN_COVER); a
+ * picture of the skill's own stays, as its content may use it.
+ * @param {string} folder @param {{ bytes: Buffer, extension: string } | null} picture */
+function writeSkillCover(folder, picture) {
+  const metadataFile = join(folder, 'openfilm.json');
+  /** @type {Record<string, unknown>} */
+  let metadata = {};
+  try { metadata = JSON.parse(readFileSync(metadataFile, 'utf8')); } catch (e) {
+    if (/** @type {any} */ (e).code !== 'ENOENT') throw new Error('Cannot update the skill\'s openfilm.json.', { cause: e });
+  }
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) throw new Error('Cannot update the skill\'s openfilm.json.');
+  const previous = metadata.cover;
+  const file = picture ? `openfilm-cover-${randomUUID()}.${picture.extension}` : null;
+  const temporary = join(folder, `.openfilm-${randomUUID()}.json`);
+  let wrotePicture = false;
+  try {
+    if (picture && file) { writeFileSync(join(folder, file), picture.bytes, { flag: 'wx' }); wrotePicture = true; metadata.cover = file; }
+    else delete metadata.cover;
+    writeFileSync(temporary, `${JSON.stringify(metadata, null, 2)}\n`, { flag: 'wx' });
+    /* Rename replaces a metadata symlink itself, without writing through it to the source. */
+    renameSync(temporary, metadataFile);
+  } catch (e) {
+    if (wrotePicture && file) rmSync(join(folder, file), { force: true });
+    throw e;
+  } finally { rmSync(temporary, { force: true }); }
+  if (typeof previous === 'string' && previous !== file && CHOSEN_COVER.test(previous)) rmSync(join(folder, previous), { force: true });
+}
+
+/** Change only a person's own installed skill. Null removes its cover: a picture of the skill's own stays.
+ * @param {string} name @param {string | null} cover @param {{ mine?: string }} [where] */
+export function setSkillCover(name, cover, { mine = mySkillsDir() } = {}) {
+  const skill = skillsIn(mine, 'mine').find((s) => s.name === name);
+  if (!skill) throw new Error('No personal skill with that name.');
+  if (!realpathSync(skill.folder).startsWith(`${realpathSync(mine)}${sep}`)) throw new Error('The skill must be kept inside your skills folder.');
+  writeSkillCover(skill.folder, cover === null ? null : coverPicture(cover));
+  return readSkill(skill.folder, 'mine');
 }
 
 /**
