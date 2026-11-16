@@ -15,6 +15,8 @@ export interface HostDeveloper { logs: boolean; changes: boolean }
 export interface StudioHost {
   /** the version of this interface the app speaks */
   version: 1;
+  /** The native Settings menu asks the current page to open General, including the launcher. */
+  settings?: { onOpen: (listener: () => void) => () => void };
   /** the app's name, for the person */
   name?: string;
   /**
