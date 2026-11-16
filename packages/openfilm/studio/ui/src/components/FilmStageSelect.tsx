@@ -46,6 +46,7 @@ import { MgOutline } from '@/components/MgOutline';
 import { FRAME_BLUE, GestureHint, StageTransformFrame, type FrameGeometry } from '@/components/StageTransformFrame';
 import { StageMaskOverlay } from '@/components/StageMaskOverlay';
 import { linkedOutlines } from '@/components/film-stage-hit';
+import { inHostPanel } from '@/components/typing-target';
 import type { StageArrange, StageArrangeResult, StageMenuContext } from '@/components/stage-menu';
 import type { PreviewHandle, StageEvent } from '@/editor/Preview';
 import { useT } from '@/i18n';
@@ -1053,7 +1054,7 @@ function FilmStageSelectImpl({
     if (!picked) { keyHandler.current = null; return undefined; }
     const onKey = (e: KeyboardEvent) => {
       /* keys pressed in an app's own panel are the app's (typing-target.ts) */
-      if ((e.target as Element | null)?.closest?.('[data-studio-host-panel]')) return;
+      if (inHostPanel(e.target)) return;
       const typingNow = () => {
         const focus = document.activeElement as HTMLElement | null;
         return Boolean(focus && (/^(INPUT|TEXTAREA|SELECT)$/.test(focus.tagName) || focus.isContentEditable));
@@ -1152,12 +1153,14 @@ function FilmStageSelectImpl({
     };
     keyHandler.current = onKey;
     /* a press elsewhere lets go: selecting is "I mean this one", and the hand moving away ends it. Not the stage, its
-       menus, the inspector (and its floating panels), the dividers or list boxes. On the timeline only layers let go:
-       a whole clip in hand is the timeline's own selection, which it keeps or clears itself. */
+       menus, the inspector (and its floating panels), the dividers or list boxes, nor an app's own panel (its chat
+       points at what is selected). On the timeline only layers let go: a whole clip in hand is the timeline's own
+       selection, which it keeps or clears itself. */
     const onDown = (e: PointerEvent) => {
       const el = e.target as HTMLElement | null;
       if (
-        el?.closest('[data-film-select]')
+        inHostPanel(el)
+        || el?.closest('[data-film-select]')
         || el?.closest('[data-selection-toolbar]')
         || el?.closest('[role="menu"]')
         || el?.closest('[data-film-inspector]')
@@ -1598,7 +1601,7 @@ function FilmStageSelectImpl({
     const onKey = (e: KeyboardEvent) => {
       if (!e.key.startsWith('Arrow') || !arrowsMoveRef.current || e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey) return;
       const el = e.target as HTMLElement | null;
-      if (el?.closest('input, textarea, select, [contenteditable="true"], [data-timeline]')) return;
+      if (inHostPanel(el) || el?.closest('input, textarea, select, [contenteditable="true"], [data-timeline]')) return;
       nudgeGroupRef.current(e);
     };
     window.addEventListener('keydown', onKey, true);
@@ -1964,7 +1967,10 @@ function FilmStageSelectImpl({
       const d = draftRef.current = { ...draftRef.current, x2: x, y2: y };
       setDraft(d);
       const area = { x: Math.min(d.x1, d.x2) / vs, y: Math.min(d.y1, d.y2) / vs, w: Math.abs(d.x2 - d.x1) / vs, h: Math.abs(d.y2 - d.y1) / vs };
-      marqueeQueue.push(area.w >= MARQUEE_MIN_PX && area.h >= MARQUEE_MIN_PX ? area : null);
+      const open = area.w >= MARQUEE_MIN_PX && area.h >= MARQUEE_MIN_PX;
+      /* a box pulled open from the dark around the picture: the film stops now (see pressDown) */
+      if (open && pauseWhenOpen.current) { pauseWhenOpen.current = false; onPause?.(); }
+      marqueeQueue.push(open ? area : null);
       return;
     }
     /* with a clip in hand too: what is in it and around it is still found (its own outline is its frame) */
@@ -2206,6 +2212,7 @@ function FilmStageSelectImpl({
     }
     const start = draftRef.current;
     if (!start) return;
+    pauseWhenOpen.current = false;
     e.stopPropagation();
     const p = local(e);
     const box = { left: Math.min(start.x1, p.x), top: Math.min(start.y1, p.y), width: Math.abs(p.x - start.x1), height: Math.abs(p.y - start.y1) };
@@ -2423,18 +2430,24 @@ function FilmStageSelectImpl({
   /**
    * A press: on the picture, or on the dark around it (a marquee starts there too, as on Figma's canvas, so what sits
    * at an edge can be boxed whole). The moves and the release then come to the overlay, which holds the pointer.
+   * `outside`: in the dark, where nothing can be clicked, only a box drawn: the film plays on until the box is pulled
+   * open (a click there only lets the selection go).
    */
-  const pressDown = (e: PressEvent) => {
+  const pauseWhenOpen = React.useRef(false);
+  const pressDown = (e: PressEvent, outside = false) => {
       if (e.button !== 0) return;
       e.stopPropagation();
       /* pause at the press, not the release: a clock still running would move the selection off under the hand */
-      onPause?.();
+      pauseWhenOpen.current = outside;
+      if (!outside) onPause?.();
       const p = local(e);
       /* the first press of a double-click is kept: the second one lands where the picture has moved to */
       const prev = lastPressRef.current;
       if (!prev || e.timeStamp - prev.at > DOUBLE_PRESS_MS) lastPressRef.current = { x: p.x / viewScaleNow(), y: p.y / viewScaleNow(), at: e.timeStamp };
       /* ⌘ held: a box to point at in the chat, whatever is under the press (nothing is selected or moved) */
       if (onRegion && regionKeyHeld(e)) {
+        /* a box for the chat is meant at once, wherever it starts */
+        if (outside) { pauseWhenOpen.current = false; onPause?.(); }
         host.current?.setPointerCapture(e.pointerId);
         regionDraftRef.current = { x1: p.x, y1: p.y, x2: p.x, y2: p.y };
         setRegionDraft(regionDraftRef.current);
@@ -2658,7 +2671,7 @@ function FilmStageSelectImpl({
       /* only the dark around the picture: what lies over the picture (the subtitles) has its own presses */
       const r = filmRect();
       if (r && e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) return;
-      pressDownRef.current(e);
+      pressDownRef.current(e, true);
     };
     area.addEventListener('pointerdown', onDown);
     return () => area.removeEventListener('pointerdown', onDown);
