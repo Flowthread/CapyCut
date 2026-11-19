@@ -1,7 +1,7 @@
 // @ts-check
 /**
  * How many people use each community item: openfilm.dev's anonymous counts (internal/community.md), read at most every
- * ten minutes, and one more counted when an item listed by OpenFilm's community is installed. What is sent is the item's
+ * ten minutes, and one more counted when an item listed by CapyCut's community is installed. What is sent is the item's
  * uid alone: nothing of the person, their computer or their projects. OPENFILM_NO_STATS turns both off; a count that
  * cannot be read or sent is let go (none shows).
  */

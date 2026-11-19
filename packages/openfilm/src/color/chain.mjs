@@ -1,7 +1,7 @@
 // @ts-check
 /**
  * A clip's grade as film.html says it: its style's `--of-lut` (SPEC.md), the color transform files it goes through in
- * order. OpenFilm's own grades put them in three parts, each a file of the project:
+ * order. CapyCut's own grades put them in three parts, each a file of the project:
  *
  *   input     `looks/in-<footage>.ctf`: the footage into the working space, ACEScct (a camera's log, HDR, or the
  *             exact inverse of the output for ordinary video), one for each kind of footage
@@ -18,7 +18,7 @@
  */
 import { declarations } from '../film-doc.mjs';
 
-/** Where OpenFilm keeps a project's color transform files. */
+/** Where CapyCut keeps a project's color transform files. */
 export const LOOKS = 'looks';
 /** The output every film's clips end with unless it says another, and the input of ordinary (SDR) footage. */
 export const OUTPUT = `${LOOKS}/out-rec709.ctf`;

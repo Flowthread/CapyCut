@@ -3,8 +3,8 @@
   "version": "0.4.1",
   "private": true,
   "type": "module",
-  "productName": "OpenFilm",
-  "description": "OpenFilm for desktop: Studio, with a chat beside it for Claude Code and Codex.",
+  "productName": "CapyCut",
+  "description": "CapyCut for desktop: Studio, with a chat beside it for Claude Code and Codex.",
   "main": "src/main.mjs",
   "scripts": {
     "start": "node scripts/start.mjs",

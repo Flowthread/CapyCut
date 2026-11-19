@@ -10,7 +10,7 @@ import { agentKeyOf } from './projects.mjs';
 import { runFile, startStudio } from './server.mjs';
 import { running } from '../client.mjs';
 
-/* OpenFilm's service is asked what it offers: nowhere here (a port that refuses at once) */
+/* CapyCut's service is asked what it offers: nowhere here (a port that refuses at once) */
 process.env.OPENFILM_API_URL ??= 'http://127.0.0.1:9';
 
 const VOICE_KEY = 'xi-sealed-voice-key-0123456789';
@@ -36,7 +36,7 @@ before(async () => {
   process.env.OPENFILM_LIBRARY = join(scratch, 'library');
   delete process.env.ELEVENLABS_API_KEY;
   delete process.env.OPENFILM_AGENT;
-  /* what an older OpenFilm, or `npx openfilm`, left: every key plain */
+  /* what an older CapyCut, or `npx openfilm`, left: every key plain */
   mkdirSync(process.env.OPENFILM_HOME, { recursive: true, mode: 0o700 });
   writeFileSync(providersFile(), JSON.stringify({ keys: { elevenlabs: VOICE_KEY, keenable: '' }, use: { tts: 'elevenlabs' }, custom: [service] }), { mode: 0o600 });
   studio = await startStudio({ port: 0, advertise: true, keepKey: true, key: STUDIO_KEY, sealer: vaultSealer(vault), openBrowser: () => {} });
@@ -51,7 +51,7 @@ test('in the app, a program of this user reading Studio\'s files gets no service
   for (const secret of [VOICE_KEY, SERVICE_KEY, STUDIO_KEY]) assert.ok(!read.includes(secret), 'nothing usable in the files');
   assert.ok(!read.includes(VOICE_KEY.slice(4, 20)), 'not even part of a key');
   const kept = JSON.parse(readFileSync(providersFile(), 'utf8'));
-  assert.deepEqual(kept.keys, { keenable: '' }, 'a keyless provider stays connected for every OpenFilm, with nothing to hide');
+  assert.deepEqual(kept.keys, { keenable: '' }, 'a keyless provider stays connected for every CapyCut, with nothing to hide');
   assert.match(kept.sealed.keys.elevenlabs, /^v1:/);
   assert.equal(kept.custom[0].key, undefined);
   assert.match(kept.sealed.custom.whisper, /^v1:/);
@@ -108,7 +108,7 @@ test('the CLI reaches the app\'s Studio with the agents\' key, an agent and the 
   assert.ok((await person.json()).url.includes(`key=${STUDIO_KEY}`));
 });
 
-test('an older OpenFilm sees no sealed key and keeps them; a key it pastes plain is sealed by the app next time', async () => {
+test('an older CapyCut sees no sealed key and keeps them; a key it pastes plain is sealed by the app next time', async () => {
   const sealer = vaultSealer(Buffer.from(vault));
   sealKeysWith(null);
   try {
@@ -134,7 +134,7 @@ test('an older OpenFilm sees no sealed key and keeps them; a key it pastes plain
 test('a sealed key opens only where it was sealed for: moved to another entry, its address changed, or another vault, it is nothing', async () => {
   const kept = JSON.parse(readFileSync(providersFile(), 'utf8'));
   const forged = structuredClone(kept);
-  /* the OpenFilm-style key moved to a service whose address the program chose */
+  /* the CapyCut-style key moved to a service whose address the program chose */
   forged.custom.push({ id: 'mine', name: 'Mine', url: 'https://example.com', auth: 'Authorization: Bearer {key}', note: '' });
   forged.sealed.custom.mine = kept.sealed.keys.elevenlabs;
   forged.sealed.keys.openai = kept.sealed.keys.elevenlabs;

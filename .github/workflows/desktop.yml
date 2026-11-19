@@ -178,7 +178,7 @@ jobs:
           ls -l upload
           # the changelog's entry for this version, if there is one
           awk -v v="## $VERSION" '$0 == v { on = 1; next } /^## / { on = 0 } on' packages/openfilm/CHANGELOG.md > notes.md 2>/dev/null || true
-          [ -s notes.md ] || echo "OpenFilm $VERSION." > notes.md
+          [ -s notes.md ] || echo "CapyCut $VERSION." > notes.md
           if gh release view "$TAG" > /dev/null 2>&1; then
             gh release upload "$TAG" upload/* --clobber
           else

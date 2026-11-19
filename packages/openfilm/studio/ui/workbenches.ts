@@ -1,5 +1,5 @@
 /**
- * The workbenches of OpenFilm's own plugins, built with the editor so that they share its modules, each an entry of
+ * The workbenches of CapyCut's own plugins, built with the editor so that they share its modules, each an entry of
  * its own. Both pages that hold the editor build them: Studio's own (vite.config.ts) and the desktop app's window
  * (apps/desktop/shell/vite.config.ts). A plugin's `browser` module (plugins/<id>/ui.js) names one as
  * `openfilm/workbench/<name>`, which the page's import map turns into the file it was built into. Which there are is
@@ -15,7 +15,7 @@ import { arrangementOf } from './src/lib/blocks.ts';
 
 const at = (path: string) => fileURLToPath(new URL(path, import.meta.url));
 
-/** OpenFilm's own plugins, each a folder (src/plugins.mjs), and the sources of the workbenches they bring. */
+/** CapyCut's own plugins, each a folder (src/plugins.mjs), and the sources of the workbenches they bring. */
 const PLUGINS = at('../../plugins/');
 const SOURCES = at('./src/plugins/');
 

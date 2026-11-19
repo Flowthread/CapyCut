@@ -1,6 +1,6 @@
 <p align="center">
-  <img src="docs/logo-light.svg#gh-light-mode-only" alt="OpenFilm" height="48">
-  <img src="docs/logo-dark.svg#gh-dark-mode-only" alt="OpenFilm" height="48">
+  <img src="docs/logo-light.svg#gh-light-mode-only" alt="CapyCut" height="48">
+  <img src="docs/logo-dark.svg#gh-dark-mode-only" alt="CapyCut" height="48">
 </p>
 <p align="center">Açık kaynaklı yapay zekâ video ajanı.</p>
 <p align="center">
@@ -40,13 +40,13 @@
   <a href="https://www.youtube.com/@riverisbuilding"><img alt="Watch on YouTube" src="docs/buttons/youtube.svg" /></a>
 </p>
 
-[![OpenFilm: siz izlerken bir ajan film yapar, sonra siz onu elle değiştirirsiniz](docs/openfilm.webp)](https://openfilm.dev)
+[![CapyCut: siz izlerken bir ajan film yapar, sonra siz onu elle değiştirirsiniz](docs/openfilm.webp)](https://openfilm.dev)
 
 ---
 
 ### Hakkında
 
-OpenFilm her kodlama ajanını bir video ajanına dönüştürür ve onun yaptığı her şeyi değiştirebileceğiniz editörler sunar.
+CapyCut her kodlama ajanını bir video ajanına dönüştürür ve onun yaptığı her şeyi değiştirebileceğiniz editörler sunar.
 
 Siz ve ajan aynı film üzerinde, birlikte ve canlı çalışırsınız. Ajan neyi değiştirirse anında görürsünüz; siz neyi değiştirirseniz ajan da görür. İşin çoğunu ajan yapar; siz herhangi bir şeyi gösterip değişiklik istersiniz ya da kendiniz yaparsınız.
 
@@ -68,25 +68,25 @@ npx skills add openfilm/openfilm
 
 ### Editörler
 
-Her editör aynı film üzerinde çalışmanın farklı bir yoludur ve her birinde siz ve ajan birlikte çalışırsınız. OpenFilm dört editörle gelir; farklı insanlar için daha fazla resmi editör de geliştiriliyor: herkesin hemen kullanabileceği kadar basit olanlar ve isteyenler için profesyonel çalışma alanları. Editörler Topluluğun açık standardını izler, böylece herkes kendi editörünü yapıp paylaşabilir.
+Her editör aynı film üzerinde çalışmanın farklı bir yoludur ve her birinde siz ve ajan birlikte çalışırsınız. CapyCut dört editörle gelir; farklı insanlar için daha fazla resmi editör de geliştiriliyor: herkesin hemen kullanabileceği kadar basit olanlar ve isteyenler için profesyonel çalışma alanları. Editörler Topluluğun açık standardını izler, böylece herkes kendi editörünü yapıp paylaşabilir.
 
 - **Gösterim**: filmi tam boyutta izleyin. Bir ana tıklayın, bir bölümün üzerinden sürükleyin ya da kadrajın bir kısmını daire içine alın; ajan neyi gösterdiğinizi bilir.
 - **Kurgu**: klipler, metin, altyazılar, dış ses ve ses için eksiksiz bir zaman çizelgesi. Bir çekimin içindeki her şeyi taşıyın, ölçekleyin ve stilini değiştirin. Video dışa aktarın ya da zaman çizelgesini Final Cut Pro, Premiere Pro veya DaVinci Resolve'a taşıyın.
 - **Tuval**: notların, görsellerin, kliplerin ve seslerin yan yana durduğu bir planlama panosu. Her birini kendi servislerinizle üretin, sonra sırayla zaman çizelgesine gönderin.
 - **Renk**: her klibin rengini skoplar, renk tekerlekleri ve eğrilerle düzenleyin; kameranın log görüntüsünden ya da `.cube` LUT'larıyla. Önizlemede ne görüyorsanız dışa aktardığınız da odur.
 
-Dördü de tek bir kütüphaneyi paylaşır: klasörlerdeki kendi görüntüleriniz kopyalanmak yerine bağlanır ve taşıdığınızda yeniden bulunur; yanında da OpenFilm'in ücretsiz müzikleri, ses efektleri, sesleri ve çıkartmaları durur.
+Dördü de tek bir kütüphaneyi paylaşır: klasörlerdeki kendi görüntüleriniz kopyalanmak yerine bağlanır ve taşıdığınızda yeniden bulunur; yanında da CapyCut'in ücretsiz müzikleri, ses efektleri, sesleri ve çıkartmaları durur.
 
 ### Topluluk
 
-Topluluk, OpenFilm'e ekleyebileceğiniz her şey için açık bir standarttır ve herkes onun için geliştirebilir.
+Topluluk, CapyCut'e ekleyebileceğiniz her şey için açık bir standarttır ve herkes onun için geliştirebilir.
 
-- **Eklentiler** OpenFilm'in kendisini yeni editörlerle ve dış servislere bağlantılarla genişletir. OpenFilm'in kendi editörleri de eklentidir ve herkesinkiyle aynı şekilde yapılmıştır.
+- **Eklentiler** CapyCut'in kendisini yeni editörlerle ve dış servislere bağlantılarla genişletir. CapyCut'in kendi editörleri de eklentidir ve herkesinkiyle aynı şekilde yapılmıştır.
 - **Beceriler** ajana bir film türünü yapmanın bir yolunu öğretir.
 - **Varlıklar** müzik, ses efektleri, geçişler, efektler, metin stilleri, çıkartmalar ve şablonlardır.
 - **Örnekler**, inceleyip öğrenebileceğiniz ve remiksleyebileceğiniz eksiksiz projelerdir.
 
-Her biri sıradan bir klasördür. OpenFilm'deki Topluluk penceresinden ekleyin ya da kendinizinkini yapın: [eklenti yapın](packages/openfilm/plugins/README.md), [beceri yazın](https://github.com/openfilm/community/blob/main/SPEC.md), [varlık paylaşın](https://github.com/openfilm/community/blob/main/assets/CONTRIBUTING.md) ya da bitmiş bir filmi örnek olarak paylaşın, ardından [openfilm/community](https://github.com/openfilm/community) içinde listeleyin.
+Her biri sıradan bir klasördür. CapyCut'deki Topluluk penceresinden ekleyin ya da kendinizinkini yapın: [eklenti yapın](packages/openfilm/plugins/README.md), [beceri yazın](https://github.com/openfilm/community/blob/main/SPEC.md), [varlık paylaşın](https://github.com/openfilm/community/blob/main/assets/CONTRIBUTING.md) ya da bitmiş bir filmi örnek olarak paylaşın, ardından [openfilm/community](https://github.com/openfilm/community) içinde listeleyin.
 
 ### Nasıl çalışır
 
@@ -114,11 +114,11 @@ window.film = {
 };
 ```
 
-**Değişiklikleriniz sizde kalır.** Bir çekimin içinde metin, renk, konum veya boyut gibi bir şeyi elle değiştirdiğinizde OpenFilm bunu sayfanın kodunda değil, klibin `overrides` alanında saklar. Ajan sayfayı yeniden yazabilir; değişiklikleriniz yine geçerli olur. Biçimin tamamı [SPEC.md](packages/openfilm/SPEC.md) dosyasında.
+**Değişiklikleriniz sizde kalır.** Bir çekimin içinde metin, renk, konum veya boyut gibi bir şeyi elle değiştirdiğinizde CapyCut bunu sayfanın kodunda değil, klibin `overrides` alanında saklar. Ajan sayfayı yeniden yazabilir; değişiklikleriniz yine geçerli olur. Biçimin tamamı [SPEC.md](packages/openfilm/SPEC.md) dosyasında.
 
 ### Katkıda bulunma
 
-OpenFilm'i kaynak koddan çalıştırmak veya pull request göndermek için [CONTRIBUTING.md](CONTRIBUTING.md) dosyasını okuyun. Hataları Settings → Developer → Copy report ile alınan raporla birlikte [Issues](https://github.com/openfilm/openfilm/issues) bölümüne, güvenlik sorunlarını ise [SECURITY.md](SECURITY.md) dosyasında anlatıldığı gibi bildirin.
+CapyCut'i kaynak koddan çalıştırmak veya pull request göndermek için [CONTRIBUTING.md](CONTRIBUTING.md) dosyasını okuyun. Hataları Settings → Developer → Copy report ile alınan raporla birlikte [Issues](https://github.com/openfilm/openfilm/issues) bölümüne, güvenlik sorunlarını ise [SECURITY.md](SECURITY.md) dosyasında anlatıldığı gibi bildirin.
 
 ### Star History
 

@@ -1,5 +1,5 @@
 /**
- * The desktop shell's bridge. In the OpenFilm app (Electron) the window's page puts it on
+ * The desktop shell's bridge. In the CapyCut app (Electron) the window's page puts it on
  * `window.openfilmDesktop`; in a plain browser there is no such object.
  *
  * It holds only what a web page cannot do by itself, such as a system folder picker or showing a path
@@ -162,7 +162,7 @@ export interface DesktopBridge {
     defaultPath?: string;
     filters?: { name: string; extensions: string[] }[];
   }): Promise<string | null>;
-  /** Where exports go by default: `~/Movies/OpenFilm/Exports` (created by the shell). null when unavailable. */
+  /** Where exports go by default: `~/Movies/CapyCut/Exports` (created by the shell). null when unavailable. */
   exportsRoot?(): Promise<string | null>;
   /** Opens a file or folder with its default app. An empty string on success, else the reason. */
   openPath?(path: string): Promise<string>;
@@ -220,7 +220,7 @@ export interface DesktopBridge {
   onLanguage?(listener: (language: string) => void): () => void;
   localAgents?: {
     list(): Promise<LocalAgentState[]>;
-    /** Close OpenFilm's open sessions with it (its own login is left alone). Older shells lack it. */
+    /** Close CapyCut's open sessions with it (its own login is left alone). Older shells lack it. */
     disconnect?(agent: LocalAgentId): Promise<{ ok: boolean }>;
     /** Opens Terminal to run its own sign-in command, which opens Anthropic's / OpenAI's sign-in page. */
     signIn(agent: LocalAgentId): Promise<{ ok: true } | { ok: false; error: string }>;
@@ -260,7 +260,7 @@ export interface DesktopBridge {
     setBadge(count: number): void;
     onNavigate(cb: (href: string) => void): () => void;
   };
-  /** OpenFilm Studio only: the page runs in a plain browser */
+  /** CapyCut Studio only: the page runs in a plain browser */
   studio?: boolean;
   /**
    * The agents' status: the MCP endpoint's half (who is connected, who is remembered) plus each agent's

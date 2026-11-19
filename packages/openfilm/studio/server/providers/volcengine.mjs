@@ -72,7 +72,7 @@ function sizeOf(/** @type {string[]} */ sizes, /** @type {string} */ asked) {
   return sizes.reduce((best, s) => (Math.abs(LINES[s] - want) < Math.abs(LINES[best] - want) || (Math.abs(LINES[s] - want) === Math.abs(LINES[best] - want) && LINES[s] > LINES[best]) ? s : best));
 }
 
-/** Ark's account refusals (no balance, an overdue bill, the model not opened) are OpenFilm's own to fix, not the person's. */
+/** Ark's account refusals (no balance, an overdue bill, the model not opened) are CapyCut's own to fix, not the person's. */
 const ACCOUNT = /AccountOverdue|InsufficientBalance|insufficient balance|overdue|ModelNotOpen|not activated|欠费|余额不足/i;
 
 /** @type {Provider} */
@@ -106,7 +106,7 @@ const auth = (/** @type {RunContext} */ ctx) => ({ authorization: `Bearer ${ctx.
  */
 async function addressOf(path, flag, ctx) {
   if (ctx.link) return ctx.link(path);
-  throw new Error(`--${flag}: Seedance at ${NAME} takes a ${flag === 'voice' ? 'recording' : 'clip'} only from a web address, and with your own key OpenFilm has nowhere to put your file for it. OpenFilm's own service gives it an address.`);
+  throw new Error(`--${flag}: Seedance at ${NAME} takes a ${flag === 'voice' ? 'recording' : 'clip'} only from a web address, and with your own key CapyCut has nowhere to put your file for it. CapyCut's own service gives it an address.`);
 }
 
 /**

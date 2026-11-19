@@ -1,11 +1,11 @@
 ---
 name: color
-description: The film's color in OpenFilm, clip by clip. Read it when the person asks to grade, color-correct, white-balance, match shots, give the film a look, apply a LUT, or fix footage that looks flat, grey, too warm or too dark (camera log).
+description: The film's color in CapyCut, clip by clip. Read it when the person asks to grade, color-correct, white-balance, match shots, give the film a look, apply a LUT, or fix footage that looks flat, grey, too warm or too dark (camera log).
 ---
 
 # Color
 
-A clip's grade is the color transform files its style's `--of-lut` names, in order (SPEC.md). OpenFilm's grades
+A clip's grade is the color transform files its style's `--of-lut` names, in order (SPEC.md). CapyCut's grades
 are in three parts, the part a file plays said by its name:
 
 ```html
@@ -20,7 +20,7 @@ are in three parts, the part a file plays said by its name:
   ordinary video, goes after it, last; so does a library filter, `looks/filter-<name>-<strength>.ctf`, which alone is
   the whole chain of ordinary video with nothing else graded.
 
-The input and output files are OpenFilm's: never edit them. `openfilm color input` sets an input and puts the files in
+The input and output files are CapyCut's: never edit them. `openfilm color input` sets an input and puts the files in
 `looks/`. Layers are yours to write and change, as `.ctf` files: `<ProcessList version="2.5" id="…">`, each operation
 with a `name` and `inBitDepth="32f" outBitDepth="32f"`. These are played and exported, and their numbers are in ACEScct
 (0.4135 is mid grey; an offset of 0.057 is a stop):

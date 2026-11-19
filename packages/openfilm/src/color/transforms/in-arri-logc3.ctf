@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ProcessList version="2" id="openfilm:in-arri-logc3">
-    <Description>OpenFilm input: ARRI LogC3 (EI 800), ALEXA Wide Gamut footage into ACEScct</Description>
+    <Description>CapyCut input: ARRI LogC3 (EI 800), ALEXA Wide Gamut footage into ACEScct</Description>
     <Log inBitDepth="32f" outBitDepth="32f" style="cameraLogToLin">
         <LogParams base="10" linSideSlope="5.55555555555556" linSideOffset="0.052272275" logSideSlope="0.2471896383" logSideOffset="0.3855369987" linSideBreak="0.0105909905" />
     </Log>

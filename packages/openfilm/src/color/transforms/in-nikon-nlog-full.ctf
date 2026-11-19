@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ProcessList version="2" id="openfilm:in-nikon-nlog-full">
-    <Description>OpenFilm input: Nikon N-Log footage (a full-range file) into ACEScct</Description>
+    <Description>CapyCut input: Nikon N-Log footage (a full-range file) into ACEScct</Description>
     <LUT1D inBitDepth="32f" outBitDepth="32f">
         <Array dim="4096 1">
 -0.0074999998

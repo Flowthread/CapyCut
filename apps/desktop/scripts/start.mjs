@@ -3,15 +3,15 @@
  * again to restart with the code as it is now.
  *
  * It is the `dev` flavour (src/flavor.mjs): on macOS a renamed copy of Electron.app with its own name, bundle id and
- * data folder, so it never shares a Dock icon, a lock or a Studio with an installed OpenFilm. There is one OpenFilm Dev
+ * data folder, so it never shares a Dock icon, a lock or a Studio with an installed CapyCut. There is one CapyCut Dev
  * at a time (a second one only brings the first to the front), so one already running, from this checkout or another,
  * is asked to quit first. Then the window's page (shell/) and Studio's editor (packages/openfilm studio/ui) are built
  * (`--no-build` skips both). Electron gets a clean environment: run from inside Claude Code or Codex, this
  * process carries their variables, which the app's agents would inherit (src/environment.mjs). Arguments after the
  * script go to Electron as they are (e.g. --remote-debugging-port=9333).
  *
- * `--lane <name>` runs a lane of it instead (src/flavor.mjs devIdentity): "OpenFilm Dev <name>", its own app beside
- * OpenFilm Dev and the other lanes, so several checkouts (a branch each) can be tried at once. Running it again
+ * `--lane <name>` runs a lane of it instead (src/flavor.mjs devIdentity): "CapyCut Dev <name>", its own app beside
+ * CapyCut Dev and the other lanes, so several checkouts (a branch each) can be tried at once. Running it again
  * restarts that lane only.
  */
 import { execFileSync, spawn, spawnSync } from 'node:child_process';
@@ -39,7 +39,7 @@ const identity = devIdentity(process.env.OPENFILM_DEV_LANE);
 const require = createRequire(import.meta.url);
 const desktop = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
-/** The OpenFilm Dev apps running now (their main process), wherever they were started from. */
+/** The CapyCut Dev apps running now (their main process), wherever they were started from. */
 function running() {
   if (process.platform !== 'darwin') return [];
   const found = spawnSync('/usr/bin/pgrep', ['-f', `${identity.productName}.app/Contents/MacOS/Electron`], { encoding: 'utf8' });
@@ -69,7 +69,7 @@ if (!process.argv.includes('--no-build')) {
 }
 
 const electron = require('electron');
-/** OpenFilm Dev.app (macOS) */
+/** CapyCut Dev.app (macOS) */
 let bundle = '';
 if (process.platform === 'darwin') {
   const version = require('electron/package.json').version;
@@ -119,7 +119,7 @@ const env = launcherEnvironment(process.env, PATH);
 if (process.platform === 'darwin') {
   /* opened by LaunchServices, not as a child of this process: macOS holds a child to what its parent (the terminal,
      Claude Code, Codex) may do, so where that one was refused the microphone, recording was refused too without the
-     question ever being asked. Opened, OpenFilm Dev asks macOS for itself, as an installed OpenFilm does. Its output
+     question ever being asked. Opened, CapyCut Dev asks macOS for itself, as an installed CapyCut does. Its output
      comes back through two pipes; `open -W` returns once it has quit. */
   const pipes = mkdtempSync(join(tmpdir(), 'openfilm-dev-'));
   const [out, err] = [join(pipes, 'out'), join(pipes, 'err')];

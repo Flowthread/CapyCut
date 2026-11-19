@@ -1,4 +1,4 @@
-/** For the tests: the arrangements of OpenFilm's own plugins, read from their openfilm.json as Studio reads them. */
+/** For the tests: the arrangements of CapyCut's own plugins, read from their openfilm.json as Studio reads them. */
 import { readFileSync } from 'node:fs';
 import { readBlocks } from '../../../../src/plugin-blocks.mjs';
 import { arrangementSpecs } from './blocks.ts';

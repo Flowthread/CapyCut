@@ -7,7 +7,7 @@ import { workbenchImportMap, workbenchInputs } from './workbenches';
 const at = (path: string) => fileURLToPath(new URL(path, import.meta.url));
 
 /* Studio's editor: built once into dist/ and served by Studio's own server (studio/server/server.mjs), with the
-   workbenches of OpenFilm's own plugins as entries of their own (workbenches.ts) */
+   workbenches of CapyCut's own plugins as entries of their own (workbenches.ts) */
 export default defineConfig({
   root: __dirname,
   plugins: [react(), tailwind(), workbenchImportMap()],

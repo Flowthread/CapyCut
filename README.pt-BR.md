@@ -1,6 +1,6 @@
 <p align="center">
-  <img src="docs/logo-light.svg#gh-light-mode-only" alt="OpenFilm" height="48">
-  <img src="docs/logo-dark.svg#gh-dark-mode-only" alt="OpenFilm" height="48">
+  <img src="docs/logo-light.svg#gh-light-mode-only" alt="CapyCut" height="48">
+  <img src="docs/logo-dark.svg#gh-dark-mode-only" alt="CapyCut" height="48">
 </p>
 <p align="center">O agente de vídeo com IA de código aberto.</p>
 <p align="center">
@@ -40,13 +40,13 @@
   <a href="https://www.youtube.com/@riverisbuilding"><img alt="Watch on YouTube" src="docs/buttons/youtube.svg" /></a>
 </p>
 
-[![OpenFilm: um agente faz um filme enquanto você assiste, depois você muda à mão](docs/openfilm.webp)](https://openfilm.dev)
+[![CapyCut: um agente faz um filme enquanto você assiste, depois você muda à mão](docs/openfilm.webp)](https://openfilm.dev)
 
 ---
 
 ### Sobre
 
-O OpenFilm transforma qualquer agente de programação em um agente de vídeo, com editores para mudar tudo o que ele cria.
+O CapyCut transforma qualquer agente de programação em um agente de vídeo, com editores para mudar tudo o que ele cria.
 
 Você e o agente trabalham no mesmo filme, juntos e ao vivo. Tudo o que o agente muda, você vê na hora; tudo o que você muda, o agente também vê. O agente faz a maior parte do trabalho; você aponta para qualquer coisa e pede uma mudança, ou faz você mesmo.
 
@@ -68,25 +68,25 @@ npx skills add openfilm/openfilm
 
 ### Editores
 
-Cada editor é um jeito diferente de trabalhar no mesmo filme, e em todos você e o agente trabalham juntos. O OpenFilm vem com quatro, e outros editores oficiais estão em desenvolvimento para diferentes tipos de pessoas: simples o bastante para qualquer um começar na hora, e estações de trabalho profissionais para quem quiser. Os editores seguem o padrão aberto da Comunidade, então qualquer pessoa pode criar um e compartilhar.
+Cada editor é um jeito diferente de trabalhar no mesmo filme, e em todos você e o agente trabalham juntos. O CapyCut vem com quatro, e outros editores oficiais estão em desenvolvimento para diferentes tipos de pessoas: simples o bastante para qualquer um começar na hora, e estações de trabalho profissionais para quem quiser. Os editores seguem o padrão aberto da Comunidade, então qualquer pessoa pode criar um e compartilhar.
 
 - **Exibição**: assista ao filme em tamanho cheio. Clique em um momento, arraste sobre um trecho ou circule parte da imagem, e o agente sabe para o que você está apontando.
 - **Edição**: uma linha do tempo completa com clipes, texto, legendas, narração e som. Mova, redimensione e mude o estilo de qualquer coisa dentro de um plano. Exporte um vídeo ou leve a linha do tempo para o Final Cut Pro, o Premiere Pro ou o DaVinci Resolve.
 - **Tela**: um quadro para planejar, com notas, imagens, clipes e vozes lado a lado. Gere cada um com os seus serviços e depois envie tudo, em ordem, para a linha do tempo.
 - **Cor**: corrija a cor de cada clipe com scopes, rodas de cor e curvas, a partir de material log da câmera ou com LUTs `.cube`. O que você vê na prévia é exatamente o que você exporta.
 
-Os quatro compartilham uma biblioteca: seu próprio material em pastas, vinculado em vez de copiado e reencontrado quando você o move, ao lado das músicas, efeitos sonoros, vozes e figurinhas gratuitos do OpenFilm.
+Os quatro compartilham uma biblioteca: seu próprio material em pastas, vinculado em vez de copiado e reencontrado quando você o move, ao lado das músicas, efeitos sonoros, vozes e figurinhas gratuitos do CapyCut.
 
 ### Comunidade
 
-A Comunidade é um padrão aberto para tudo o que você pode adicionar ao OpenFilm, e qualquer pessoa pode criar para ela.
+A Comunidade é um padrão aberto para tudo o que você pode adicionar ao CapyCut, e qualquer pessoa pode criar para ela.
 
-- **Plugins** estendem o próprio OpenFilm com novos editores e conectores para serviços externos. Os editores do OpenFilm também são plugins, feitos do mesmo jeito que os de qualquer pessoa.
+- **Plugins** estendem o próprio CapyCut com novos editores e conectores para serviços externos. Os editores do CapyCut também são plugins, feitos do mesmo jeito que os de qualquer pessoa.
 - **Skills** ensinam ao agente um jeito de fazer um tipo de filme.
 - **Recursos** são músicas, efeitos sonoros, transições, efeitos, estilos de texto, figurinhas e modelos.
 - **Exemplos** são projetos completos para aprender e remixar.
 
-Cada um é uma pasta comum. Adicione um pela janela Comunidade do OpenFilm ou crie o seu: [crie um plugin](packages/openfilm/plugins/README.md), [escreva uma skill](https://github.com/openfilm/community/blob/main/SPEC.md), [compartilhe recursos](https://github.com/openfilm/community/blob/main/assets/CONTRIBUTING.md) ou compartilhe um filme pronto como exemplo, e depois liste em [openfilm/community](https://github.com/openfilm/community).
+Cada um é uma pasta comum. Adicione um pela janela Comunidade do CapyCut ou crie o seu: [crie um plugin](packages/openfilm/plugins/README.md), [escreva uma skill](https://github.com/openfilm/community/blob/main/SPEC.md), [compartilhe recursos](https://github.com/openfilm/community/blob/main/assets/CONTRIBUTING.md) ou compartilhe um filme pronto como exemplo, e depois liste em [openfilm/community](https://github.com/openfilm/community).
 
 ### Como funciona
 
@@ -114,11 +114,11 @@ window.film = {
 };
 ```
 
-**Suas mudanças continuam suas.** Quando você muda algo à mão dentro de um plano, como texto, cor, posição ou tamanho, o OpenFilm salva isso nos `overrides` do clipe, e não no código da página. O agente pode reescrever a página e suas mudanças continuam valendo. O formato completo está em [SPEC.md](packages/openfilm/SPEC.md).
+**Suas mudanças continuam suas.** Quando você muda algo à mão dentro de um plano, como texto, cor, posição ou tamanho, o CapyCut salva isso nos `overrides` do clipe, e não no código da página. O agente pode reescrever a página e suas mudanças continuam valendo. O formato completo está em [SPEC.md](packages/openfilm/SPEC.md).
 
 ### Como contribuir
 
-Para rodar o OpenFilm a partir do código-fonte ou enviar um pull request, leia [CONTRIBUTING.md](CONTRIBUTING.md). Relate bugs nas [Issues](https://github.com/openfilm/openfilm/issues) com o relatório de Settings → Developer → Copy report, e problemas de segurança como descreve o [SECURITY.md](SECURITY.md).
+Para rodar o CapyCut a partir do código-fonte ou enviar um pull request, leia [CONTRIBUTING.md](CONTRIBUTING.md). Relate bugs nas [Issues](https://github.com/openfilm/openfilm/issues) com o relatório de Settings → Developer → Copy report, e problemas de segurança como descreve o [SECURITY.md](SECURITY.md).
 
 ### Star History
 

@@ -2,9 +2,9 @@
 /**
  * The library is one folder (saved.mjs libraryRoot): each folder at its top is one of the person's, made here or linked
  * from elsewhere (another disk, a NAS). The library drawer's side bar lists those beside the packs of the Community
- * (OpenFilm's own among them), in the person's order: the shelf, entries `saved/<folder>` and `pack:<group>`, with the
- * packs taken out of it (`hidden`, OpenFilm's own ones: the Community's are taken out by not being added). Kept in the
- * library folder itself (SHELF_FILE), so every OpenFilm on the computer that shares the library shows the same. What is
+ * (CapyCut's own among them), in the person's order: the shelf, entries `saved/<folder>` and `pack:<group>`, with the
+ * packs taken out of it (`hidden`, CapyCut's own ones: the Community's are taken out by not being added). Kept in the
+ * library folder itself (SHELF_FILE), so every CapyCut on the computer that shares the library shows the same. What is
  * saved without a folder asked for goes to the first of the person's folders in that order.
  */
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
@@ -34,7 +34,7 @@ export function readShelf() {
   return Array.isArray(raw) ? [...new Set(raw.filter(valid))] : null;
 }
 
-/** OpenFilm's own packs taken out of the library (`pack:<group>`). */
+/** CapyCut's own packs taken out of the library (`pack:<group>`). */
 export function readHidden() {
   const raw = readFile()?.hidden;
   return Array.isArray(raw) ? [...new Set(raw.filter((e) => typeof e === 'string' && PACK.test(e)))] : [];

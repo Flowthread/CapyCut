@@ -2,22 +2,22 @@
 /**
  * Skills: ways of making a kind of film that an agent takes up when asked. A skill is a folder in the Agent Skills
  * format (agentskills.io): a `SKILL.md` whose front matter names it and says what it is for (`name`, `description`),
- * its body the way to work, and any files it brings (scripts, templates, libraries). A skill never changes OpenFilm
+ * its body the way to work, and any files it brings (scripts, templates, libraries). A skill never changes CapyCut
  * itself: what it makes is pages and media in the project, like anything else an agent writes.
  *
  * Each is told apart by its uid, whose it is and its name (`openfilm/keynote`, `river/keynote`, SKILL_UID), so two of a
  * name are both had; an agent, which reads skills by name alone, is given the second as `owner-name` (agentNames).
  * Three places hold them, the first a uid is found in winning:
  *   project    `<project>/skills/<name>/`, kept with the project, so a film carries the ways it was made
- *   mine       `Skills/` beside the projects library (~/Movies/OpenFilm/Skills on macOS, ~/Videos/OpenFilm/Skills
+ *   mine       `Skills/` beside the projects library (~/Movies/CapyCut/Skills on macOS, ~/Videos/CapyCut/Skills
  *              elsewhere; OPENFILM_SKILLS to name another): the person's own, and those they added. In sight beside
  *              their Projects and Exports, backed up with them, and never in Studio's own folder, which a reset clears.
  *              Skills kept in Studio's home before (~/.openfilm/skills) are moved there (migrateMySkills).
  *   official   `skills-installed/` in the shared home (~/.openfilm): those installed from the openfilm/community index
  *              (studio/server/skill-catalog.mjs), each the commit it was installed at, with where it came from in its
- *              `.source.json`. Every OpenFilm on this computer has the same ones.
+ *              `.source.json`. Every CapyCut on this computer has the same ones.
  *
- * OpenFilm's own (coreSkills: `manual/` in this package, and its plugins' in their folders) are never installed or
+ * CapyCut's own (coreSkills: `manual/` in this package, and its plugins' in their folders) are never installed or
  * removed. None is given to every agent: as a package names the packages it depends on, a plugin (src/plugins.mjs) and
  * a skill name the skills they build on (openfilm.json `requires`: `film`, how a film is written; `media`), and an
  * agent is given those the plugins on bring and require, each once, a skill after those it builds on (ownSkills); with
@@ -99,7 +99,7 @@ export const isPlugin = (skill) => Boolean(skill.page || skill.program || skill.
  * The element a plugin brings: its package.json's `browser`, npm's own field for what a browser loads, a JavaScript
  * module in its folder whose default export is a custom element (a class that extends HTMLElement). Studio loads it
  * into its own page and puts the element where the plugin's workbench is: in the app itself, not in a frame, so it
- * can do all that OpenFilm's own workbenches do, which are loaded the same way. For that it runs only once the
+ * can do all that CapyCut's own workbenches do, which are loaded the same way. For that it runs only once the
  * person lets this plugin run (pluginRuns). A file that is not there: undefined.
  * @param {string} folder @returns {string | undefined} the module, in the folder
  */
@@ -216,11 +216,11 @@ export function discoverSkills() {
     return skill ? [skill] : [];
   });
 }
-/** OpenFilm's own skills that go with no plugin, released with this package beside the system prompt. */
+/** CapyCut's own skills that go with no plugin, released with this package beside the system prompt. */
 export const coreSkillsDir = () => join(dirname(fileURLToPath(import.meta.url)), '..', 'manual');
 /**
  * The person's own skills: OPENFILM_SKILLS, else `Skills/` beside the default projects library (OPENFILM_LIBRARY, else
- * ~/Movies/OpenFilm/Projects on macOS, ~/Videos/OpenFilm/Projects elsewhere: locations.mjs libraryDefault). They stay
+ * ~/Movies/CapyCut/Projects on macOS, ~/Videos/CapyCut/Projects elsewhere: locations.mjs libraryDefault). They stay
  * there when new projects are set to go elsewhere.
  */
 export const mySkillsDir = () => process.env.OPENFILM_SKILLS || join(dirname(libraryDefault()), 'Skills');
@@ -251,7 +251,7 @@ export function migrateMySkills({ from = oldSkillsDir(), to = mySkillsDir() } = 
     try { renameSyncSafe(skill.folder, target); moved.push(skill.name); } catch { kept.push(basename(skill.folder)); }
   }
   try {
-    writeFileSync(join(from, MOVED_NOTE), `Your OpenFilm skills are kept in ${to} now.
+    writeFileSync(join(from, MOVED_NOTE), `Your CapyCut skills are kept in ${to} now.
 ${kept.length ? `These stayed here, as a skill of the same name is there: ${kept.join(', ')}.
 ` : ''}`);
   } catch { /* the note is only a courtesy */ }
@@ -262,16 +262,16 @@ ${kept.length ? `These stayed here, as a skill of the same name is there: ${kept
 export const SKILL_NAME = /^[a-z0-9][a-z0-9-]{0,63}$/;
 
 /**
- * A skill's uid: whose it is and its name, `owner/name`, the one way OpenFilm tells skills apart (two of the same name
+ * A skill's uid: whose it is and its name, `owner/name`, the one way CapyCut tells skills apart (two of the same name
  * can be had side by side), and how one is shared and searched. The owner is read from where the skill came from,
- * never from what it says of itself, so none can pass for another's: `openfilm` for OpenFilm's (released with it), the
+ * never from what it says of itself, so none can pass for another's: `openfilm` for CapyCut's (released with it), the
  * GitHub account one of the person's was added from (`gitlab-<group>` on GitLab), `local` for one made here or added
  * from a folder, `project` for a project's own.
  */
 export const SKILL_UID = /^[a-z0-9][a-z0-9-]{0,63}\/[a-z0-9][a-z0-9-]{0,63}$/;
 
 /**
- * Namespaces that are never a GitHub account's: `openfilm` (OpenFilm's own, github.com/openfilm), `local` (the
+ * Namespaces that are never a GitHub account's: `openfilm` (CapyCut's own, github.com/openfilm), `local` (the
  * person's own, made or added from a folder here) and `project` (a project's). An account of one of those names is
  * `github-<name>`, so it is never taken for them.
  */
@@ -286,7 +286,7 @@ const uidPart = (name) => name.toLowerCase().replace(/[^a-z0-9-]+/g, '-').replac
  * the person's came from
  */
 export function skillOwner(source, origin) {
-  /* an installed one is its repository's account's (OpenFilm's own, openfilm); OpenFilm's own skills, openfilm */
+  /* an installed one is its repository's account's (CapyCut's own, openfilm); CapyCut's own skills, openfilm */
   if (source === 'official') {
     const account = origin?.address ? /^https:\/\/github\.com\/([\w.-]+)\//.exec(`${origin.address}/`)?.[1] : null;
     return account ? accountSpace(uidPart(account)) : 'openfilm';
@@ -355,7 +355,7 @@ export function parseSkillFile(text) {
  *   where an app shows it and what it builds on (openfilm.json, each optional): `requires` the skills an agent reads
  *   before it (by name: ownSkills), `kind` a way of working or a look, `order` among its kind,
  *   `icon` a mark's name, `cover` a picture and `preview` a video in its folder, `repository` where its source is read,
- *   `needs` what it needs beyond OpenFilm (by language), `platforms` the computers it runs on (none: every one), `tab`
+ *   `needs` what it needs beyond CapyCut (by language), `platforms` the computers it runs on (none: every one), `tab`
  *   a plugin's surface shown as a tab of the library instead of as a workbench (src/plugins.mjs tabOf), `blocks` the
  *   blocks its workbench is laid out in among the page's panels (src/plugin-blocks.mjs); and `appIcon`, its app icon
  *   (appIconIn), with or without an openfilm.json
@@ -369,7 +369,7 @@ const byLanguage = (/** @type {unknown} */ v, max = 200) => (typeof v === 'strin
 export const APP_ICON_FILES = Object.freeze(['icon.svg', 'icon.png', 'icon.webp']);
 /**
  * The app icon a folder brings, by convention as an app's: a square picture at its root named icon.svg, icon.png or
- * icon.webp (OpenFilm rounds its corners and draws it the same everywhere); none: OpenFilm's default for its kind.
+ * icon.webp (CapyCut rounds its corners and draws it the same everywhere); none: CapyCut's default for its kind.
  * @param {string} folder @returns {string | undefined}
  */
 export const appIconIn = (folder) => APP_ICON_FILES.find((name) => existsSync(join(folder, name)));
@@ -496,7 +496,7 @@ export function skillsIn(dir, source) {
 
 /**
  * Every skill available to a project (or none: only the person's own and the official ones), by uid, the first place
- * holding a uid winning (one of the person's added from OpenFilm's own repository is that official one); sorted by
+ * holding a uid winning (one of the person's added from CapyCut's own repository is that official one); sorted by
  * name, then the project's, the person's, the official ones. Two of the same name and other owners are both there.
  * @param {{ project?: string | null, mine?: string, official?: string }} [where]
  * @returns {Skill[]}
@@ -520,7 +520,7 @@ export function listSkills({ project = null, mine = mySkillsDir(), official = of
 
 /**
  * Which skills agents get: the person's own, a project's and those installed, all of them unless turned off
- * (`skillsOff`), offered to no agent until turned on again. Kept in the shared prefs.json, so every OpenFilm on this
+ * (`skillsOff`), offered to no agent until turned on again. Kept in the shared prefs.json, so every CapyCut on this
  * computer agrees; `home`: the Studio home that holds it.
  */
 const namesIn = (/** @type {unknown} */ value) => (Array.isArray(value) ? [...new Set(value.filter((n) => typeof n === 'string' && (SKILL_UID.test(n) || SKILL_NAME.test(n))))].sort() : []);
@@ -625,7 +625,7 @@ export function allowProjectSkill(skill, project, on, home) {
 }
 
 /**
- * What OpenFilm has withdrawn, by its index's `revoked` (studio/server/skill-catalog.mjs keeps the last one read, beside
+ * What CapyCut has withdrawn, by its index's `revoked` (studio/server/skill-catalog.mjs keeps the last one read, beside
  * the index, so it holds offline): a skill by its uid, at some commits or all of them, or by the digest of its files
  * wherever a copy of it is (a project's, the person's). One withdrawn is given to no agent and nothing of it runs; the
  * person is told why. `reason`: malware, impersonation, rights, broken or policy.
@@ -668,7 +668,7 @@ export function revocationOf(skill, list = revokedNow()) {
 
 /**
  * The skills agents get for a project: listSkills's, less any turned off, less a project's own the person has not
- * allowed in it (projectSkillAllowed), and less any OpenFilm withdrew (revocationOf).
+ * allowed in it (projectSkillAllowed), and less any CapyCut withdrew (revocationOf).
  * @param {Parameters<typeof listSkills>[0] & { home?: string }} [where]
  */
 export function usableSkills({ home, ...where } = {}) {
@@ -677,10 +677,10 @@ export function usableSkills({ home, ...where } = {}) {
   return listSkills(where).filter((s) => !keeps(off, s) && projectSkillAllowed(s, where.project, home) && !revocationOf(s, revoked));
 }
 
-/** OpenFilm's own skills by name, in the order they are listed: how a film is written, its media, its canvas, its motion. */
+/** CapyCut's own skills by name, in the order they are listed: how a film is written, its media, its canvas, its motion. */
 export const CORE_SKILLS = Object.freeze(['film', 'media', 'canvas']);
 
-/** Names OpenFilm's own skills had before, read as their names now (`edit`, which became `film`). */
+/** Names CapyCut's own skills had before, read as their names now (`edit`, which became `film`). */
 const RENAMED = Object.freeze(/** @type {Record<string, string>} */ ({ edit: 'film' }));
 
 /**
@@ -727,7 +727,7 @@ export function requiredSkills(roots, pool) {
 export const WITHOUT_PLUGINS = Object.freeze(['film', 'media']);
 
 /**
- * The skills an agent is given of OpenFilm's own (requiredSkills): those the plugins on bring and require
+ * The skills an agent is given of CapyCut's own (requiredSkills): those the plugins on bring and require
  * (src/plugins.mjs), with none on WITHOUT_PLUGINS, and those `also` require (the person's own and a project's, given
  * too), and what these require.
  * @param {string} [home] @param {readonly { name: string, requires?: readonly string[] }[]} [also]
@@ -737,7 +737,7 @@ export function ownSkills(home, also = []) {
   const roots = [];
   const on = pluginStates(home).filter((p) => p.on);
   for (const p of on) for (const name of [...p.requires, ...p.skills]) roots.push([p.id, name]);
-  if (!on.length) for (const name of WITHOUT_PLUGINS) roots.push(['OpenFilm', name]);
+  if (!on.length) for (const name of WITHOUT_PLUGINS) roots.push(['CapyCut', name]);
   for (const s of also) for (const name of s.requires ?? []) roots.push([s.name, name]);
   return requiredSkills(roots, new Map(coreSkills().map((s) => [s.name, s])));
 }
@@ -746,8 +746,8 @@ export function ownSkills(home, also = []) {
 const after = (skill) => (skill.requires?.length ? ` (after ${skill.requires.map((n) => `\`${n}\``).join(', ')})` : '');
 
 /**
- * OpenFilm's own skills, which every agent has unless turned off, in CORE_SKILLS's order: those in coreSkillsDir, and
- * those OpenFilm's plugins bring, each in its plugin's folder (src/plugins.mjs pluginSkillDir).
+ * CapyCut's own skills, which every agent has unless turned off, in CORE_SKILLS's order: those in coreSkillsDir, and
+ * those CapyCut's plugins bring, each in its plugin's folder (src/plugins.mjs pluginSkillDir).
  * @returns {Skill[]}
  */
 export function coreSkills() {
@@ -757,7 +757,7 @@ export function coreSkills() {
 }
 
 /**
- * One skill by its uid (`owner/name`), or by its name (OpenFilm's own first, else the first listSkills has), or null.
+ * One skill by its uid (`owner/name`), or by its name (CapyCut's own first, else the first listSkills has), or null.
  * @param {string} key @param {Parameters<typeof listSkills>[0]} [where]
  */
 export function findSkill(key, where) {
@@ -767,7 +767,7 @@ export function findSkill(key, where) {
 
 /**
  * Every skill a key names, one each: by its full name (`owner/name`, or as an agent is given it, `owner:name` in a
- * Claude Code plugin or `owner-name` elsewhere), else by its name alone, which two owners may share. OpenFilm's own and
+ * Claude Code plugin or `owner-name` elsewhere), else by its name alone, which two owners may share. CapyCut's own and
  * the library's first, then Discover's not installed (tried in a conversation before it is installed).
  * @param {string} key @param {Parameters<typeof listSkills>[0]} [where] @returns {Skill[]}
  */
@@ -809,7 +809,7 @@ export function agentNames(skills) {
 }
 
 /**
- * OpenFilm's skills as agents are offered them, each with the name it is given by (agentNames), in this order: its own
+ * CapyCut's skills as agents are offered them, each with the name it is given by (agentNames), in this order: its own
  * that the plugins on and the skills given require (ownSkills) (`core`), those installed and on (`usable`), then the rest
  * of the library but those off, which a message can still name (Try now). `given`: the first two, what a session has.
  * @param {Parameters<typeof usableSkills>[0]} [where]
@@ -831,7 +831,7 @@ export function offeredSkills({ home, ...where } = {}) {
 }
 
 /**
- * OpenFilm's own skills as the system prompt lists them (src/system-prompt.mjs; `openfilm` alone prints them after
+ * CapyCut's own skills as the system prompt lists them (src/system-prompt.mjs; `openfilm` alone prints them after
  * it): one line for each that an agent is given (ownSkills), its name, what it builds on and what its SKILL.md says it
  * is for, a skill after those it builds on; one no plugin on needs is left out (an agent is not told to read what it
  * is not given), and when plugins are off, a last line says which (src/plugins.mjs).
@@ -840,7 +840,7 @@ export function offeredSkills({ home, ...where } = {}) {
 export function promptSkills(home) {
   const { skills, missing } = ownSkills(home);
   const lines = skills.map((s) => `- \`${s.name}\`${after(s)}: ${s.description}`);
-  /* what a skill builds on and OpenFilm has not: said, so the agent works without it knowingly */
+  /* what a skill builds on and CapyCut has not: said, so the agent works without it knowingly */
   if (missing.size) lines.push(`- Not here, though required: ${[...missing].map(([name, by]) => `\`${name}\` (by ${by.join(', ')})`).join('; ')}.`);
   const said = pluginsOffLine(home);
   return `${lines.join('\n')}${said ? `\n\n${said}` : ''}\n`;
@@ -862,9 +862,9 @@ export function buildsOnLine(given) {
 }
 
 /**
- * Text for an agent with OpenFilm's commands as `run` types them here (`npx -y openfilm@latest`, the app's own by its
- * path): the system prompt's and OpenFilm's own skills' `openfilm …`, and the official ones' `npx openfilm …`. A skill read
- * from its file says `openfilm`, which is the command on the PATH where OpenFilm is installed and in the desktop app.
+ * Text for an agent with CapyCut's commands as `run` types them here (`npx -y openfilm@latest`, the app's own by its
+ * path): the system prompt's and CapyCut's own skills' `openfilm …`, and the official ones' `npx openfilm …`. A skill read
+ * from its file says `openfilm`, which is the command on the PATH where CapyCut is installed and in the desktop app.
  * @param {string} text @param {string} run
  */
 export const asRun = (text, run) => text.replaceAll('npx openfilm', run).replace(/`openfilm(?=[\s`])/g, `\`${run}`);
@@ -942,10 +942,10 @@ function coverPicture(data) {
   return { bytes, extension };
 }
 
-/* the name a cover chosen in OpenFilm is saved under: only such a file is removed when the cover changes */
+/* the name a cover chosen in CapyCut is saved under: only such a file is removed when the cover changes */
 const CHOSEN_COVER = /^openfilm-cover-[0-9a-f-]{36}\.(?:png|jpg|webp)$/;
 
-/** Replace the metadata atomically. The previous cover's file goes only when OpenFilm saved it (CHOSEN_COVER); a
+/** Replace the metadata atomically. The previous cover's file goes only when CapyCut saved it (CHOSEN_COVER); a
  * picture of the skill's own stays, as its content may use it.
  * @param {string} folder @param {{ bytes: Buffer, extension: string } | null} picture */
 function writeSkillCover(folder, picture) {

@@ -1,6 +1,6 @@
 /**
- * Settings → General → Account, at the top: the person's OpenFilm account, the one the OpenFilm service signs in to
- * (lib/providers `openfilm`). Not signed in is a local account where everything works, and only the OpenFilm service
+ * Settings → General → Account, at the top: the person's CapyCut account, the one the CapyCut service signs in to
+ * (lib/providers `openfilm`). Not signed in is a local account where everything works, and only the CapyCut service
  * waits for a sign-in. Signing in opens the website in the browser; signed in shows the account's picture, name and
  * email as the website has them (studio/server/account-profile.mjs; the email and its initial until the service
  * says), a way to the website's account page, where they are changed (the app changes nothing of the account), and
@@ -10,7 +10,7 @@ import React from 'react';
 import { ExternalLink, User } from 'lucide-react';
 import { useT } from '@/i18n';
 import { accountState } from '@/lib/account';
-import { useOpenFilmAccount } from '@/lib/providers';
+import { useCapyCutAccount } from '@/lib/providers';
 import { SettingsButton, SettingsGroup, SettingsItem, SettingsLinkButton, settingsError } from './ui';
 
 /** The account's picture, else the first letter of its name on the app's color. */
@@ -29,14 +29,14 @@ export function Avatar({ src, name, size = 40 }: { src: string | null | undefine
 
 export function AccountGroup() {
   const t = useT();
-  const hook = useOpenFilmAccount();
+  const hook = useCapyCutAccount();
   const { own, signingIn: signing } = hook;
   const busy = hook.busy === 'openfilm';
   const problem = (hook.problemFor === 'openfilm' ? hook.problem : null) ?? (signing?.errorFor === 'openfilm' ? signing.error : null) ?? own?.connectionError;
 
   if (!own) return (
     <SettingsGroup title={t('settings.account.group')}>
-      <SettingsItem mark={<User size={18} aria-hidden />} title="OpenFilm"
+      <SettingsItem mark={<User size={18} aria-hidden />} title="CapyCut"
         description={<span role="status">{t(hook.accountLoadFailed ? 'settings.account.loadFailed' : 'settings.account.loading')}</span>}
         control={hook.accountLoadFailed ? <SettingsButton onClick={hook.retryAccount}>{t('settings.account.retry')}</SettingsButton> : null} />
     </SettingsGroup>
@@ -45,7 +45,7 @@ export function AccountGroup() {
   const state = accountState(own, signing);
   const signedIn = state === 'signed-in' || state === 'env';
   const email = own.account;
-  const name = own.profile?.name || email || 'OpenFilm';
+  const name = own.profile?.name || email || 'CapyCut';
   /* under the name: the email, when the name is not it */
   const line = state === 'env' ? t('settings.account.env').replace('{env}', own.env)
     : state === 'signed-in' ? (email && email !== name ? email : t('settings.account.signedIn'))

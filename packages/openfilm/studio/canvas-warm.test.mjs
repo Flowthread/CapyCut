@@ -60,7 +60,7 @@ test('an open video node picks up a service sign-in without reloading the canvas
       if (path === '/api/providers/openfilm/sign-in' && route.request().method() === 'POST') status = 'waiting';
       const connected = status === 'connected';
       await route.fulfill({ json: {
-        providers: [{ id: 'openfilm', name: 'OpenFilm', verbs: ['video'], models: { video: [{ id: model, name }] },
+        providers: [{ id: 'openfilm', name: 'CapyCut', verbs: ['video'], models: { video: [{ id: model, name }] },
           source: connected ? 'file' : null, signIn: true, account: null, keysUrl: '', pricingUrl: '', env: '', envKey: false, last4: null }],
         use: { video: connected ? 'openfilm' : null }, model: { video: connected ? model : null }, custom: [],
         signingIn: { provider: status === 'waiting' ? 'openfilm' : null, error: null, errorFor: null }, librarySearch: null,
@@ -82,8 +82,8 @@ test('an open video node picks up a service sign-in without reloading the canvas
       await page.getByRole('button', { name: 'Connect a service', exact: true }).click();
       await page.getByRole('button', { name: /Seedance 2\.0 Fast.*Connect/ }).click();
       const settings = page.getByRole('dialog', { name: 'Services', exact: true });
-      await settings.getByRole('button', { name: 'OpenFilm', exact: true }).click();
-      const provider = page.getByRole('dialog', { name: 'OpenFilm', exact: true });
+      await settings.getByRole('button', { name: 'CapyCut', exact: true }).click();
+      const provider = page.getByRole('dialog', { name: 'CapyCut', exact: true });
       await provider.getByRole('button', { name: 'Connect', exact: true }).click();
       await provider.getByText('Finish signing in in your browser…').waitFor();
       await provider.getByRole('button', { name: 'Done', exact: true }).click();
@@ -105,7 +105,7 @@ test('new videos keep the ratio picked while the canvas stays open, including th
   await withBoard([{ id: 'video', x: 0, y: 0, make: 'video', prompt: 'A camera moves toward the sea.' }], async ({ page, url, file }) => {
     const requests = [];
     await page.context().route('**/api/providers', (route) => route.fulfill({ json: {
-      providers: [{ id: 'openfilm', name: 'OpenFilm', verbs: ['video'], source: 'file',
+      providers: [{ id: 'openfilm', name: 'CapyCut', verbs: ['video'], source: 'file',
         models: { video: [{ id: 'test-video', name: 'Test video', ratios: ['16:9', '9:16', '1:1'], frames: false, refs: 0 }] } }],
       use: { video: 'openfilm' }, model: { video: 'test-video' }, custom: [],
       signingIn: { provider: null, error: null, errorFor: null }, librarySearch: null,

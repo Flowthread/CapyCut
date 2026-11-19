@@ -56,6 +56,6 @@ are made with, **multilingual-e5-small** by Liang Wang et al., Microsoft (MIT Li
 Xenova/multilingual-e5-small; it runs it in **ONNX Runtime Web** (`onnxruntime-web`, MIT License, © Microsoft
 Corporation), fetched likewise.
 
-The offline Discover snapshot (`skill-catalog-seed.json`) includes OpenFilm's Replicate skill at its pinned commit
-from `openfilm/skill-replicate` (MIT License, © 2026 OpenFilm contributors). The snapshot retains the full license
+The offline Discover snapshot (`skill-catalog-seed.json`) includes CapyCut's Replicate skill at its pinned commit
+from `openfilm/skill-replicate` (MIT License, © 2026 CapyCut contributors). The snapshot retains the full license
 and source commit. It is a discovery fallback, not an automatically installed skill.

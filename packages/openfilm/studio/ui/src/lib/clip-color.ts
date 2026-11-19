@@ -44,7 +44,7 @@ export function clipFilter(clip: ColorClip): { slug: string; amount: number; url
 /** Whether a filter (by its slug) is the library item `id`. */
 export const isFilter = (slug: string, id: string): boolean => filterSlug(id) === slug;
 
-/** Files OpenFilm brings for ordinary video: written into the project when a chain names one it does not have. */
+/** Files CapyCut brings for ordinary video: written into the project when a chain names one it does not have. */
 function needed(chain: readonly string[], text: ColorText, standard: Readonly<Record<string, string>>): { path: string; text: string }[] {
   return chain.flatMap((p) => (standard[p] != null && text(p) == null ? [{ path: p, text: standard[p] }] : []));
 }
@@ -52,7 +52,7 @@ function needed(chain: readonly string[], text: ColorText, standard: Readonly<Re
 /**
  * A layer of each clip changed by `edit` (given its text as it is, null: none yet): `'own'`, each clip's own layer, or
  * one file the clips share (a group). Each clip's chain has the layer in it after (or not, once its own changes
- * nothing), with the files OpenFilm brings for ordinary video it needs.
+ * nothing), with the files CapyCut brings for ordinary video it needs.
  */
 export function layerWrite(clips: readonly ColorClip[], text: ColorText, layer: 'own' | string, edit: (old: string | null, clip: ColorClip) => string, standard: Readonly<Record<string, string>>): ColorWrite {
   const out: ColorWrite = { styles: [], files: [] };
@@ -79,7 +79,7 @@ export function adjustWrite(clips: readonly ColorClip[], text: ColorText, edit: 
   return layerWrite(clips, text, layer, (old, clip) => withAdjust(old, edit(adjustOf(old)), (layer === 'own' ? ownPath(clip) : layer).split('/').pop()!.replace(/\.ctf$/, '')), standard);
 }
 
-/** Each clip's input (`path`, one of OpenFilm's; `inputText` its text, written when the project has none) in place of its own. */
+/** Each clip's input (`path`, one of CapyCut's; `inputText` its text, written when the project has none) in place of its own. */
 export function inputWrite(clips: readonly ColorClip[], text: ColorText, path: string, inputText: string, standard: Readonly<Record<string, string>>): ColorWrite {
   const out: ColorWrite = { styles: [], files: [] };
   const all = { ...standard, [path]: inputText };

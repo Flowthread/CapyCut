@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { chooseProvider, listProviders, shownChoices } from './index.mjs';
 
-/* OpenFilm's service is asked what it offers: nowhere here (a port that refuses at once) */
+/* CapyCut's service is asked what it offers: nowhere here (a port that refuses at once) */
 process.env.OPENFILM_API_URL ??= 'http://127.0.0.1:9';
 
 before(() => {
@@ -21,7 +21,7 @@ test('the own-key providers, then Local services, in the order Settings lists th
   assert.deepEqual(listProviders().map((p) => p.id), ['elevenlabs', 'inworld', 'cartesia', 'openai', 'google', 'fal', 'openrouter', 'volcengine', 'pexels', 'pixabay', 'brave', 'tavily', 'groq', 'azure', 'doubao', 'mimo', 'keenable', 'openfilm', 'local']);
 });
 
-test('each provider paid with a key of its own links its own pricing page; OpenFilm\'s service and Local services none', () => {
+test('each provider paid with a key of its own links its own pricing page; CapyCut\'s service and Local services none', () => {
   for (const p of listProviders()) {
     if (p.signIn || p.ready) assert.equal(p.pricingUrl, undefined, p.id);
     else assert.match(p.pricingUrl ?? '', /^https:\/\//, p.id);

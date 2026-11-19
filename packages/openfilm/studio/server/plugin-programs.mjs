@@ -11,7 +11,7 @@
  *   PORT              the port to serve on, on this computer (HOST: 127.0.0.1)
  *   OPENFILM_PROJECT  the project's folder
  *   OPENFILM_PLUGIN   the plugin's own folder
- *   OPENFILM_RUN      how `openfilm` is typed, to run OpenFilm's and other plugins' commands
+ *   OPENFILM_RUN      how `openfilm` is typed, to run CapyCut's and other plugins' commands
  * and `node` and `openfilm` first on its PATH: the Node this Studio runs on and this Studio's own command, so a
  * plugin needs nothing installed. It is ready once it answers on its port (READY_MS at most), and is stopped, with
  * all it started, when the plugin is turned off or no longer let run, and when Studio closes or is gone in any way
@@ -45,7 +45,7 @@ export function programBin(dir, { node = process.execPath, cli = fileURLToPath(n
   }
   const asNode = electron ? 'ELECTRON_RUN_AS_NODE=1 ' : '';
   for (const [name, line] of [['node', `${asNode}exec ${sq(node)} "$@"`], ['openfilm', `${asNode}exec ${sq(node)} ${sq(cli)} "$@"`]]) {
-    writeFileSync(join(dir, name), `#!/bin/sh\n# written by OpenFilm Studio for the programs of plugins (changes are lost)\n${line}\n`);
+    writeFileSync(join(dir, name), `#!/bin/sh\n# written by CapyCut Studio for the programs of plugins (changes are lost)\n${line}\n`);
     chmodSync(join(dir, name), 0o755);
   }
   return dir;

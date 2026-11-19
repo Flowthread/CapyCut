@@ -1,5 +1,5 @@
 /**
- * What crosses between Studio's shell and the edit, OpenFilm-internal: NOT part of Studio's public interface. Any
+ * What crosses between Studio's shell and the edit, CapyCut-internal: NOT part of Studio's public interface. Any
  * workbench (the canvas, a plugin someone made) reaches the shell through `openfilm/studio` (studio/index), which is
  * read from the frame here; the edit reaches the rest of it through studio/internal. A workbench is an element with a
  * React root of its own (plugins/edit, plugins/canvas, components/surfaces), so no context reaches it: the sides share

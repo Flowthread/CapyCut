@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ProcessList version="2" id="openfilm:in-sony-slog3">
-    <Description>OpenFilm input: Sony S-Log3, S-Gamut3.Cine footage (a video-range file) into ACEScct</Description>
+    <Description>CapyCut input: Sony S-Log3, S-Gamut3.Cine footage (a video-range file) into ACEScct</Description>
     <Matrix inBitDepth="32f" outBitDepth="32f">
         <Array dim="3 4">
   0.856304985337243                   0                   0  0.0625610948191593

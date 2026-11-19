@@ -54,7 +54,7 @@ export function installerPid(bundleId, run = (file, args) => execFileSync(file, 
   } catch { return null; }
 }
 
-/** The .app the running executable is in (…/OpenFilm.app/Contents/MacOS/OpenFilm). */
+/** The .app the running executable is in (…/CapyCut.app/Contents/MacOS/CapyCut). */
 export const appBundle = (execPath) => posix.resolve(posix.dirname(execPath), '..', '..');
 
 /* waits for ShipIt ($1) to finish, at most HAND_OFF_SECONDS, then opens the app ($2) */

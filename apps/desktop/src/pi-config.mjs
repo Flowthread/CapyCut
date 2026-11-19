@@ -15,7 +15,7 @@ export const PI_APIS = Object.freeze({ chat: 'openai-completions', responses: 'o
 /**
  * The reasoning efforts a model of the person's own can offer, in order: `auto` sends no reasoning setting (the
  * service decides, as it always did), the others are Pi's thinking levels. Which of them a model offers is the
- * person's to say in Settings (OpenFilm cannot know what a service's model takes); a model they said nothing of offers
+ * person's to say in Settings (CapyCut cannot know what a service's model takes); a model they said nothing of offers
  * `auto` alone.
  */
 export const EFFORTS = Object.freeze(['auto', 'off', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max']);
@@ -115,7 +115,7 @@ export function fitImages(messages, budget, { omitted = new Set(), maxImages = 1
 
 /**
  * A model's context length as kept: a whole number of tokens from 32K to 10M, as the person gave it in Settings (the
- * service documents it; OpenFilm cannot know it). Null for none or anything else: the model gets 128K.
+ * service documents it; CapyCut cannot know it). Null for none or anything else: the model gets 128K.
  */
 export function contextLength(/** @type {unknown} */ value) {
   return typeof value === 'number' && Number.isInteger(value) && value >= 32_000 && value <= 10_000_000 ? value : null;
@@ -286,7 +286,7 @@ export function contextUsed(message, model) {
 
 /** Where each service the person's own key may be for is topped up, by its address. */
 const BILLING = [
-  { host: /(^|\.)openfilm\.dev$/, name: 'OpenFilm', url: 'https://openfilm.dev/account' },
+  { host: /(^|\.)openfilm\.dev$/, name: 'CapyCut', url: 'https://openfilm.dev/account' },
   { host: /(^|\.)openai\.com$/, name: 'OpenAI', url: 'https://platform.openai.com/settings/organization/billing' },
   { host: /(^|\.)anthropic\.com$/, name: 'Anthropic', url: 'https://console.anthropic.com/settings/billing' },
   { host: /(^|\.)openrouter\.ai$/, name: 'OpenRouter', url: 'https://openrouter.ai/settings/credits' },

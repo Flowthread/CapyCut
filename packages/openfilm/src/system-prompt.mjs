@@ -1,12 +1,12 @@
 // @ts-check
 /**
- * OpenFilm's system prompt (SYSTEM_PROMPT.md): what every agent is told before anything else, whichever agent it is
+ * CapyCut's system prompt (SYSTEM_PROMPT.md): what every agent is told before anything else, whichever agent it is
  * and however it is reached. It says where the agent is, how to be with the person, and that skills say how each kind
  * of work is done. It holds nothing of any one kind of work: what a film is, how one is seen or rendered, where media
  * comes from are each a skill's, with the commands that skill uses, read when a task needs it. So the prompt stays a
- * few lines however much OpenFilm can do.
+ * few lines however much CapyCut can do.
  *
- * One text, three ways to an agent: `openfilm` alone prints it with OpenFilm's own skills listed after it (the CLI:
+ * One text, three ways to an agent: `openfilm` alone prints it with CapyCut's own skills listed after it (the CLI:
  * an agent in a terminal, and one an app started that was told to run it); the desktop app's own agent has it as its
  * system prompt. After its first lines comes the part for where the agent is: `<!-- in a terminal -->` (how Studio
  * is opened; how it talks with the person is that agent's own), or `<!-- in the app -->` (Studio is beside it, and

@@ -1,6 +1,6 @@
 <p align="center">
-  <img src="docs/logo-light.svg#gh-light-mode-only" alt="OpenFilm" height="48">
-  <img src="docs/logo-dark.svg#gh-dark-mode-only" alt="OpenFilm" height="48">
+  <img src="docs/logo-light.svg#gh-light-mode-only" alt="CapyCut" height="48">
+  <img src="docs/logo-dark.svg#gh-dark-mode-only" alt="CapyCut" height="48">
 </p>
 <p align="center">AI-videoagenten med åpen kildekode.</p>
 <p align="center">
@@ -40,13 +40,13 @@
   <a href="https://www.youtube.com/@riverisbuilding"><img alt="Watch on YouTube" src="docs/buttons/youtube.svg" /></a>
 </p>
 
-[![OpenFilm: en agent lager en film mens du ser på, og så endrer du den for hånd](docs/openfilm.webp)](https://openfilm.dev)
+[![CapyCut: en agent lager en film mens du ser på, og så endrer du den for hånd](docs/openfilm.webp)](https://openfilm.dev)
 
 ---
 
 ### Om
 
-OpenFilm gjør enhver kodeagent til en videoagent, med editorer der du kan endre alt den lager.
+CapyCut gjør enhver kodeagent til en videoagent, med editorer der du kan endre alt den lager.
 
 Du og agenten jobber med den samme filmen, sammen og i sanntid. Alt agenten endrer, ser du mens det skjer; alt du endrer, ser agenten også. Agenten gjør det meste av jobben; du peker på hva som helst og ber om en endring, eller gjør den selv.
 
@@ -68,25 +68,25 @@ npx skills add openfilm/openfilm
 
 ### Editorer
 
-Hver editor er en egen måte å jobbe med den samme filmen på, og i alle jobber du og agenten sammen. OpenFilm leveres med fire, og flere offisielle editorer er under utvikling for ulike typer mennesker: enkle nok til at hvem som helst kan ta dem i bruk, og profesjonelle arbeidsbenker for dem som vil ha det. Editorene følger Fellesskapets åpne standard, så hvem som helst kan lage en og dele den.
+Hver editor er en egen måte å jobbe med den samme filmen på, og i alle jobber du og agenten sammen. CapyCut leveres med fire, og flere offisielle editorer er under utvikling for ulike typer mennesker: enkle nok til at hvem som helst kan ta dem i bruk, og profesjonelle arbeidsbenker for dem som vil ha det. Editorene følger Fellesskapets åpne standard, så hvem som helst kan lage en og dele den.
 
 - **Visning**: se filmen i full størrelse. Klikk på et øyeblikk, dra over et stykke eller ring inn en del av bildet, og agenten vet hva du peker på.
 - **Redigering**: en komplett tidslinje med klipp, tekst, undertekster, voiceover og lyd. Flytt, skaler og endre stilen på alt inne i et shot. Eksporter en video, eller ta med tidslinjen til Final Cut Pro, Premiere Pro eller DaVinci Resolve.
 - **Lerret**: en tavle for planlegging, med notater, bilder, klipp og stemmer side om side. Generer hver av dem med tjenestene dine, og send dem så til tidslinjen i rekkefølge.
 - **Farge**: fargekorriger hvert klipp med scopes, fargehjul og kurver, fra kameraets log-opptak eller med `.cube`-LUT-er. Det du ser i forhåndsvisningen, er det du eksporterer.
 
-Alle fire deler ett bibliotek: dine egne opptak i mapper, lenket i stedet for kopiert og funnet igjen når du flytter dem, side om side med OpenFilms gratis musikk, lydeffekter, stemmer og klistremerker.
+Alle fire deler ett bibliotek: dine egne opptak i mapper, lenket i stedet for kopiert og funnet igjen når du flytter dem, side om side med CapyCuts gratis musikk, lydeffekter, stemmer og klistremerker.
 
 ### Fellesskap
 
-Fellesskapet er en åpen standard for alt du kan legge til i OpenFilm, og hvem som helst kan bygge for det.
+Fellesskapet er en åpen standard for alt du kan legge til i CapyCut, og hvem som helst kan bygge for det.
 
-- **Plugins** utvider selve OpenFilm med nye editorer og koblinger til eksterne tjenester. OpenFilms egne editorer er plugins, bygget på samme måte som alle andres.
+- **Plugins** utvider selve CapyCut med nye editorer og koblinger til eksterne tjenester. CapyCuts egne editorer er plugins, bygget på samme måte som alle andres.
 - **Ferdigheter** lærer agenten en måte å lage en bestemt type film på.
 - **Ressurser** er musikk, lydeffekter, overganger, effekter, tekststiler, klistremerker og maler.
 - **Eksempler** er komplette prosjekter du kan lære av og remikse.
 
-Hver av dem er en vanlig mappe. Legg til en fra Fellesskap-vinduet i OpenFilm, eller lag din egen: [lag en plugin](packages/openfilm/plugins/README.md), [skriv en ferdighet](https://github.com/openfilm/community/blob/main/SPEC.md), [del ressurser](https://github.com/openfilm/community/blob/main/assets/CONTRIBUTING.md), eller del en ferdig film som eksempel, og før den så opp i [openfilm/community](https://github.com/openfilm/community).
+Hver av dem er en vanlig mappe. Legg til en fra Fellesskap-vinduet i CapyCut, eller lag din egen: [lag en plugin](packages/openfilm/plugins/README.md), [skriv en ferdighet](https://github.com/openfilm/community/blob/main/SPEC.md), [del ressurser](https://github.com/openfilm/community/blob/main/assets/CONTRIBUTING.md), eller del en ferdig film som eksempel, og før den så opp i [openfilm/community](https://github.com/openfilm/community).
 
 ### Slik fungerer det
 
@@ -114,11 +114,11 @@ window.film = {
 };
 ```
 
-**Endringene dine forblir dine.** Når du endrer noe inne i et shot for hånd, for eksempel tekst, farge, posisjon eller størrelse, lagrer OpenFilm det i klippets `overrides` i stedet for i sidens kode. Agenten kan skrive om siden, og endringene dine gjelder fortsatt. Hele formatet står i [SPEC.md](packages/openfilm/SPEC.md).
+**Endringene dine forblir dine.** Når du endrer noe inne i et shot for hånd, for eksempel tekst, farge, posisjon eller størrelse, lagrer CapyCut det i klippets `overrides` i stedet for i sidens kode. Agenten kan skrive om siden, og endringene dine gjelder fortsatt. Hele formatet står i [SPEC.md](packages/openfilm/SPEC.md).
 
 ### Bidra
 
-For å kjøre OpenFilm fra kildekoden eller sende en pull request, les [CONTRIBUTING.md](CONTRIBUTING.md). Rapporter feil i [Issues](https://github.com/openfilm/openfilm/issues) med rapporten fra Settings → Developer → Copy report, og sikkerhetsproblemer slik [SECURITY.md](SECURITY.md) beskriver.
+For å kjøre CapyCut fra kildekoden eller sende en pull request, les [CONTRIBUTING.md](CONTRIBUTING.md). Rapporter feil i [Issues](https://github.com/openfilm/openfilm/issues) med rapporten fra Settings → Developer → Copy report, og sikkerhetsproblemer slik [SECURITY.md](SECURITY.md) beskriver.
 
 ### Star History
 

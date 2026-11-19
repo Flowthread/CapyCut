@@ -202,7 +202,7 @@ test('an update says what more it would take: scripts, hosts, a page, a program,
     { scripts: 1, network: ['b.com'], page: true, program: true });
 });
 
-test('another community index the person adds is read after OpenFilm\'s own: never in place of one of its skills, its own marked, and unable to withdraw', async (t) => {
+test('another community index the person adds is read after CapyCut\'s own: never in place of one of its skills, its own marked, and unable to withdraw', async (t) => {
   const root = isolated(t);
   const gh = await github({ [A]: skill('1.0.0', 'First.') }); t.after(gh.close);
   const other = join(root, 'other.json');
@@ -216,10 +216,10 @@ test('another community index the person adds is read after OpenFilm\'s own: nev
   setCommunitySources([other]);
   assert.deepEqual(communitySources(), [other]);
   const catalog = await refreshCatalog({ hosts: gh.hosts });
-  /* OpenFilm's own first, untouched by the other's entry of the same uid; the other's own skill after it, marked */
+  /* CapyCut's own first, untouched by the other's entry of the same uid; the other's own skill after it, marked */
   assert.deepEqual(catalog.listed.map((e) => [e.repo, e.commit, e.from ?? null]), [['https://github.com/openfilm/skill-demo', A, null], ['https://github.com/someone/skill-demo', B, other]]);
   assert.deepEqual([...entrySources(catalog)], [['someone/demo', other]]);
-  assert.deepEqual(revokedNow(), [], 'only OpenFilm\'s own index withdraws');
+  assert.deepEqual(revokedNow(), [], 'only CapyCut\'s own index withdraws');
 });
 
 test('an index entry of a kind this app does not add yet is left out; one with no kind is a skill', () => {

@@ -86,7 +86,7 @@ export async function failure(service, res, ctx) {
   /* with no key (a keyless provider) there is nothing to blank out */
   const reason = (ctx.key ? reasonOf(text).split(ctx.key).join('•••') : reasonOf(text)).slice(0, 500);
   if (PAID_PLAN.test(text)) return new Error(`${service} needs a paid plan for this (${res.status})${reason ? `: ${reason}` : ''}`);
-  if (res.status === 401 || res.status === 403) return new Error(`${service} did not accept your key (${res.status}). Check it in Studio: Settings (the OpenFilm logo at the top left) → Services.`);
+  if (res.status === 401 || res.status === 403) return new Error(`${service} did not accept your key (${res.status}). Check it in Studio: Settings (the CapyCut logo at the top left) → Services.`);
   if (res.status >= 500 && !reason) return new Error(`${service} is not answering right now (${res.status}). Try again in a moment.`);
   return new Error(`${service} answered ${res.status}${reason ? `: ${reason}` : ''}`);
 }
@@ -603,7 +603,7 @@ export async function sampleVoice(args, ctx, service, clones) {
     .map((v) => ({ ...v, used: lastUsed.get(v.voiceId) ?? (Date.parse(MADE.exec(v.description)?.[1] ?? '') || 0) }));
   let voiceId = ours.find((v) => v.name === name)?.voiceId;
   if (!voiceId) {
-    const make = () => clones.make(ctx, { name, description: `OpenFilm voice sample, made ${new Date().toISOString()}`, wav: bytes, language: text(args.language) || null });
+    const make = () => clones.make(ctx, { name, description: `CapyCut voice sample, made ${new Date().toISOString()}`, wav: bytes, language: text(args.language) || null });
     try { voiceId = await make(); }
     catch (e) {
       if (!FULL.test(/** @type {Error} */ (e)?.message ?? '')) throw e;

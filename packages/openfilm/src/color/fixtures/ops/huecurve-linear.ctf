@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ProcessList version="2.5" id="fixture">
-    <Description>OpenFilm color fixture</Description>
+    <Description>CapyCut color fixture</Description>
     <GradingHueCurve inBitDepth="32f" outBitDepth="32f" style="linear">
         <HueHue>
             <ControlPoints>0 0 0.2 0.25 0.4 0.38 0.6 0.6 0.8 0.85</ControlPoints>

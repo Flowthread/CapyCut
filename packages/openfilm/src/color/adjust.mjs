@@ -305,7 +305,7 @@ ${rows.map((r) => `            ${r}`).join('\n')}
   }
   return `<?xml version="1.0" encoding="UTF-8"?>
 <ProcessList version="2.5" id="${esc(id)}" name="${esc(title)}">
-    <Description>${esc(title)}, ${Math.round(clamp01(amount) * 100)} %: OpenFilm's library filter ${esc(id)}, made for the screen (after a clip's output)</Description>
+    <Description>${esc(title)}, ${Math.round(clamp01(amount) * 100)} %: CapyCut's library filter ${esc(id)}, made for the screen (after a clip's output)</Description>
 ${ops.join('\n')}
 </ProcessList>
 `;

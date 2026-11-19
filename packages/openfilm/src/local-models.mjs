@@ -1,7 +1,7 @@
 // @ts-check
 /**
  * The files of the models that run on this computer (Settings → Services → Local services): each model a list of files of
- * the published library, with their size and sha256, fetched together into the library's cache for every OpenFilm
+ * the published library, with their size and sha256, fetched together into the library's cache for every CapyCut
  * here (studio/server/library.mjs fetchLibrary), checked, and kept until the person removes them.
  *
  *   library/local-models.json   { models: [{ id, files: [{ path, bytes, sha256 }] }] }, a runtime file shared by
@@ -156,7 +156,7 @@ export function modelBytesHere(/** @type {ModelEntry} */ m) {
 }
 
 /**
- * The environment a Node program of OpenFilm's own runs in when it is started with `process.execPath`. In the desktop
+ * The environment a Node program of CapyCut's own runs in when it is started with `process.execPath`. In the desktop
  * app, Studio runs on Electron (a utility process), whose program is the app: without ELECTRON_RUN_AS_NODE it would
  * start the app again (which steps aside for the one running) instead of running the program, and nothing would happen.
  */

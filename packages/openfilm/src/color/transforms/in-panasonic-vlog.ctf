@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ProcessList version="2" id="openfilm:in-panasonic-vlog">
-    <Description>OpenFilm input: Panasonic V-Log, V-Gamut footage (a video-range file) into ACEScct</Description>
+    <Description>CapyCut input: Panasonic V-Log, V-Gamut footage (a video-range file) into ACEScct</Description>
     <Matrix inBitDepth="32f" outBitDepth="32f">
         <Array dim="3 4">
   0.856304985337243                   0                   0  0.0625610948191593

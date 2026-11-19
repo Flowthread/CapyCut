@@ -3,7 +3,7 @@
  * service's own remote MCP server; the person signs in to it here once, in their browser, and every agent the app runs
  * (its own Pi, Claude Code, Codex…) uses it from then on, none of them holding the person's credentials.
  *
- * Signing in is the MCP authorization flow (OAuth 2.1 with PKCE; OpenFilm registers itself with the service's
+ * Signing in is the MCP authorization flow (OAuth 2.1 with PKCE; CapyCut registers itself with the service's
  * authorization server, RFC 7591, as the six official connectors' servers allow), with a loopback redirect on this
  * computer (RFC 8252): `connect` opens the service's page in the browser and waits for the answer. What it gets (the
  * client registered, the tokens, the tools the server offers) is kept per connector in `<dataDir>/connectors/<id>.json`,
@@ -44,9 +44,9 @@ const ID = /^[a-z][a-z0-9-]{0,31}$/;
 
 /** The page the browser shows once it has answered: plain words in the app's style, to close and go back. */
 function callbackPage(page) {
-  const [title, words] = page.ok ? ['Connected', 'You can close this tab and go back to OpenFilm.'] : ['Not connected', page.message];
+  const [title, words] = page.ok ? ['Connected', 'You can close this tab and go back to CapyCut.'] : ['Not connected', page.message];
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
-  return `<!doctype html><meta charset="utf-8"><title>OpenFilm · ${esc(title)}</title><body style="font:15px system-ui;background:#1e1e1e;color:#eee;display:grid;place-items:center;height:100vh;margin:0"><div style="text-align:center"><h1 style="font-size:22px">${esc(title)}</h1><p style="color:#aaa">${esc(words)}</p></div>`;
+  return `<!doctype html><meta charset="utf-8"><title>CapyCut · ${esc(title)}</title><body style="font:15px system-ui;background:#1e1e1e;color:#eee;display:grid;place-items:center;height:100vh;margin:0"><div style="text-align:center"><h1 style="font-size:22px">${esc(title)}</h1><p style="color:#aaa">${esc(words)}</p></div>`;
 }
 
 /**
@@ -90,7 +90,7 @@ export function createConnectors(o) {
     };
     return new McpOAuthProvider({
       serverUrl: def.url, redirectUrl,
-      clientMetadata: { client_name: 'OpenFilm', client_uri: 'https://openfilm.dev', grant_types: ['authorization_code', 'refresh_token'],
+      clientMetadata: { client_name: 'CapyCut', client_uri: 'https://openfilm.dev', grant_types: ['authorization_code', 'refresh_token'],
         response_types: ['code'], token_endpoint_auth_method: 'none' },
       store,
       onRedirect: (url) => { if (opened.value) return o.openExternal(url.href); throw new Error('signed out'); },
@@ -99,7 +99,7 @@ export function createConnectors(o) {
 
   /** The tools a connected server offers, as its page lists them (read-only ones apart from those that change things). */
   const toolsOf = async (def, provider) => {
-    const client = new McpClient({ name: 'OpenFilm', version: '1' });
+    const client = new McpClient({ name: 'CapyCut', version: '1' });
     await client.connect(new StreamableHttpTransport({ url: def.url, authProvider: adaptOAuthProvider(provider), openGetStream: false, fetch: doFetch }));
     try {
       const tools = await client.listTools({ timeoutMs: 20_000 });
@@ -175,14 +175,14 @@ export function createConnectors(o) {
       return doFetch(def.url, { method: req.method ?? 'POST', headers, ...(body && req.method !== 'GET' ? { body } : {}) });
     };
     let bearer = await token(id);
-    if (!bearer) { res.writeHead(401, { 'content-type': 'application/json' }).end(JSON.stringify({ error: `Sign in to ${def.title ?? id} in OpenFilm first.` })); return; }
+    if (!bearer) { res.writeHead(401, { 'content-type': 'application/json' }).end(JSON.stringify({ error: `Sign in to ${def.title ?? id} in CapyCut first.` })); return; }
     let answer;
     try {
       answer = await send(bearer);
       if (answer.status === 401) {
         await answer.body?.cancel().catch(() => {});
         bearer = await token(id, true);
-        if (!bearer) { res.writeHead(401, { 'content-type': 'application/json' }).end(JSON.stringify({ error: `Sign in to ${def.title ?? id} in OpenFilm again.` })); return; }
+        if (!bearer) { res.writeHead(401, { 'content-type': 'application/json' }).end(JSON.stringify({ error: `Sign in to ${def.title ?? id} in CapyCut again.` })); return; }
         answer = await send(bearer);
       }
     } catch (e) {
@@ -259,7 +259,7 @@ export function createConnectors(o) {
           const answer = await callback.waitForCallback(await provider.state());
           if (abort.signal.aborted) throw new Error('cancelled');
           const done = await authorizeMcp(provider, { serverUrl: def.url, authorizationCode: answer.code, ...(answer.iss ? { iss: answer.iss } : {}), fetch: doFetch, signal: abort.signal });
-          if (done !== 'AUTHORIZED') throw new Error('The service did not let OpenFilm in.');
+          if (done !== 'AUTHORIZED') throw new Error('The service did not let CapyCut in.');
         }
         const offered = await toolsOf(def, provider);
         write(id, { ...read(id), ...offered, connectedAt: Date.now(), expired: false });

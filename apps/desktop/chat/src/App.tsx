@@ -544,7 +544,7 @@ function ChatPane({ project, banners, selection, assetsOpen, assetsOverlay }: { 
     const pill = skillPill(skill);
     requestAnimationFrame(() => { composerRef.current?.insertReference(pill); composerRef.current?.focus(); });
   }, [skillPill]);
-  /* the skills a message can name: OpenFilm's, and of the agent's own those it has (let in, or all when it cannot be told) */
+  /* the skills a message can name: CapyCut's, and of the agent's own those it has (let in, or all when it cannot be told) */
   const nameableSkills = React.useMemo(() => [
     ...(skillListing?.openfilm ?? []),
     ...(skillListing?.own.skills ?? []).filter((s) => !skillListing?.own.filtered || s.allowed),
@@ -1230,7 +1230,7 @@ function ChatPane({ project, banners, selection, assetsOpen, assetsOverlay }: { 
         {openedFile ? <AttachmentPreview item={openedFile} onClose={() => setOpenedFile(null)} /> : null}
         <div className="flex items-end gap-1.5 py-2.5 pl-2 pr-2">
           {/* Add, at the start of the line as in other agent apps: files and pictures for this message, and what
-              OpenFilm can do more (the Community's plugins and skills) */}
+              CapyCut can do more (the Community's plugins and skills) */}
           <Popover open={addOpen} onOpenChange={setAddOpen} placement="top" align="start" anchorRef={addButtonRef} bare
             trigger={(
               <Tooltip label={addOpen ? undefined : t('project.addMenu')}>
@@ -1302,7 +1302,7 @@ function ChatPane({ project, banners, selection, assetsOpen, assetsOverlay }: { 
           hidden
           onChange={(event) => { attachFiles(Array.from(event.target.files ?? [])); event.target.value = ''; }}
         />
-        {/* the Community: what there is to add to OpenFilm, and what was added, in Studio's Community window */}
+        {/* the Community: what there is to add to CapyCut, and what was added, in Studio's Community window */}
         {app.showExamples ? (
           <Tooltip label={t('project.plugins')}>
             <button type="button" onClick={() => app.showExamples?.({ kind: 'plugins' })} className="openfilm-composer-tool" aria-label={t('project.plugins')}>

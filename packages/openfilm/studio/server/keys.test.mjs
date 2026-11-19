@@ -8,7 +8,7 @@ import { listProviders } from './providers/index.mjs';
 import { agentKeyOf } from './projects.mjs';
 import { personsSay, startStudio } from './server.mjs';
 
-/* OpenFilm's service is asked what it offers: nowhere here (a port that refuses at once) */
+/* CapyCut's service is asked what it offers: nowhere here (a port that refuses at once) */
 process.env.OPENFILM_API_URL ??= 'http://127.0.0.1:9';
 
 const KEY = 'xi-secret-key-abcdef1234';
@@ -185,7 +185,7 @@ test('an own key comes with its model: the provider\'s first unless chosen, kept
   assert.equal(modelFor({ keys: {}, use: {}, model: { tts: 'gone' } }, provider, 'tts'), first.id);
 });
 
-test('what a newer OpenFilm keeps in providers.json stays when this one writes it', async () => {
+test('what a newer CapyCut keeps in providers.json stays when this one writes it', async () => {
   const file = join(mkdtempSync(join(tmpdir(), 'of-keys-newer-')), 'providers.json');
   writeFileSync(file, JSON.stringify({
     keys: { elevenlabs: 'xi-kept-0123456789' }, use: {}, model: {}, off: [], spending: { ask: 'video' },
@@ -199,7 +199,7 @@ test('what a newer OpenFilm keeps in providers.json stays when this one writes i
   assert.equal(written.keys.openai, 'sk-new-0123456789');
 });
 
-test('the library is searched by meaning at OpenFilm\'s service unless turned off, and the choice is kept', async () => {
+test('the library is searched by meaning at CapyCut\'s service unless turned off, and the choice is kept', async () => {
   let state = await (await api('/api/providers')).json();
   assert.equal(state.librarySearch, 'openfilm', 'on by default');
   state = await (await api('/api/providers/library-search', { method: 'PUT', body: { on: false } })).json();

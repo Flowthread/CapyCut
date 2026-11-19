@@ -1,5 +1,5 @@
 /**
- * OpenFilm-internal: NOT part of Studio's public interface (that is studio/index, `openfilm/studio`). What the edit
+ * CapyCut-internal: NOT part of Studio's public interface (that is studio/index, `openfilm/studio`). What the edit
  * reaches of the shell that no other workbench needs: the shell's whole frame of the project (where its blocks are
  * arranged, the page's places, the media pane's operations, the toast as the shell holds it…), the wiring, through
  * which the shell reaches how the edit's blocks are sized, its picture and its library actions (shell/frame), which

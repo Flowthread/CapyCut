@@ -116,7 +116,7 @@ test('Studio popups use the same themed controls on Windows and Mac browser prof
         await page.getByRole('button', { name: 'Clone voice', exact: true }).first().click();
         const dialog = page.getByRole('dialog', { name: 'Clone voice', exact: true });
         await dialog.waitFor();
-        /* the dialog's menus are the themed ones, over the dialog's overlay (its engine is OpenFilm's service's to offer) */
+        /* the dialog's menus are the themed ones, over the dialog's overlay (its engine is CapyCut's service's to offer) */
         await dialog.getByRole('button', { name: 'Recording language', exact: true }).click();
         await menuAppearance(page, 'dark');
         const japanese = page.getByRole('option', { name: '日本語', exact: true });

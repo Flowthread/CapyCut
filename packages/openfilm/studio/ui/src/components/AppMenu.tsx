@@ -1,6 +1,6 @@
 /**
  * The app menu opens on click: Settings; the Community window, in Studio in a browser only (the app opens it from the
- * chat's button); where people talk (OpenFilm's groups and its maker's accounts), a flyout that opens on hover like the model menu;
+ * chat's button); where people talk (CapyCut's groups and its maker's accounts), a flyout that opens on hover like the model menu;
  * feedback; a star.
  */
 import React from 'react';

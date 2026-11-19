@@ -11,7 +11,7 @@ import { AudioLines, BadgeCheck, Check, ChevronDown, ChevronRight, GripVertical,
 import { useLanguage, useT } from '@/i18n';
 import { KindIcon, type FeatureKind } from '../feature-kinds';
 import type { Plugin } from '@/lib/plugins';
-import { byOpenFilm, libraryUrl, makerName, nameOf, posterUrl, previewUrl, templatePreviewUrl, TEXT_COMPONENT, type LibraryItem } from '@/lib/library';
+import { byCapyCut, libraryUrl, makerName, nameOf, posterUrl, previewUrl, templatePreviewUrl, TEXT_COMPONENT, type LibraryItem } from '@/lib/library';
 import { AppIcon } from '../AppIcon';
 import { WorkbenchMark } from '../WorkbenchMark';
 import { PLAIN } from './OnPicture';
@@ -251,7 +251,7 @@ export function AssetTile({ item, lang, onOpen }: { item: LibraryItem; lang: Lan
         {moving ? <video key={moving} src={moving} autoPlay muted loop playsInline onError={() => setStill(true)} className="absolute inset-0 h-full w-full object-cover" /> : null}
       </div>
       <div className={`mt-1.5 truncate text-[13px] text-[var(--text)] ${shape === 'sticker' ? 'text-center text-[12px]' : ''}`}>{name}</div>
-      {item.by && shape !== 'sticker' ? <div className="flex items-center gap-1 truncate text-[11.5px] text-[var(--text-faint)]">{makerName(item.by)}{byOpenFilm(item.by) ? <BadgeCheck size={11} strokeWidth={2} aria-hidden className="shrink-0" /> : null}</div> : null}
+      {item.by && shape !== 'sticker' ? <div className="flex items-center gap-1 truncate text-[11.5px] text-[var(--text-faint)]">{makerName(item.by)}{byCapyCut(item.by) ? <BadgeCheck size={11} strokeWidth={2} aria-hidden className="shrink-0" /> : null}</div> : null}
     </div>
   );
 }

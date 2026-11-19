@@ -104,7 +104,7 @@ export const forgetAsked = (): void => { waiting.clear(); toOpen.length = 0; };
 
 /** Where the files each workbench shows are kept in this browser, so a link opens one before it is in the page. */
 const OPENS_KEY = 'openfilm.opens';
-/** What OpenFilm's own workbenches show, until they have said (a new install, before they were first in the page). */
+/** What CapyCut's own workbenches show, until they have said (a new install, before they were first in the page). */
 const OPENS_DEFAULT: ReadonlyArray<readonly [string, readonly string[]]> = [['edit', [FILM]], ['canvas', CANVAS_FILES]];
 
 function keptOpens(): Map<string, readonly string[]> {
@@ -121,7 +121,7 @@ function keptOpens(): Map<string, readonly string[]> {
 }
 
 let opens: ReadonlyMap<string, readonly string[]> | null = null;
-/** The files each workbench shows, by its name, in the order they were first said (OpenFilm's own first). */
+/** The files each workbench shows, by its name, in the order they were first said (CapyCut's own first). */
 export const workbenchOpens = (): ReadonlyMap<string, readonly string[]> => (opens ??= keptOpens());
 
 function claim(name: string, patterns: readonly string[]): void {

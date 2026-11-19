@@ -1,6 +1,6 @@
 <p align="center">
-  <img src="docs/logo-light.svg#gh-light-mode-only" alt="OpenFilm" height="48">
-  <img src="docs/logo-dark.svg#gh-dark-mode-only" alt="OpenFilm" height="48">
+  <img src="docs/logo-light.svg#gh-light-mode-only" alt="CapyCut" height="48">
+  <img src="docs/logo-dark.svg#gh-dark-mode-only" alt="CapyCut" height="48">
 </p>
 <p align="center">AI video agent otvorenog koda.</p>
 <p align="center">
@@ -40,13 +40,13 @@
   <a href="https://www.youtube.com/@riverisbuilding"><img alt="Watch on YouTube" src="docs/buttons/youtube.svg" /></a>
 </p>
 
-[![OpenFilm: agent pravi film dok ti gledaš, a onda ga mijenjaš ručno](docs/openfilm.webp)](https://openfilm.dev)
+[![CapyCut: agent pravi film dok ti gledaš, a onda ga mijenjaš ručno](docs/openfilm.webp)](https://openfilm.dev)
 
 ---
 
 ### O projektu
 
-OpenFilm pretvara bilo kojeg agenta za kodiranje u video agenta, uz editore u kojima možeš promijeniti sve što on napravi.
+CapyCut pretvara bilo kojeg agenta za kodiranje u video agenta, uz editore u kojima možeš promijeniti sve što on napravi.
 
 Ti i agent radite na istom filmu, zajedno i uživo. Šta god agent promijeni, vidiš dok se dešava; šta god ti promijeniš, vidi i agent. Agent radi većinu posla; ti pokažeš na bilo šta i tražiš izmjenu, ili je napraviš sam.
 
@@ -68,25 +68,25 @@ npx skills add openfilm/openfilm
 
 ### Editori
 
-Svaki editor je drugačiji način rada na istom filmu, a u svakom od njih ti i agent radite zajedno. OpenFilm dolazi s četiri, a još zvaničnih editora je u razvoju za različite vrste ljudi: dovoljno jednostavni da ih svako odmah savlada, i profesionalni radni stolovi za one koji ih žele. Editori prate otvoreni standard Zajednice, pa svako može napraviti svoj i podijeliti ga.
+Svaki editor je drugačiji način rada na istom filmu, a u svakom od njih ti i agent radite zajedno. CapyCut dolazi s četiri, a još zvaničnih editora je u razvoju za različite vrste ljudi: dovoljno jednostavni da ih svako odmah savlada, i profesionalni radni stolovi za one koji ih žele. Editori prate otvoreni standard Zajednice, pa svako može napraviti svoj i podijeliti ga.
 
 - **Projekcija**: gledaj film u punoj veličini. Klikni na trenutak, prevuci preko dijela ili zaokruži dio slike i agent zna na šta pokazuješ.
 - **Montaža**: potpuna vremenska linija s klipovima, tekstom, titlovima, naracijom i zvukom. Pomjeraj, skaliraj i mijenjaj stil bilo čega unutar kadra. Izvezi video ili prenesi vremensku liniju u Final Cut Pro, Premiere Pro ili DaVinci Resolve.
 - **Platno**: tabla za planiranje, s bilješkama, slikama, klipovima i glasovima jedni pored drugih. Generiši svaki od njih svojim servisima, a onda ih redom pošalji na vremensku liniju.
 - **Boja**: radi korekciju boja svakog klipa uz skopove, točkove boja i krive, iz log snimaka kamere ili uz `.cube` LUT-ove. Ono što vidiš u pregledu, to i izvoziš.
 
-Sva četiri dijele jednu biblioteku: tvoje vlastite snimke u folderima, povezane umjesto kopirane i ponovo pronađene kad ih premjestiš, uz besplatnu muziku, zvučne efekte, glasove i naljepnice koje daje OpenFilm.
+Sva četiri dijele jednu biblioteku: tvoje vlastite snimke u folderima, povezane umjesto kopirane i ponovo pronađene kad ih premjestiš, uz besplatnu muziku, zvučne efekte, glasove i naljepnice koje daje CapyCut.
 
 ### Zajednica
 
-Zajednica je otvoreni standard za sve što možeš dodati u OpenFilm, i svako može praviti stvari za nju.
+Zajednica je otvoreni standard za sve što možeš dodati u CapyCut, i svako može praviti stvari za nju.
 
-- **Dodaci** proširuju sam OpenFilm novim editorima i konektorima za vanjske servise. I editori koje OpenFilm donosi su dodaci, napravljeni na isti način kao i svačiji.
+- **Dodaci** proširuju sam CapyCut novim editorima i konektorima za vanjske servise. I editori koje CapyCut donosi su dodaci, napravljeni na isti način kao i svačiji.
 - **Vještine** uče agenta kako da napravi određenu vrstu filma.
 - **Materijali** su muzika, zvučni efekti, prijelazi, efekti, stilovi teksta, naljepnice i šabloni.
 - **Primjeri** su kompletni projekti iz kojih možeš učiti i koje možeš remiksovati.
 
-Svaki od njih je običan folder. Dodaj ga iz prozora Zajednica u aplikaciji OpenFilm ili napravi svoj: [napravi dodatak](packages/openfilm/plugins/README.md), [napiši vještinu](https://github.com/openfilm/community/blob/main/SPEC.md), [podijeli materijale](https://github.com/openfilm/community/blob/main/assets/CONTRIBUTING.md) ili podijeli gotov film kao primjer, a onda ga navedi u [openfilm/community](https://github.com/openfilm/community).
+Svaki od njih je običan folder. Dodaj ga iz prozora Zajednica u aplikaciji CapyCut ili napravi svoj: [napravi dodatak](packages/openfilm/plugins/README.md), [napiši vještinu](https://github.com/openfilm/community/blob/main/SPEC.md), [podijeli materijale](https://github.com/openfilm/community/blob/main/assets/CONTRIBUTING.md) ili podijeli gotov film kao primjer, a onda ga navedi u [openfilm/community](https://github.com/openfilm/community).
 
 ### Kako radi
 
@@ -114,11 +114,11 @@ window.film = {
 };
 ```
 
-**Tvoje izmjene ostaju tvoje.** Kad nešto unutar kadra promijeniš ručno, recimo tekst, boju, poziciju ili veličinu, OpenFilm to sprema u `overrides` klipa, a ne u kod stranice. Agent može prepisati stranicu, a tvoje izmjene i dalje važe. Cijeli format je opisan u [SPEC.md](packages/openfilm/SPEC.md).
+**Tvoje izmjene ostaju tvoje.** Kad nešto unutar kadra promijeniš ručno, recimo tekst, boju, poziciju ili veličinu, CapyCut to sprema u `overrides` klipa, a ne u kod stranice. Agent može prepisati stranicu, a tvoje izmjene i dalje važe. Cijeli format je opisan u [SPEC.md](packages/openfilm/SPEC.md).
 
 ### Doprinos
 
-Da pokreneš OpenFilm iz izvornog koda ili pošalješ pull request, pročitaj [CONTRIBUTING.md](CONTRIBUTING.md). Greške prijavi u [Issues](https://github.com/openfilm/openfilm/issues) uz izvještaj iz Settings → Developer → Copy report, a sigurnosne probleme onako kako opisuje [SECURITY.md](SECURITY.md).
+Da pokreneš CapyCut iz izvornog koda ili pošalješ pull request, pročitaj [CONTRIBUTING.md](CONTRIBUTING.md). Greške prijavi u [Issues](https://github.com/openfilm/openfilm/issues) uz izvještaj iz Settings → Developer → Copy report, a sigurnosne probleme onako kako opisuje [SECURITY.md](SECURITY.md).
 
 ### Star History
 

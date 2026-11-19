@@ -13,7 +13,7 @@ test('the library drawer: the media are folders, the project and the person’s 
   const names = ['HOME', 'SHARED_HOME', 'LIBRARY', 'SAVED', 'EXPORTS'];
   const before = new Map([...names, 'TRASH_DIR'].map(name => [`OPENFILM_${name}`, process.env[`OPENFILM_${name}`]]));
   for (const name of names) process.env[`OPENFILM_${name}`] = join(scratch, name.toLowerCase());
-  /* deletes go to OpenFilm's own recycle bin, in the shared home above */
+  /* deletes go to CapyCut's own recycle bin, in the shared home above */
   delete process.env.OPENFILM_TRASH_DIR;
   let studio, browser;
   try {
@@ -82,7 +82,7 @@ test('the library drawer: the media are folders, the project and the person’s 
     const kept = JSON.parse(await readFile(join(process.env.OPENFILM_SAVED, '.openfilm-shelf.json'), 'utf8'));
     assert.ok(kept.shelf.indexOf('saved/Sounds') < kept.shelf.indexOf(`saved/${LIB}`), 'the order is kept in the library folder');
 
-    /* any other category's side bar is namespaces: OpenFilm's opens to its packs; no folders */
+    /* any other category's side bar is namespaces: CapyCut's opens to its packs; no folders */
     await drawer.getByRole('button', { name: 'Music', exact: true }).click();
     const section = drawer.locator('[data-rail-section="openfilm"] > button[aria-expanded]');
     await section.waitFor();
@@ -131,7 +131,7 @@ test('the library drawer: the media are folders, the project and the person’s 
     await line('saved/Logos').click();
     await drawer.locator('[data-media-path="saved/Logos/Brand.svg"]').waitFor();
 
-    /* a folder deleted goes to OpenFilm's recycle bin, and comes back from it */
+    /* a folder deleted goes to CapyCut's recycle bin, and comes back from it */
     await line('saved/Logos').click({ button: 'right' });
     await page.getByRole('menuitem', { name: 'Delete', exact: true }).click();
     await page.getByRole('dialog').getByRole('button', { name: 'Delete', exact: true }).click();

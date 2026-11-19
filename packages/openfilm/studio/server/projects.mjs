@@ -71,7 +71,7 @@ export function studioKey() {
  */
 export const agentKeyOf = (key) => createHmac('sha256', key).update('openfilm-agent').digest('hex').slice(0, 48);
 
-/** Where new projects go: the folder chosen in Settings, else ~/Movies/OpenFilm/Projects on macOS, ~/Videos/OpenFilm/Projects elsewhere (src/locations.mjs). */
+/** Where new projects go: the folder chosen in Settings, else ~/Movies/CapyCut/Projects on macOS, ~/Videos/CapyCut/Projects elsewhere (src/locations.mjs). */
 export { libraryRoot };
 
 /**
@@ -112,7 +112,7 @@ export async function readState() {
   });
 }
 
-/* the file is shared with every OpenFilm on this computer (`npx openfilm`, the app), older or newer: what this one does
+/* the file is shared with every CapyCut on this computer (`npx openfilm`, the app), older or newer: what this one does
    not know of it is written back as it was */
 async function writeState(/** @type {StudioState} */ state) {
   await mkdir(studioHome(), { recursive: true });

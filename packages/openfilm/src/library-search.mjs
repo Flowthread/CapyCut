@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * The library's verbs of `openfilm get` (LIBRARY_VERBS: music-search, sfx-search, sticker): OpenFilm's own library
+ * The library's verbs of `openfilm get` (LIBRARY_VERBS: music-search, sfx-search, sticker): CapyCut's own library
  * (studio/server/library.mjs) searched, so a film uses a music bed, a sound or a sticker that is already there, free,
  * where it fits; and the one chosen taken into the project, as Studio's assets drawer takes it. The library's other
  * kinds (transitions, effects, filters, texts, templates) are the person's to pick in Studio, not an agent's: an
@@ -323,11 +323,11 @@ const SEC = { value: 'seconds' };
  */
 export const LIBRARY_VERBS = {
   'music-search': { kind: 'music', makes: 'music', options: { prompt: PROMPT, sec: SEC, limit: LIMIT, take: TAKE },
-    help: 'Free and offline: OpenFilm\'s own music (CC0), searched in any words and language. Returns the best matches: id, name, length, tempo, energy 1–5, whether it loops, what of the prompt it has and lacks, a file to hear it; --sec puts what is at least that long first. --take <id> copies one into assets/. Music of the film\'s own, made to the prompt and length: `get music`.' },
+    help: 'Free and offline: CapyCut\'s own music (CC0), searched in any words and language. Returns the best matches: id, name, length, tempo, energy 1–5, whether it loops, what of the prompt it has and lacks, a file to hear it; --sec puts what is at least that long first. --take <id> copies one into assets/. Music of the film\'s own, made to the prompt and length: `get music`.' },
   'sfx-search': { kind: 'sound', makes: 'sfx', options: { prompt: PROMPT, sec: SEC, limit: LIMIT, take: TAKE },
-    help: 'Free and offline: OpenFilm\'s own sound effects (CC0), about 5,400, searched in any words and language. Returns the best matches: id, name, length, what of the prompt it has and lacks, a file to hear it; --sec puts those near that long first. --take <id> copies one into assets/. A sound of the film\'s own, made to the prompt and length: `get sfx`.' },
+    help: 'Free and offline: CapyCut\'s own sound effects (CC0), about 5,400, searched in any words and language. Returns the best matches: id, name, length, what of the prompt it has and lacks, a file to hear it; --sec puts those near that long first. --take <id> copies one into assets/. A sound of the film\'s own, made to the prompt and length: `get sfx`.' },
   sticker: { kind: 'sticker', options: { prompt: PROMPT, limit: LIMIT, take: TAKE },
-    help: 'Free and offline: OpenFilm\'s stickers: 1,587 emoji, and arrows, marks, buttons and badges that move. --take <id> copies one into the project.' },
+    help: 'Free and offline: CapyCut\'s stickers: 1,587 emoji, and arrows, marks, buttons and badges that move. --take <id> copies one into the project.' },
 };
 
 /** The library's verbs as `openfilm get` lists them (`only`: that one). @param {string} [only] */
@@ -362,15 +362,15 @@ export async function libraryGet(verb, flags) {
   const query = prompt.trim();
   const { found, worded } = await searchLibrary(spec.kind, query, { duration: seconds, limit: count });
   const make = spec.makes ? `make one with \`openfilm get ${spec.makes}\`` : 'write it yourself, as a page or CSS';
-  if (!found.length) return { code: 0, lines: [`Nothing in OpenFilm's library for “${query}”: ${make}.`] };
+  if (!found.length) return { code: 0, lines: [`Nothing in CapyCut's library for “${query}”: ${make}.`] };
   const lang = languageOf(query);
   const { vocab } = library();
   /* what the film around here has already: a sound or music the library gave keeps its file's name in assets/ */
   const root = projectAround('.');
   let film = '';
   try { if (root) film = readFileSync(join(root, 'film.html'), 'utf8'); } catch { /* no film yet */ }
-  const lines = [worded ? `${found.length} in OpenFilm's library for “${query}”, the best first (free to use in any film):`
-    : `No words of “${query}” are in OpenFilm's library; the ${found.length} nearest in meaning, which may not fit:`, ''];
+  const lines = [worded ? `${found.length} in CapyCut's library for “${query}”, the best first (free to use in any film):`
+    : `No words of “${query}” are in CapyCut's library; the ${found.length} nearest in meaning, which may not fit:`, ''];
   found.forEach(({ item, tags }, i) => {
     const name = lang === 'en' || !item.name[lang] ? item.name.en : `${item.name[lang]} (${item.name.en})`;
     const facts = [

@@ -97,7 +97,7 @@ const inside = (/** @type {string} */ root, /** @type {string} */ path) => { con
 
 /**
  * Every listed project that is there, with what it takes, the biggest first (`linked`: a folder elsewhere, opened in
- * place, not in the projects' folder), and the sums; and the room OpenFilm's other folders take: the person's own media and skills, the exports, and what the app keeps
+ * place, not in the projects' folder), and the sums; and the room CapyCut's other folders take: the person's own media and skills, the exports, and what the app keeps
  * for itself (models, the library it downloaded, its logs).
  * @param {string} root @param {string} savedPath
  * @returns {Promise<{ projects: ({ id: string, name: string, path: string, linked: boolean } & Usage)[], total: number, clearable: number,
@@ -123,7 +123,7 @@ let kept = null;
 /** @type {Map<string, ReturnType<typeof measure>>} */
 const measuring = new Map();
 
-/** What OpenFilm takes on disk (see measure). `fresh`: measured again now (after a clear). */
+/** What CapyCut takes on disk (see measure). `fresh`: measured again now (after a clear). */
 export async function storage({ fresh = false } = {}) {
   const root = libraryRoot();
   const saved = savedRoot();

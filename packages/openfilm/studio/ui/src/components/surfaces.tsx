@@ -4,7 +4,7 @@
  * writes the film itself with the editor's own parts (editor/use-film for the film and its edits, editor/Preview for
  * the picture, editor/player for the clock), so no workbench reaches into another.
  *
- * OpenFilm's own workbenches are elements their plugins bring (plugins/<id>: its package.json's `browser`), which the
+ * CapyCut's own workbenches are elements their plugins bring (plugins/<id>: its package.json's `browser`), which the
  * shell lays out where the layout says (shell/workbenches: the edit among the page's panels, the canvas in its box).
  * Any other is shown here, in the panes' place. One someone made is a web page (its skill's `index.html`,
  * lib/project-plugins), shown in a frame on the plugins' own origin (studio/server/plugin-pages.mjs): it is told
@@ -13,7 +13,7 @@
  * shown what its program serves, started when its workbench is first shown, once the person lets it run. One that
  * brings an element (its package.json's `browser`: a module whose default export is a custom element) is not in a
  * frame at all: the module is loaded into this page and the element put where the workbench is, so it does all a
- * workbench of OpenFilm's own does (menus over the library, drags from it, the editor's API), again once the person
+ * workbench of CapyCut's own does (menus over the library, drags from it, the editor's API), again once the person
  * lets it run. The shell shows the one picked without knowing which there are.
  */
 import React from 'react';
@@ -27,7 +27,7 @@ export interface SurfaceProps {
 }
 
 /**
- * A plugin's surface by its workbench's name: its element (one of OpenFilm's own, or one someone made once the person
+ * A plugin's surface by its workbench's name: its element (one of CapyCut's own, or one someone made once the person
  * lets it run), the page of one someone made, or what its program serves; one this build has nothing to show for says so.
  */
 export function PluginSurface({ id, page, files, title, program, runs, inApp, element, keep, ...props }: SurfaceProps & { id: string; page?: string; files?: string; title?: string; program?: boolean; runs?: boolean; inApp?: boolean; element?: string; keep?: boolean }) {

@@ -11,7 +11,7 @@ import { chooseProvider } from './index.mjs';
 import { runGet } from '../get.mjs';
 import { readTranscript } from '../transcripts.mjs';
 
-/* OpenFilm's service is asked what it offers: nowhere here (a port that refuses at once) */
+/* CapyCut's service is asked what it offers: nowhere here (a port that refuses at once) */
 process.env.OPENFILM_API_URL ??= 'http://127.0.0.1:9';
 
 const fixture = () => ({ audio_info: { duration: 2000 }, result: { text: '你好，AI native。', utterances: [{ words: [

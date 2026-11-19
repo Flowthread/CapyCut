@@ -2,7 +2,7 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { Loader2, RefreshCw } from 'lucide-react';
 import { useT } from '@/i18n';
-import { studioHost, type HostAgent, type HostOpenFilmModel } from '@/lib/host';
+import { studioHost, type HostAgent, type HostCapyCutModel } from '@/lib/host';
 import { PROVIDER_SITES } from '@/lib/providers';
 import { ProviderMark } from './ProviderMark';
 import { DialogClose, DialogIdentity } from './DialogIdentity';
@@ -15,7 +15,7 @@ import { AgentUpdateDetails } from './AgentUpdateDetails';
 const makerMark = (id: string) => { const maker = id.split('/')[0]!; return maker === 'anthropic' ? 'claude' : maker; };
 
 /** Account information and this computer's model menu, edited together and saved explicitly. */
-export function OpenFilmAgentDialog({ agent, onClose, actions, connectionStatus, connectionError }: {
+export function CapyCutAgentDialog({ agent, onClose, actions, connectionStatus, connectionError }: {
   agent: HostAgent;
   onClose: () => void;
   actions?: React.ReactNode;
@@ -25,16 +25,16 @@ export function OpenFilmAgentDialog({ agent, onClose, actions, connectionStatus,
   const t = useT();
   const dialog = React.useRef<HTMLDialogElement>(null);
   const titleId = React.useId();
-  const [models, setModels] = React.useState<HostOpenFilmModel[]>(() => agent.openfilm?.models ?? []);
+  const [models, setModels] = React.useState<HostCapyCutModel[]>(() => agent.openfilm?.models ?? []);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const dirty = React.useRef(false);
   const snapshot = JSON.stringify(agent.openfilm?.models ?? []);
   React.useEffect(() => {
-    const next = JSON.parse(snapshot) as HostOpenFilmModel[];
+    const next = JSON.parse(snapshot) as HostCapyCutModel[];
     setModels((was) => dirty.current ? mergeModelMenu(was, next) : next);
   }, [snapshot]);
-  const change = (next: HostOpenFilmModel[]) => { dirty.current = true; setModels(next); };
+  const change = (next: HostCapyCutModel[]) => { dirty.current = true; setModels(next); };
   React.useLayoutEffect(() => {
     const node = dialog.current;
     if (!node) return undefined;
@@ -43,7 +43,7 @@ export function OpenFilmAgentDialog({ agent, onClose, actions, connectionStatus,
     node.showModal();
     return () => { node.close(); document.body.style.overflow = overflow; };
   }, []);
-  const save = studioHost?.agents?.saveOpenFilmModels;
+  const save = studioHost?.agents?.saveCapyCutModels;
   const refreshModels = studioHost?.agents?.refreshModels;
   const submit = async () => {
     if (!save || busy) return;
@@ -71,7 +71,7 @@ export function OpenFilmAgentDialog({ agent, onClose, actions, connectionStatus,
       }}>
       <DialogClose label={t('settings.agents.close')} onClose={onClose} />
       <div className="shrink-0 px-7 pt-7">
-        <DialogIdentity titleId={titleId} name="OpenFilm" mark={<ProviderMark id="openfilm" size={24} />}
+        <DialogIdentity titleId={titleId} name="CapyCut" mark={<ProviderMark id="openfilm" size={24} />}
           website={{ href: `https://${PROVIDER_SITES.openfilm}`, label: PROVIDER_SITES.openfilm! }} actions={actions} status={connectionStatus} />
       </div>
       <div className="min-h-0 overflow-y-auto px-7 py-5">

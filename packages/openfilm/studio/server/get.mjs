@@ -124,7 +124,7 @@ export const VERBS = /** @type {Record<string, VerbSpec>} */ ({
       frames: { value: 'n', min: 2, max: 16, integer: true, default: 9 }, 'frame-ms': { value: 'ms', min: 20, max: 2000, integer: true, default: 200 } },
   },
   video: {
-    help: 'Make one video clip. --resolution 480p to 4K, as the model makes them (720p, or its nearest, when not asked): a bigger one costs more. Returns src, dur, its size and preview frames. It spends a lot: the person confirms it in Studio first (--yes when they already agreed). The same request again returns the same clip; --force makes a new one. A person who speaks on screen speaks in the clip, the voice and the lips made together, never a voice laid over a clip made without it: write the words in the prompt, in quotes, and keep the clip\'s own sound (--voice gives a recording of whose voice it is, the same across clips); or give a recording with --audio and the lips follow it word for word (at fal: omnihuman-v2 or kling-avatar-v2 from a picture of the person, --first-frame; sync-3 for a clip, --video). --video makes it from a clip in the project, trimmed to the part to make again (references/ is the place for another\'s footage); what it keeps is the model\'s way, chosen with --model: at fal, kling-o3-edit changes what the prompt names and keeps the rest; kling-o3-reference makes a new clip with its camera and motion; seedance-2.0 takes it as a reference (@Video1 in the prompt); luma-ray-3.2 redraws it, its performance kept; minimax-h3-max-recast puts the people of --input-reference in place of its own, one picture each; at OpenRouter, Seedance and HeyGen Video take it as a reference too, given a web address (OpenFilm\'s service gives one; your own key cannot); at Google and OpenRouter, gemini-omni-1.2-flash edits it as the prompt says, or continues it when the prompt asks (a clip of 15 s at most to edit, 30 s in all once continued; --duration: the 3 to 10 s a continuation adds, else the clip\'s own length).',
+    help: 'Make one video clip. --resolution 480p to 4K, as the model makes them (720p, or its nearest, when not asked): a bigger one costs more. Returns src, dur, its size and preview frames. It spends a lot: the person confirms it in Studio first (--yes when they already agreed). The same request again returns the same clip; --force makes a new one. A person who speaks on screen speaks in the clip, the voice and the lips made together, never a voice laid over a clip made without it: write the words in the prompt, in quotes, and keep the clip\'s own sound (--voice gives a recording of whose voice it is, the same across clips); or give a recording with --audio and the lips follow it word for word (at fal: omnihuman-v2 or kling-avatar-v2 from a picture of the person, --first-frame; sync-3 for a clip, --video). --video makes it from a clip in the project, trimmed to the part to make again (references/ is the place for another\'s footage); what it keeps is the model\'s way, chosen with --model: at fal, kling-o3-edit changes what the prompt names and keeps the rest; kling-o3-reference makes a new clip with its camera and motion; seedance-2.0 takes it as a reference (@Video1 in the prompt); luma-ray-3.2 redraws it, its performance kept; minimax-h3-max-recast puts the people of --input-reference in place of its own, one picture each; at OpenRouter, Seedance and HeyGen Video take it as a reference too, given a web address (CapyCut\'s service gives one; your own key cannot); at Google and OpenRouter, gemini-omni-1.2-flash edits it as the prompt says, or continues it when the prompt asks (a clip of 15 s at most to edit, 30 s in all once continued; --duration: the 3 to 10 s a continuation adds, else the clip\'s own length).',
     dir: 'assets/video', timeoutSec: 1200,
     options: { out, prompt, force: {}, duration: { value: 'seconds', min: 1, max: 30, integer: true, default: 5 },
       resolution: { value: 'size', choices: ['360p', '480p', '720p', '768p', '1080p', '2K', '4K'] },
@@ -157,7 +157,7 @@ export const VERBS = /** @type {Record<string, VerbSpec>} */ ({
 export const WEB_VERBS = ['web-search', 'web-fetch'];
 
 /** Where the person connects a service and picks its models, said the same way everywhere. */
-export const WHERE_TO_CONNECT = 'In Studio, the OpenFilm logo at the top left opens Settings: under Services the person chooses the model '
+export const WHERE_TO_CONNECT = 'In Studio, the CapyCut logo at the top left opens Settings: under Services the person chooses the model '
   + 'for each kind of media, and connects its service there (signing in, or with their own key).';
 /** The services that make `verb`, by name: "fal.ai, Google or OpenAI". @param {string} verb */
 const makers = (verb) => {
@@ -174,12 +174,12 @@ const notConnected = (verbs) => `Not connected here: ${verbs.map((v) => `${v} ($
 const offered = (/** @type {string} */ verb) => listProviders().some((p) => /** @type {readonly string[]} */ (p.verbs).includes(verb));
 /** The whole of `openfilm get` when nothing is connected. */
 const nothing = () => 'Nothing is connected for media here: each kind works only once the person connects a service that makes it (below). '
-  + 'Until then, take what OpenFilm\'s own library has (its verbs are free and need nothing connected), make sound and pictures in code, '
+  + 'Until then, take what CapyCut\'s own library has (its verbs are free and need nothing connected), make sound and pictures in code, '
   + 'or use a service the person has a key for (with its API docs), and save them under assets/. '
   + `\`openfilm get <what> --help\` shows what one kind takes (${Object.keys(VERBS).filter((v) => !WEB_VERBS.includes(v) && offered(v)).join(', ')}).`;
 
 /** What `call` says when the person has added no service of their own. */
-const NO_OWN_SERVICES = 'The person has added no services of their own. In Studio, the OpenFilm logo at the top left opens Settings: '
+const NO_OWN_SERVICES = 'The person has added no services of their own. In Studio, the CapyCut logo at the top left opens Settings: '
   + 'they add one under Services (its address, its key if it takes one, and what it does).';
 
 /** Each kind of media, in words (finding voices is part of voice-over). */
@@ -332,7 +332,7 @@ export async function runGet(root, verb, given, { via, model, yes = false, ask, 
   if (audio && settings.use[verb] === '' && !recoverOnly) {
     throw new GetError(`Generating ${WORDS[verb]} is off in Settings → Services. Use the project's existing audio or the free library. Only the person can turn generation back on.`);
   }
-  /* a voice of OpenFilm's service is its recording, sent with the run under SAMPLE_INPUT; --voice keeps its name */
+  /* a voice of CapyCut's service is its recording, sent with the run under SAMPLE_INPUT; --voice keeps its name */
   let sampleOf = '';
   if (verb === 'tts' && typeof args.voice === 'string' && args.voice.startsWith('my:')) {
     const voice = await privateVoiceForSpeech(args.voice, settings);
@@ -366,7 +366,7 @@ export async function runGet(root, verb, given, { via, model, yes = false, ask, 
     if (voices.length > 2) throw usage('--voice: one voice, or two for a dialogue.');
     const dialogue = offered.find((m) => /** @type {{ dialogue?: boolean }} */ (m).dialogue);
     if (voices.length === 2) {
-      if (!dialogue) throw usage(`${provider.name} speaks no dialogue of two voices: Doubao does (--via doubao, or OpenFilm).`);
+      if (!dialogue) throw usage(`${provider.name} speaks no dialogue of two voices: Doubao does (--via doubao, or CapyCut).`);
       args.voice = voices.join('+');
       runModel = dialogue.id;
     } else if (offered.find((m) => m.id === runModel && /** @type {{ dialogue?: boolean }} */ (m).dialogue)) {
@@ -386,7 +386,7 @@ export async function runGet(root, verb, given, { via, model, yes = false, ask, 
 
   const spec = VERBS[verb];
   const said = /** @type {string[]} */ ([]);
-  /* OpenFilm's service may run a job up to 21 minutes, and its result is fetched after: wait longer than it can take */
+  /* CapyCut's service may run a job up to 21 minutes, and its result is fetched after: wait longer than it can take */
   const waitSec = provider.id === 'openfilm' ? 50 * 60 : spec.timeoutSec + 60;
   const clock = deadline(waitSec, signal);
   /** @param {Spend} spend */
@@ -470,7 +470,7 @@ export async function runGet(root, verb, given, { via, model, yes = false, ask, 
       (!refusal?.rejected && refusal?.code !== 'balance' && (!status || status === 408 || status >= 500)));
     if (journal && !unknown && !previousAudio && !uncertainAudio) await journal.finish().catch(() => {});
     if (clock.timedOut() && !audio) throw new GetError(provider.id === 'openfilm'
-      ? `OpenFilm did not deliver this within ${waitSec} s. The task may already be complete and paid. Run the same command to recover its original result; use --fresh only when the person intentionally wants another paid take.`
+      ? `CapyCut did not deliver this within ${waitSec} s. The task may already be complete and paid. Run the same command to recover its original result; use --fresh only when the person intentionally wants another paid take.`
       : `${provider.name} did not finish within ${waitSec} s, so Studio stopped waiting. Nothing landed in the project; try again later.`);
     if (/** @type {{ code?: string, limit?: boolean }} */ (e)?.code === 'balance' && /** @type {{ limit?: boolean }} */ (e).limit) {
       throw new GetError(`This did not run: the ${provider.name} key reached the spending limit set on it. The person can raise or remove that limit where `
@@ -918,7 +918,7 @@ export function createAsks(pages) {
  *                           { ok: false, code, text, reason? }: code 2, not a project or a wrong command; 1, it did not run
  *                           (`reason` 'balance': the service's account had too little left)
  *   POST /api/get/asks/:id  { allow } → { answered }: the person's answer to a question about spending
- *   POST /api/get/library   { verb, args } → { code, lines }: a search of OpenFilm's own library (src/library-search.mjs),
+ *   POST /api/get/library   { verb, args } → { code, lines }: a search of CapyCut's own library (src/library-search.mjs),
  *                           answered with the library and its model kept loaded here, so it takes milliseconds
  * @param {Req} req @param {Res} res @param {string[]} parts the path after /api/get @param {ReturnType<typeof createAsks>} asks
  * @param {(root: string) => void} [made] told once how the files a run landed were made is on record (media-made.mjs)

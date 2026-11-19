@@ -1,5 +1,5 @@
 /**
- * `openfilm/studio`: what a plugin's element in Studio's page reaches of Studio, the same for OpenFilm's own plugins
+ * `openfilm/studio`: what a plugin's element in Studio's page reaches of Studio, the same for CapyCut's own plugins
  * and anyone's (packages/openfilm/plugins/README.md). It is named by the page's import map (studio/ui/workbenches.ts),
  * so a module loaded into the page imports it by that name, and it needs no framework: `openfilm/studio/react` is the
  * same for React.
@@ -12,7 +12,7 @@
  * buttons on the top bar (`topBar`); the blocks its workbench is laid out in, drawn where Studio places them (`blocks`);
  * a plugin's own server routes and events (`pluginApi`, lib/plugin-api).
  *
- * It is read from the shell's frame (shell/frame) and kept apart from it: the frame and the wiring stay OpenFilm's own
+ * It is read from the shell's frame (shell/frame) and kept apart from it: the frame and the wiring stay CapyCut's own
  * (studio/internal), and may change with any version; this changes only with `version`.
  */
 import { api, type Film, type MediaMade, type Op } from '@/api';

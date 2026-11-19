@@ -9,7 +9,7 @@
 import { randomUUID } from 'node:crypto';
 import { call, landing, needed, list, serviceUrl, text, wav } from './common.mjs';
 
-/** The model, as OpenFilm names it; Doubao's resource for it. */
+/** The model, as CapyCut names it; Doubao's resource for it. */
 export const DIALOGUE_MODEL = 'seed-podcast';
 const RESOURCE = 'volc.service_type.10050';
 /** Doubao's limits: a turn, and the whole script. */

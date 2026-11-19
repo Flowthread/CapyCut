@@ -130,7 +130,7 @@ export type GenerationDesign =
   | { kind: 'filter'; css: string }
   | { kind: 'transition'; style: typeof transitions[number]; seconds: number };
 
-/** Convert bounded model data into trusted OpenFilm assets. All text is escaped, all script is authored here. */
+/** Convert bounded model data into trusted CapyCut assets. All text is escaped, all script is authored here. */
 export function generationDesign(kind: GenerationKind, answer: string, seconds: number): GenerationDesign {
   const json = answer.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
   const data = JSON.parse(json) as Record<string, unknown> | null;

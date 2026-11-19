@@ -13,7 +13,7 @@ import styles from './ProjectLayoutMenu.module.css';
 export function useArrangementWords(name: string, titled?: Readonly<Record<string, string>>): { layouts: string; editing: string } {
   const t = useT();
   const language = useLanguage();
-  /* a plugin of OpenFilm's own by the plugins listed; one someone made by the words its workbench was given (`titled`) */
+  /* a plugin of CapyCut's own by the plugins listed; one someone made by the words its workbench was given (`titled`) */
   const own = usePlugins().find((p) => p.workbench === name)?.title;
   const words = titled ?? own;
   const title = words?.[language] ?? words?.en ?? name;

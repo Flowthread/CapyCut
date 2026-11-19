@@ -582,7 +582,7 @@ export function sampleBaked({ size, lut, shaper }, r, g, b, out) {
  * enough digits for a 16-bit picture; those past 0–1 are kept, and the picture is clamped after the lookup.
  * @param {{ size: number, lut: Float32Array, shaper?: unknown }} baked @param {string} [title]
  */
-export function cubeText({ size, lut, shaper }, title = 'OpenFilm grade') {
+export function cubeText({ size, lut, shaper }, title = 'CapyCut grade') {
   if (shaper) throw new Error('cubeText: a LUT baked with a shaper needs its 1D shaper too');
   const lines = [`TITLE "${title.replace(/"/g, "'")}"`, `LUT_3D_SIZE ${size}`];
   for (let i = 0; i < lut.length; i += 3) lines.push(`${lut[i].toFixed(6)} ${lut[i + 1].toFixed(6)} ${lut[i + 2].toFixed(6)}`);

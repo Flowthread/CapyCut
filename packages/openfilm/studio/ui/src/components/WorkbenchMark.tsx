@@ -1,5 +1,5 @@
 /**
- * A workbench's app icon (components/AppIcon): the picture its folder brings (OpenFilm's own and anyone's alike), else
+ * A workbench's app icon (components/AppIcon): the picture its folder brings (CapyCut's own and anyone's alike), else
  * the default for a workbench.
  */
 import { AudioLines, Box, Clapperboard, Film, FolderOpen, Layers, Palette, Projector, Scissors, Spline, Workflow, type LucideIcon } from 'lucide-react';

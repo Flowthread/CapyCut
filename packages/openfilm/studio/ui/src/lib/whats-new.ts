@@ -44,7 +44,7 @@ export const RELEASE: ReleaseNotes = {
       },
       {
         "kind": "improved",
-        "text": "Turn off music or sound-effect generation in Services. OpenFilm keeps track of paid requests whose outcomes are uncertain so it can recover them."
+        "text": "Turn off music or sound-effect generation in Services. CapyCut keeps track of paid requests whose outcomes are uncertain so it can recover them."
       },
       {
         "kind": "improved",
@@ -68,7 +68,7 @@ export const RELEASE: ReleaseNotes = {
       },
       {
         "kind": "fixed",
-        "text": "OpenFilm retries interrupted model requests and shows connection details if a request fails. Studio can reconnect after a failed restart and copy diagnostics while disconnected."
+        "text": "CapyCut retries interrupted model requests and shows connection details if a request fails. Studio can reconnect after a failed restart and copy diagnostics while disconnected."
       },
       {
         "kind": "fixed",
@@ -106,7 +106,7 @@ export const RELEASE: ReleaseNotes = {
       },
       {
         "kind": "improved",
-        "text": "可以在服务设置里关闭音乐或音效生成。付费请求结果未明时，OpenFilm 会保留原请求以便恢复。"
+        "text": "可以在服务设置里关闭音乐或音效生成。付费请求结果未明时，CapyCut 会保留原请求以便恢复。"
       },
       {
         "kind": "improved",
@@ -292,7 +292,7 @@ export const RELEASE: ReleaseNotes = {
       },
       {
         "kind": "improved",
-        "text": "Desactiva la generación de música o efectos sonoros desde Servicios. OpenFilm conserva las solicitudes de pago de resultado incierto para poder recuperarlas."
+        "text": "Desactiva la generación de música o efectos sonoros desde Servicios. CapyCut conserva las solicitudes de pago de resultado incierto para poder recuperarlas."
       },
       {
         "kind": "improved",
@@ -316,7 +316,7 @@ export const RELEASE: ReleaseNotes = {
       },
       {
         "kind": "fixed",
-        "text": "OpenFilm reintenta las solicitudes interrumpidas y muestra los detalles de conexión si fallan. Studio puede reconectarse tras un reinicio fallido y copiar el diagnóstico sin conexión."
+        "text": "CapyCut reintenta las solicitudes interrumpidas y muestra los detalles de conexión si fallan. Studio puede reconectarse tras un reinicio fallido y copiar el diagnóstico sin conexión."
       },
       {
         "kind": "fixed",

@@ -1,4 +1,4 @@
-/** The OpenFilm model menu's default order. Provider routing remains on the cloud. */
+/** The CapyCut model menu's default order. Provider routing remains on the cloud. */
 export const OPENFILM_MODELS = Object.freeze([
   { id: 'anthropic/claude-fable-5.2', name: 'Claude Fable 5.2' },
   { id: 'anthropic/claude-opus-5.5', name: 'Claude Opus 5.5' },

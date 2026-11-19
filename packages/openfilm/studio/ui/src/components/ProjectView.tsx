@@ -166,7 +166,7 @@ import { compactScale, type MgTransform, type NodeOverride, type OverridePivot, 
 import { usePreviewPrefs, writePreviewPref } from '@/lib/preview-prefs';
 import { isTextField, isTypingTarget } from './typing-target';
 /* Studio's public interface for what it offers (the app's chat, its commands, the edit's `add`, Settings), and the
-   shell's frame and wiring, OpenFilm-internal, for the rest */
+   shell's frame and wiring, CapyCut-internal, for the rest */
 import { blocks, chat, onCommand, openSettings, provide } from '@/studio';
 import { attachedBlocks, blockKey, TOP_BTN, useFrame, usePublishWiring, useSteady } from '@/studio/internal';
 
@@ -2041,7 +2041,7 @@ export function ProjectView({ projectId, onProject }: {
       dismissLibraryPreview.current();
       const before = new Set(blocksRef.current.flatMap((b) => (b.clipId ? [b.clipId] : [])));
       const picked = (failed: string | null) => { if (!failed) pickNewClip(before); return failed; };
-      /* a transition of OpenFilm's library (lib/library): its middle on the cut it was put near, never pushing or
+      /* a transition of CapyCut's library (lib/library): its middle on the cut it was put near, never pushing or
          cutting what is under it */
       if (builtInItem(file.saved)?.place === 'cut') {
         const at = onCut(plan.at, durMs, cutsOf(timelineTracks));
@@ -2126,7 +2126,7 @@ export function ProjectView({ projectId, onProject }: {
     else if (pickedMedia) void addMedia(pickedMedia, { mode, range, atPlayhead: true, follow: true });
   }, [addMedia, placeSaved, pickedMedia, pickedSaved]);
   /*
-   * OpenFilm's library in the assets drawer (components/library/LibraryDrawer, lib/library). A click tries a thing in
+   * CapyCut's library in the assets drawer (components/library/LibraryDrawer, lib/library). A click tries a thing in
    * the viewer, nothing written (components/library/LibraryTrial; a look through the stage's look preview, on the clip
    * it would go on). Enter or "+" puts it in: a page or a sound taken into the project and put at the
    * playhead (a sound as a file of the project goes, a page on a new track at the top, a transition's middle on the

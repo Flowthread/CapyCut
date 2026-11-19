@@ -162,7 +162,7 @@ export function agentProblem(entry, step, e, turnId = null) {
  * folders where an agent waits for the person's answer. `onTurn` hears each turn done or stopped by an error (not one
  * the person stopped) and each time an agent asks the person something, for the system's notifications (turn-notices.mjs).
  * `logDir()`, as each session starts: the folder for the logs an agent is started with (Developer mode on), or null.
- * `skills`: where the app keeps its record of skills (`dataDir`) and the person's own skills (`mine`): each session has its maker's skills and MCP servers, OpenFilm's skills, and of the person's own those let
+ * `skills`: where the app keeps its record of skills (`dataDir`) and the person's own skills (`mine`): each session has its maker's skills and MCP servers, CapyCut's skills, and of the person's own those let
  * in (agent-skills.mjs).
  * @param {{ trusted: (event: any) => boolean, binDir?: string | null, fallbackDir?: string | null, env?: Record<string, string>,
  *           harness?: (id: string) => Promise<any>, onWorking?: (folders: string[]) => void, onAsking?: (folders: string[]) => void, onTurn?: (turn: { kind: 'done' | 'failed' | 'asking', agent: string, cwd: string, meta: any, error?: string }) => void, onConnectionResult?: (id: string, error: unknown | null) => void, logDir?: () => string | null,
@@ -174,7 +174,7 @@ export function registerLocalAgentIpc(ipcMain, { trusted, binDir = null, fallbac
   /* what went wrong, kept in Studio's home with Studio's own problems (openfilm's problems.mjs), for its report */
   const problems = env.OPENFILM_HOME ? problemsFile(env.OPENFILM_HOME) : undefined;
   const noteProblem = (entry, step, e, turnId = null) => recordProblem(agentProblem(entry, step, e, turnId), { file: problems });
-  /** a session's skills and MCP servers: OpenFilm's, and of the person's own those let in (agent-skills.mjs) */
+  /** a session's skills and MCP servers: CapyCut's, and of the person's own those let in (agent-skills.mjs) */
   const skillsFor = (agent) => (skills && skillRecord ? { ...skills, allowed: skillRecord.allowed(agent), mcpAllowed: skillRecord.mcpAllowed(agent) } : null);
   /** @type {Map<string, { session: AgentSession, sender: import('electron').WebContents, pending: Map<string, (answer: any) => void>, agent: string, cwd: string, turn: any }>} */
   const sessions = new Map();

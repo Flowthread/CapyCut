@@ -82,7 +82,7 @@ async function service({ broke = false, fails = null, busyOnce = false, hold = n
 /** One of the person's own models, as the roster's harness gives it (pi-config.mjs OwnModel). */
 const own = (id, url, over = {}) => ({ id, name: id, api: 'openai-completions', baseUrl: url, keyEnv: `OPENFILM_BYOK_KEY_${id}`, model: id, levels: ['auto'], effort: 'auto', ...over });
 
-test('OpenFilm runs Pi on the shared account, switches cloud models and sends OpenRouter reasoning through the relay', { timeout: 60_000 }, async () => {
+test('CapyCut runs Pi on the shared account, switches cloud models and sends OpenRouter reasoning through the relay', { timeout: 60_000 }, async () => {
   const svc = await service();
   const deepseek = 'deepseek/deepseek-v4.1-flash-1017';
   const haiku = 'anthropic/claude-haiku-5.5';
@@ -190,7 +190,7 @@ test('a dropped model stream keeps the partial reply and surfaces the interrupti
   }
 });
 
-test('OpenFilm account model requests follow the configured HTTP proxy', { timeout: 30_000 }, async () => {
+test('CapyCut account model requests follow the configured HTTP proxy', { timeout: 30_000 }, async () => {
   const svc = await service();
   const tunnels = [];
   const sockets = new Set();
@@ -230,7 +230,7 @@ test('OpenFilm account model requests follow the configured HTTP proxy', { timeo
   }
 });
 
-test('OpenFilm account requests bypass an unavailable proxy for NO_PROXY hosts', { timeout: 30_000 }, async () => {
+test('CapyCut account requests bypass an unavailable proxy for NO_PROXY hosts', { timeout: 30_000 }, async () => {
   const svc = await service();
   const model = 'anthropic/claude-opus-5.5';
   const offer = agentOffer({ default: model, data: [{ id: model, name: 'Claude Opus 5.5' }] }, svc.url);

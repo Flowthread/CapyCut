@@ -4,7 +4,7 @@
  * `openfilm canvas [apply <steps> | add <file…>]`: the project's canvas read, or steps taken on it, through the Studio
  * running (started when needed; studio/client.mjs canvasCommand). `add` is steps too: files put in a row (add.mjs). The canvas plugin brings it (its package.json's `bin`), so it is
  * there only while the plugin is on (src/plugin-commands.mjs). What it prints and its exit status are the same as when
- * it was one of OpenFilm's own commands: 0 done, 1 it failed, 2 not a project or a wrong command.
+ * it was one of CapyCut's own commands: 0 done, 1 it failed, 2 not a project or a wrong command.
  */
 import { parseArgs } from 'node:util';
 import { canvasCommand } from '../../studio/client.mjs';

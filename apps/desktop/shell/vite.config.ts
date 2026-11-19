@@ -5,7 +5,7 @@ import type { Plugin as PostcssPlugin } from 'postcss';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-/* the workbenches of OpenFilm's own plugins, built with the editor as Studio's own page builds them */
+/* the workbenches of CapyCut's own plugins, built with the editor as Studio's own page builds them */
 import { workbenchImportMap, workbenchInputs } from '../../../packages/openfilm/studio/ui/workbenches.ts';
 
 /*

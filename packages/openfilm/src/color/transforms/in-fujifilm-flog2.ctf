@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ProcessList version="2" id="openfilm:in-fujifilm-flog2">
-    <Description>OpenFilm input: Fujifilm F-Log2 footage (a video-range file) into ACEScct</Description>
+    <Description>CapyCut input: Fujifilm F-Log2 footage (a video-range file) into ACEScct</Description>
     <Matrix inBitDepth="32f" outBitDepth="32f">
         <Array dim="3 4">
   0.856304985337243                   0                   0  0.0625610948191593

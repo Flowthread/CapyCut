@@ -37,7 +37,7 @@ import { agentMark } from '@/lib/provider-marks';
 import { SettingsSelect } from './SettingsSelect';
 import { SettingsButton, SettingsField, SettingsGroup, SettingsInset, SettingsItem, SettingsLinkButton, SettingsPage, SettingsStatus, SettingsSwitch, settingsError } from './ui';
 import { AgentConnectionHelp } from './AgentConnectionHelp';
-import { OpenFilmAgentDialog } from './OpenFilmAgentDialog';
+import { CapyCutAgentDialog } from './CapyCutAgentDialog';
 
 function useHostAgents(): HostAgent[] | null {
   const [agents, setAgents] = React.useState<HostAgent[] | null>(null);
@@ -131,7 +131,7 @@ export function AgentsSection() {
   const [checkingUpdates, setCheckingUpdates] = React.useState(false);
   const [refreshError, setRefreshError] = React.useState<string | null>(null);
   const [keyOpen, setKeyOpen] = React.useState(false);
-  const [openfilmOpen, setOpenfilmOpen] = React.useState(false);
+  const [capycutOpen, setCapyCutOpen] = React.useState(false);
   const [diagnosis, setDiagnosis] = React.useState<{ id: HostAgentId; report: HostAgentDiagnosis | null; checking?: boolean; copied?: boolean } | null>(null);
   /* the agent whose installer the person is asked about */
   const [confirming, setConfirming] = React.useState<HostAgentId | null>(null);
@@ -303,7 +303,7 @@ export function AgentsSection() {
     const description = agent.connectionIssue ? statusLine(agent) : agent.status === 'ready' ? chosen ? accountLine(agent) : t('settings.agents.available') : statusLine(agent);
     const helpLabel = agent.id === 'openfilm' ? t('settings.agents.openfilmInfo') : t('settings.agents.helpFor').replace('{name}', ownKey ? t('settings.agents.byokName') : agent.name);
     const helpButton = showHelper || agent.id === 'openfilm' ? <button type="button" aria-label={helpLabel} title={helpLabel}
-      onClick={() => agent.id === 'openfilm' ? setOpenfilmOpen(true) : setHelp(agent.id)} className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full hover:bg-[var(--bg-hover)] hover:text-[var(--text)]"><CircleHelp size={15} aria-hidden /></button> : null;
+      onClick={() => agent.id === 'openfilm' ? setCapyCutOpen(true) : setHelp(agent.id)} className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full hover:bg-[var(--bg-hover)] hover:text-[var(--text)]"><CircleHelp size={15} aria-hidden /></button> : null;
     const connectedStatus = agent.status === 'ready' && chosen && !problem && !agent.connectionIssue
       ? <SettingsStatus>{t('settings.agents.ready')}</SettingsStatus> : null;
     /* what is left of its plan: while being asked, and once told (an agent that can't say shows nothing) */
@@ -433,11 +433,11 @@ export function AgentsSection() {
   const helpDiagnosis = diagnosis?.id === help ? diagnosis : null;
   const helpError = helpAgent ? error?.id === help ? error.text : helpAgent.error ?? (helpAgent.problem ? `${t('settings.agents.unreadable')} ${helpAgent.problem}` : undefined) : undefined;
   const byId = (id: HostAgentId) => list.find((a) => a.id === id);
-  /* always listed: Codex, Claude Code, OpenFilm and your own key; the others appear here once switched on */
+  /* always listed: Codex, Claude Code, CapyCut and your own key; the others appear here once switched on */
   const always = (['codex', 'claude', 'openfilm', 'byok'] as const).map(byId).filter((a): a is HostAgent => Boolean(a));
   const others = list.filter((a) => OWN.includes(a.id) && !always.includes(a));
   const more = others.filter((a) => !a.shown).sort((a, b) => (MORE_ORDER[a.id] ?? 2) - (MORE_ORDER[b.id] ?? 2));
-  const openfilmAgent = byId('openfilm');
+  const capycutAgent = byId('openfilm');
   return (
     <SettingsPage note={t('settings.agents.intro')}>
       <div className="mb-3 flex justify-end gap-2">
@@ -451,14 +451,14 @@ export function AgentsSection() {
         {[...always, ...others.filter((a) => a.shown)].map((a) => row(a))}
       </SettingsGroup>
       {more.length ? <SettingsGroup title={t('settings.agents.groupMore')}>{more.map((a) => row(a, false))}</SettingsGroup> : null}
-      {openfilmOpen && openfilmAgent ? <OpenFilmAgentDialog agent={openfilmAgent} onClose={() => setOpenfilmOpen(false)}
-        connectionStatus={dialogStatus(openfilmAgent)}
-        connectionError={error?.id === 'openfilm' ? error.text : openfilmAgent.error}
-        actions={openfilmAgent.status === 'ready' ? <>
+      {capycutOpen && capycutAgent ? <CapyCutAgentDialog agent={capycutAgent} onClose={() => setCapyCutOpen(false)}
+        connectionStatus={dialogStatus(capycutAgent)}
+        connectionError={error?.id === 'openfilm' ? error.text : capycutAgent.error}
+        actions={capycutAgent.status === 'ready' ? <>
           <SettingsLinkButton href={`https://${PROVIDER_SITES.openfilm}/account`}>{t('settings.providers.account')}<ExternalLink size={12} /></SettingsLinkButton>
           <SettingsButton variant="quiet" disabled={busy === 'openfilm'} title={t('settings.agents.openfilmDisconnect')}
             onClick={() => act('openfilm', () => host.disconnect('openfilm'))}>{t('settings.providers.disconnect')}</SettingsButton>
-        </> : action(openfilmAgent)} /> : null}
+        </> : action(capycutAgent)} /> : null}
       {helpAgent ? <AgentConnectionHelp key={helpAgent.id} agent={helpAgent}
         actions={action(helpAgent, always.includes(helpAgent) || helpAgent.shown, true)} connectionStatus={dialogStatus(helpAgent)}
         status={helpAgent.status === 'ready' && !helpAgent.connectionIssue ? t('settings.agents.ready') : statusLine(helpAgent)}

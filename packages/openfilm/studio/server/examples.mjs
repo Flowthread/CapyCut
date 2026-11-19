@@ -3,7 +3,7 @@
  * The example films the Projects window and the Community offer, and the Community's news: both read from the
  * Community's index (openfilm/community's index.json, its `examples` and `news`), or from OPENFILM_EXAMPLES_INDEX
  * (another address, or a file on this computer, to try a new index). An example is a whole project kept in its
- * publisher's own repository (OpenFilm's own in openfilm/examples), listed in the Community like anything else it
+ * publisher's own repository (CapyCut's own in openfilm/examples), listed in the Community like anything else it
  * shares, and opened with the same fetch as "Get from GitHub". Unreachable, or not an index: no examples, and the
  * window shows none.
  *
@@ -15,12 +15,12 @@
  * An example's `poster` (and `video`, a short preview played under the pointer) is an address, or a path in its folder,
  * read at the commit it is listed at. Its folder is fetched from the repository's `main` (the fetch takes branches,
  * not commits). An index of the older shape (`repo`, `branch`, `examples: [{ folder, … }]`, paths from the repository's
- * top) is read too: the copy that comes with OpenFilm, an index tried from a file.
+ * top) is read too: the copy that comes with CapyCut, an index tried from a file.
  *
  * An index read from a file on this computer (trying a new one) has its posters and previews served by Studio from
  * the folder it is in (`/api/examples/file/<path>`), so they show before the repository has them.
  *
- * GitHub's index shows at once: OpenFilm comes with a copy of the examples and their posters (examples-index,
+ * GitHub's index shows at once: CapyCut comes with a copy of the examples and their posters (examples-index,
  * `pnpm examples:sync`), and the last index read is kept in Studio's home. Those are shown while GitHub is asked in the
  * background (Studio asks as it starts), and a poster the copy has is served from it, so a slow or blocked GitHub costs
  * no wait; one that cannot be read, or has no examples yet, leaves them shown.
@@ -41,7 +41,7 @@ const DEFAULT_REPO = { owner: 'openfilm', repo: 'examples', branch: 'main' };
 const KEEP_MS = 10 * 60 * 1000;
 const RETRY_MS = 60 * 1000;
 const NAME = /^[\w.-]+$/;
-/** The copy of GitHub's index and its posters that comes with OpenFilm (`pnpm examples:sync`). */
+/** The copy of GitHub's index and its posters that comes with CapyCut (`pnpm examples:sync`). */
 export const BUNDLED_INDEX = fileURLToPath(new URL('../../examples-index/', import.meta.url));
 /** Where the last index read from GitHub is kept, for the next start. */
 const savedIndex = (/** @type {string} */ home) => join(home, 'cache', 'examples-index.json');
@@ -82,7 +82,7 @@ export function readExamples(raw, source = EXAMPLES_INDEX) {
   /** @type {Example[]} */
   const out = [];
   const local = !/^https?:\/\//.test(source);
-  /* GitHub's index: a poster the copy that came with OpenFilm has is served from it */
+  /* GitHub's index: a poster the copy that came with CapyCut has is served from it */
   const bundled = source === EXAMPLES_INDEX ? (/** @type {string} */ v) => existsSync(join(BUNDLED_INDEX, ...v.split('/'))) : () => false;
   for (const entry of index.examples.slice(0, 50)) {
     if (!entry || typeof entry !== 'object' || typeof entry.title !== 'string' || !entry.title.trim()) continue;
@@ -128,7 +128,7 @@ export function readExamples(raw, source = EXAMPLES_INDEX) {
  */
 export function exampleFile(path, { source = process.env.OPENFILM_EXAMPLES_INDEX || EXAMPLES_INDEX } = {}) {
   if (!repoPath(path)) return null;
-  /* GitHub's index: the posters of the copy that came with OpenFilm */
+  /* GitHub's index: the posters of the copy that came with CapyCut */
   if (source === EXAMPLES_INDEX) return existsSync(join(BUNDLED_INDEX, ...path.split('/'))) ? join(BUNDLED_INDEX, ...path.split('/')) : null;
   if (/^https?:\/\//.test(source)) return null;
   return join(dirname(source), ...path.split('/'));
@@ -177,7 +177,7 @@ const cache = new Map();
 /** @type {Map<string, Promise<Read>>} */
 const reading = new Map();
 
-/** An index kept on disk (the last read, or the copy that came with OpenFilm); null when there is none or it lists no examples. @param {string} file */
+/** An index kept on disk (the last read, or the copy that came with CapyCut); null when there is none or it lists no examples. @param {string} file */
 function indexAt(file) {
   try {
     const raw = JSON.parse(readFileSync(file, 'utf8'));
@@ -186,13 +186,13 @@ function indexAt(file) {
   } catch { return null; }
 }
 
-/** What GitHub's index showed last, else the copy that came with OpenFilm. @param {string} home */
+/** What GitHub's index showed last, else the copy that came with CapyCut. @param {string} home */
 const keptIndex = (home) => indexAt(savedIndex(home)) ?? indexAt(join(BUNDLED_INDEX, 'examples.json'));
 
 /**
  * The index read (cached a while). Never fails: an index that cannot be read is no examples and no news.
  * GitHub's index never waits on GitHub when there is one to show: the last read (here, then in Studio's home), else
- * the copy that came with OpenFilm, while GitHub is asked in the background.
+ * the copy that came with CapyCut, while GitHub is asked in the background.
  * @param {{ source?: string, fetchImpl?: typeof fetch, home?: string }} options
  * @returns {Promise<Read>}
  */

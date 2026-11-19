@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * OpenFilm's recycle bin: what the person deletes in OpenFilm (a file or folder of a project or the library, a project,
+ * CapyCut's recycle bin: what the person deletes in CapyCut (a file or folder of a project or the library, a project,
  * a skill, a voice, a subject) is kept here until it is put back, deleted for good, or the bin is emptied. It is a
  * folder of the shared home, `recycle/`, one folder per thing deleted:
  *

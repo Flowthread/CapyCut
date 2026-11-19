@@ -1,7 +1,7 @@
 /**
  * Build the app people install: `pnpm --filter @openfilm/desktop release` (`--arch=x64` for Intel Macs, default this
  * Mac's; `--unsigned` for a local try; `--platform=win --arch=x64|arm64` for the Windows installer, built here too;
- * `--official` for the project's own build; `--preview` for "OpenFilm Preview", an app of its own to try a build in).
+ * `--official` for the project's own build; `--preview` for "CapyCut Preview", an app of its own to try a build in).
  *
  * Which build it is comes from the `openfilm` package's product files: a build of this source uses product.json,
  * empty in the repository (no update feed: the app never looks for updates); `--official` uses product.official.json
@@ -26,8 +26,8 @@
  *
  *   4. the .dmg is signed and notarized too, so the download itself opens without a warning.
  *
- * Windows: an NSIS installer (OpenFilm-Setup-<version>-<arch>.exe, per user, no admin) and its feed (latest.yml). It is
- * built on this Mac: the program's icon and version are written into OpenFilm.exe with resedit (rcedit would need
+ * Windows: an NSIS installer (CapyCut-Setup-<version>-<arch>.exe, per user, no admin) and its feed (latest.yml). It is
+ * built on this Mac: the program's icon and version are written into CapyCut.exe with resedit (rcedit would need
  * wine). Not code-signed yet (no Windows certificate): SmartScreen asks once, "More info" → "Run anyway".
  *
  * Output: .release/<arch>/out (git-ignored). Nothing is uploaded: official builds are published by the project's
@@ -61,11 +61,11 @@ if (unsigned && !win && !process.argv.includes('--unsigned')) {
 
 /* this build's product: its update feed (see the header) */
 const official = process.argv.includes('--official');
-/* --preview: "OpenFilm Preview", to try a build in apart from an installed OpenFilm: its own name and bundle, data
+/* --preview: "CapyCut Preview", to try a build in apart from an installed CapyCut: its own name and bundle, data
    folder, Studio home, port and projects (src/flavor.mjs `preview`, from the package's `openfilmFlavor`); no updates */
 const preview = process.argv.includes('--preview');
 if (preview && official) throw new Error('--preview is never the official build');
-const NAME = preview ? 'OpenFilm Preview' : 'OpenFilm';
+const NAME = preview ? 'CapyCut Preview' : 'CapyCut';
 const productFile = join(protocol, official ? 'product.official.json' : 'product.json');
 const product = JSON.parse(readFileSync(productFile, 'utf8'));
 const updates = typeof product.desktop?.updates === 'string' ? product.desktop.updates.trim().replace(/\/+$/, '') : '';
@@ -97,7 +97,7 @@ writeFileSync(join(stage, 'package.json'), `${JSON.stringify({
   ...(preview ? { openfilmFlavor: 'preview' } : {}),
   version: pkg.version,
   description: pkg.description,
-  author: 'OpenFilm',
+  author: 'CapyCut',
   license: 'UNLICENSED',
   private: true,
   type: 'module',
@@ -162,9 +162,9 @@ await builder.build({
     },
     appId: preview ? 'dev.openfilm.desktop.preview' : 'dev.openfilm.desktop',
     /* openfilm:// links: a page of openfilm.dev opens the app on what it names (src/deep-links.mjs) */
-    protocols: [{ name: 'OpenFilm', schemes: ['openfilm'] }],
+    protocols: [{ name: 'CapyCut', schemes: ['openfilm'] }],
     productName: NAME,
-    copyright: 'Copyright © 2026 OpenFilm',
+    copyright: 'Copyright © 2026 CapyCut',
     electronVersion,
     asar: true,
     /* run by Electron as Node from outside the archive: the CLI the agents run, the agents' adapters */
@@ -195,7 +195,7 @@ await builder.build({
       entitlements: join(desktop, 'build/entitlements.mac.plist'),
       entitlementsInherit: join(desktop, 'build/entitlements.mac.plist'),
       /* what macOS says when Studio's record button first asks for the microphone (the entitlement above lets it) */
-      extendInfo: { NSMicrophoneUsageDescription: 'OpenFilm records sound from the microphone when you press Record.' },
+      extendInfo: { NSMicrophoneUsageDescription: 'CapyCut records sound from the microphone when you press Record.' },
       ...(unsigned ? { identity: null } : { identity: IDENTITY, notarize: true }),
     },
     /* the downloads keep one name from version to version: the website links the latest release's by it */
@@ -230,7 +230,7 @@ function adHocSign(context) {
   execFileSync('codesign', ['--force', '--deep', '--sign', '-', join(context.appOutDir, `${NAME}.app`)], { stdio: 'inherit' });
 }
 
-/** OpenFilm.exe's icon and version, as rcedit would write them. */
+/** CapyCut.exe's icon and version, as rcedit would write them. */
 async function windowsResources(context) {
   const ResEdit = await import('resedit');
   const PE = await import('pe-library');
@@ -244,8 +244,8 @@ async function windowsResources(context) {
   info.setFileVersion(major, minor, patch, 0, 1033);
   info.setProductVersion(major, minor, patch, 0, 1033);
   info.setStringValues({ lang: 1033, codepage: 1200 }, {
-    ProductName: 'OpenFilm', FileDescription: 'OpenFilm', CompanyName: 'OpenFilm', OriginalFilename: 'OpenFilm.exe',
-    InternalName: 'OpenFilm', LegalCopyright: 'Copyright © 2026 OpenFilm', FileVersion: pkg.version, ProductVersion: pkg.version,
+    ProductName: 'CapyCut', FileDescription: 'CapyCut', CompanyName: 'CapyCut', OriginalFilename: 'CapyCut.exe',
+    InternalName: 'CapyCut', LegalCopyright: 'Copyright © 2026 CapyCut', FileVersion: pkg.version, ProductVersion: pkg.version,
   });
   info.outputToResourceEntries(res.entries);
   res.outputResource(exe);

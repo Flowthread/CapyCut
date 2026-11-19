@@ -30,7 +30,7 @@ test('agent update help checks versions, queues a busy update and shows newly di
             catalog: { models: [{ id: 'old', name: 'Previous model', shown: true }] } },
           { id: 'codex', name: 'Codex', shown: true, status: 'ready', path: '/Applications/Codex.app/Contents/Resources/codex',
             update: { status: 'unknown', version: '0.166.0', error: 'Version service answered 503.', action: { kind: 'link', url: 'https://chatgpt.com/download/' } } },
-          { id: 'openfilm', name: 'OpenFilm', shown: true, status: 'ready', update: { status: 'managed', version: '0.3.2', action: { kind: 'desktop' } } },
+          { id: 'openfilm', name: 'CapyCut', shown: true, status: 'ready', update: { status: 'managed', version: '0.3.2', action: { kind: 'desktop' } } },
         ];
         const publish = (id, status) => { agents = agents.map(a => a.id === id ? { ...a, update: { ...a.update, status } } : a); listeners.forEach(fn => fn(agents)); };
         window.agentUpdatesFixture = { calls, publish, finish: () => {

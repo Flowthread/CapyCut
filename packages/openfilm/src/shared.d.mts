@@ -13,7 +13,7 @@ export declare const COMMAND_ROOM: number;
 /** The option that reads a filter graph from a file, for this ffmpeg: `-/filter_complex` from 7 on, `-filter_complex_script` before. */
 export declare function filterScriptOption(): Promise<string>;
 /** A film opened in a browser to be drawn: what `look` and `render` start from. */
-export interface OpenFilm {
+export interface CapyCut {
   root: string; entry: string; dir: string; name: string;
   film: import('./host.mjs').FilmPage;
   browser: import('playwright-core').Browser;
@@ -21,9 +21,9 @@ export interface OpenFilm {
   close(): Promise<void>;
 }
 /** `playable`: the picture is wanted, so footage the browser does not decode is served as a copy it plays (the film's video clips, or these files). */
-export declare function open(target: string, opts?: { root?: string; timeline?: string; renderRanges?: [number, number][]; playable?: boolean | string[]; signal?: AbortSignal }): Promise<OpenFilm>;
+export declare function open(target: string, opts?: { root?: string; timeline?: string; renderRanges?: [number, number][]; playable?: boolean | string[]; signal?: AbortSignal }): Promise<CapyCut>;
 /** The film's sound from `from` seconds on, as clips to mix: its sound clips and its videos' own sound. */
-export declare function filmSound(s: OpenFilm, from: number, signal?: AbortSignal): Promise<MixClip[]>;
+export declare function filmSound(s: CapyCut, from: number, signal?: AbortSignal): Promise<MixClip[]>;
 export declare class UsageError extends Error {}
 /** Stop a process at once, with its children on Windows. */
 export declare function kill(proc: import('node:child_process').ChildProcess): void;

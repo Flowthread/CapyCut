@@ -14,6 +14,6 @@ test('a clip tool is offered by the model made for it first, then by those that 
   /* a recording needs a model that takes one; a model made for another tool does not do this one */
   assert.deepEqual(clipModels(tool('lipsync'), [noVoice, kling, seedance]).map((c) => c.name), ['Seedance 2.0 Mini']);
   assert.deepEqual(clipModels(tool('motion'), [words]), []);
-  /* through OpenFilm the model's id carries its provider */
+  /* through CapyCut the model's id carries its provider */
   assert.equal(clipModels(tool('edit'), [{ ...kling, via: 'openfilm', model: 'fal/kling-o3-edit' }])[0]!.name, 'Kling O3 Edit');
 });

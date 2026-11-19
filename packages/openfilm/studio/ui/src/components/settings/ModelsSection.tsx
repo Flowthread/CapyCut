@@ -68,7 +68,7 @@ export function ModelsSection() {
 }
 
 /**
- * OpenFilm's library searched by what is meant: OpenFilm's service (src/library-semantic.mjs, free, no account), on
+ * CapyCut's library searched by what is meant: CapyCut's service (src/library-semantic.mjs, free, no account), on
  * by default, or none (the library's words alone).
  */
 function LibraryRow({ hook }: { hook: ProvidersHook }) {

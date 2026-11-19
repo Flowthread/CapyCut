@@ -11,7 +11,7 @@ import inRec709 from '../../../../src/color/transforms/in-rec709.ctf?raw';
 import outRec709 from '../../../../src/color/transforms/out-rec709.ctf?raw';
 import type { ColorText } from './clip-color.ts';
 
-/** OpenFilm's own files for ordinary video, written into a project when a clip's chain first names them. */
+/** CapyCut's own files for ordinary video, written into a project when a clip's chain first names them. */
 export const STANDARD: Readonly<Record<string, string>> = { 'looks/in-rec709.ctf': inRec709, 'looks/out-rec709.ctf': outRec709 };
 
 type Read = { text: string; rev: string } | null;

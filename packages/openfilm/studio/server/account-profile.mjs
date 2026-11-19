@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * Who the OpenFilm account is, for Settings → General → Account: its name and picture as the website shows them,
+ * Who the CapyCut account is, for Settings → General → Account: its name and picture as the website shows them,
  * read with the key this computer holds (GET <service>/api/desktop/profile). Kept ten minutes per key, a failure a
  * minute; a temporary failure keeps the last profile for the same key.
  * Changing them is the website's: Studio only shows them.

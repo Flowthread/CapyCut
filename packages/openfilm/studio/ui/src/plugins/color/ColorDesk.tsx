@@ -251,7 +251,7 @@ export function ColorDesk({ projectId, host, clips, current, timeMs, onShot, onS
   }, []);
   React.useEffect(() => {
     for (const p of paths) {
-      /* an input or an output is OpenFilm's own, copied in as a chain first needs it: not a change of the grade */
+      /* an input or an output is CapyCut's own, copied in as a chain first needs it: not a change of the grade */
       if (roleOf(p) === 'input' || roleOf(p) === 'output') continue;
       const now = text(p);
       if (now === undefined) continue;
@@ -342,7 +342,7 @@ export function ColorDesk({ projectId, host, clips, current, timeMs, onShot, onS
   const exportLut = () => first && run('export', async () => {
     const texts = await readColorTexts(projectId, chain);
     const ops = chain.flatMap((f) => parseColorTransform(texts(f) ?? '', f));
-    const cube = cubeText(bake(ops, { size: 65 }), `OpenFilm grade of ${first.id}`);
+    const cube = cubeText(bake(ops, { size: 65 }), `CapyCut grade of ${first.id}`);
     const a = document.createElement('a');
     const name = `${first.id}.cube`;
     a.href = URL.createObjectURL(new Blob([cube], { type: 'text/plain' }));

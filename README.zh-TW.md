@@ -1,6 +1,6 @@
 <p align="center">
-  <img src="docs/logo-light.svg#gh-light-mode-only" alt="OpenFilm" height="48">
-  <img src="docs/logo-dark.svg#gh-dark-mode-only" alt="OpenFilm" height="48">
+  <img src="docs/logo-light.svg#gh-light-mode-only" alt="CapyCut" height="48">
+  <img src="docs/logo-dark.svg#gh-dark-mode-only" alt="CapyCut" height="48">
 </p>
 <p align="center">開源的 AI 影片代理。</p>
 <p align="center">
@@ -40,13 +40,13 @@
   <a href="https://www.youtube.com/@riverisbuilding"><img alt="在 YouTube 觀看" src="docs/buttons/youtube.zh-TW.svg" /></a>
 </p>
 
-[![OpenFilm：代理做片子，你在旁邊看著，再親手修改](docs/openfilm.webp)](https://openfilm.dev)
+[![CapyCut：代理做片子，你在旁邊看著，再親手修改](docs/openfilm.webp)](https://openfilm.dev)
 
 ---
 
 ### 簡介
 
-OpenFilm 讓任何程式設計代理都能做影片，再配上編輯器，它做出的一切你都能改。
+CapyCut 讓任何程式設計代理都能做影片，再配上編輯器，它做出的一切你都能改。
 
 你和代理即時協作，做的是同一部片子：代理改了什麼，你馬上就能看到；你改了什麼，代理也看得到。大部分由代理完成；你可以指著任何東西請它改，也可以自己動手。
 
@@ -68,25 +68,25 @@ npx skills add openfilm/openfilm
 
 ### 編輯器
 
-每個編輯器都是處理同一部片子的一種方式，在每一個裡都是你和代理協同工作。OpenFilm 目前內建四個，更多官方編輯器正在開發中，面向不同的人：一般人一上手就會用，專業的人也有自己的專業工作台。編輯器遵循社群的開放標準，任何人都可以開發自己的編輯器並分享出來。
+每個編輯器都是處理同一部片子的一種方式，在每一個裡都是你和代理協同工作。CapyCut 目前內建四個，更多官方編輯器正在開發中，面向不同的人：一般人一上手就會用，專業的人也有自己的專業工作台。編輯器遵循社群的開放標準，任何人都可以開發自己的編輯器並分享出來。
 
 - **放映**：大螢幕看片。點一個時刻、拖過一段，或在畫面上圈出一塊，代理就知道你指的是什麼。
 - **剪輯**：完整的時間軸，放片段、文字、字幕、配音和聲音。鏡頭裡的任何東西都能移動、縮放、改樣式。匯出影片，或把時間軸帶到 Final Cut Pro、Premiere Pro、DaVinci Resolve。
 - **畫布**：構思用的白板，筆記、圖片、片段、聲音並排擺開。用你的服務逐一生成，再依序送上時間軸。
 - **調色**：用示波器、色輪和曲線替每個片段調色，支援相機 Log 素材和 `.cube` LUT。預覽是什麼樣子，匯出就是什麼樣子。
 
-四個編輯器共用一個素材庫：你自己的素材依資料夾管理，連結而不複製，搬了位置也找得回來；旁邊是 OpenFilm 免費的音樂、音效、聲音和貼圖。
+四個編輯器共用一個素材庫：你自己的素材依資料夾管理，連結而不複製，搬了位置也找得回來；旁邊是 CapyCut 免費的音樂、音效、聲音和貼圖。
 
 ### 社群
 
-社群是一套開放標準，涵蓋所有能加進 OpenFilm 的東西，任何人都能為它開發。
+社群是一套開放標準，涵蓋所有能加進 CapyCut 的東西，任何人都能為它開發。
 
-- **外掛**為 OpenFilm 本身加上新的編輯器，以及連接外部服務的連接器。OpenFilm 內建的編輯器也是外掛，和任何人的做法一樣。
+- **外掛**為 CapyCut 本身加上新的編輯器，以及連接外部服務的連接器。CapyCut 內建的編輯器也是外掛，和任何人的做法一樣。
 - **技能**教代理做某一類片子的方法。
 - **素材**包括音樂、音效、轉場、特效、文字樣式、貼圖和範本。
 - **範例**是完整的專案，可以照著學，也可以拿來改。
 
-每一樣都是一個普通資料夾。在 OpenFilm 的社群視窗裡加入，或者自己做：[做外掛](packages/openfilm/plugins/README.md)、[寫技能](https://github.com/openfilm/community/blob/main/SPEC.md)、[分享素材](https://github.com/openfilm/community/blob/main/assets/CONTRIBUTING.md)，或把成片當作範例分享，然後提交到 [openfilm/community](https://github.com/openfilm/community)。
+每一樣都是一個普通資料夾。在 CapyCut 的社群視窗裡加入，或者自己做：[做外掛](packages/openfilm/plugins/README.md)、[寫技能](https://github.com/openfilm/community/blob/main/SPEC.md)、[分享素材](https://github.com/openfilm/community/blob/main/assets/CONTRIBUTING.md)，或把成片當作範例分享，然後提交到 [openfilm/community](https://github.com/openfilm/community)。
 
 ### 原理
 
@@ -114,11 +114,11 @@ window.film = {
 };
 ```
 
-**你的改動不會遺失。** 你在鏡頭裡親手改的文字、顏色、位置、大小，OpenFilm 存在片段的 `overrides` 裡，不動網頁程式碼。代理重寫網頁之後，你的改動照樣生效。完整格式見 [SPEC.md](packages/openfilm/SPEC.md)。
+**你的改動不會遺失。** 你在鏡頭裡親手改的文字、顏色、位置、大小，CapyCut 存在片段的 `overrides` 裡，不動網頁程式碼。代理重寫網頁之後，你的改動照樣生效。完整格式見 [SPEC.md](packages/openfilm/SPEC.md)。
 
 ### 參與貢獻
 
-想從原始碼執行 OpenFilm 或提交 PR，請先讀 [CONTRIBUTING.md](CONTRIBUTING.md)。Bug 請回報到 [Issues](https://github.com/openfilm/openfilm/issues)，附上 Settings → Developer → Copy report 裡的報告；安全問題請依 [SECURITY.md](SECURITY.md) 的說明回報。
+想從原始碼執行 CapyCut 或提交 PR，請先讀 [CONTRIBUTING.md](CONTRIBUTING.md)。Bug 請回報到 [Issues](https://github.com/openfilm/openfilm/issues)，附上 Settings → Developer → Copy report 裡的報告；安全問題請依 [SECURITY.md](SECURITY.md) 的說明回報。
 
 ### Star History
 

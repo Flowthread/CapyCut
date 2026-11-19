@@ -14,7 +14,7 @@ test('the version whose notes were last shown: a version, else none', () => {
   assert.deepEqual(prefsOf({ seenVersion: '0.1.6' }).proxies, { on: true, height: 720 }, 'the rest as before');
 });
 
-test('what a newer OpenFilm keeps in prefs.json stays when this one writes it', () => {
+test('what a newer CapyCut keeps in prefs.json stays when this one writes it', () => {
   const home = mkdtempSync(join(tmpdir(), 'of-prefs-'));
   const was = process.env.OPENFILM_HOME;
   process.env.OPENFILM_HOME = home;
@@ -69,6 +69,6 @@ test('the library\'s categories are kept in shape: names once each, nothing else
   assert.equal(prefsOf({}).libraryCategories, null);
   assert.deepEqual(libraryCategoriesOf({ order: ['text', 'text', 'Bad Name', 3, 'sticker'], off: 'skill' }), { order: ['text', 'sticker'], off: [] });
   assert.equal(libraryCategoriesOf(['text']), null);
-  /* a plugin's tab is named by the plugin's id: OpenFilm's own, or one someone made (owner/name) */
+  /* a plugin's tab is named by the plugin's id: CapyCut's own, or one someone made (owner/name) */
   assert.deepEqual(libraryCategoriesOf({ order: ['captions', 'river/notes', 'a/b/c', '../x'], off: ['river/notes'] }), { order: ['captions', 'river/notes'], off: ['river/notes'] });
 });

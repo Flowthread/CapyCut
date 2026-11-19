@@ -4,7 +4,7 @@
  * voices (its podcast model, doubao-dialogue.mjs), recorded-speech
  * recognition, and sound effects and music (Seed-Audio 1.0, https://docs.volcengine.com/docs/doubao-voice/audio-generation-http).
  * Recognition is ASR 2.0 (`volc.seedasr.auc`, a task asked after until done), which reads the recording from a web
- * address, so it runs where the run can give one (OpenFilm's service); with a key alone, the older flash recognition
+ * address, so it runs where the run can give one (CapyCut's service); with a key alone, the older flash recognition
  * (`volc.bigasr.auc_turbo`, which accounts that have it can still use) takes the recording inside the request.
  */
 import { randomUUID } from 'node:crypto';
@@ -20,7 +20,7 @@ const SPEECH = 'https://openspeech.bytedance.com';
 /** How often a recognition task is asked after (tests make it short). */
 export const polling = { ms: 2000 };
 
-/** Convert only actual service timestamps, in milliseconds, to OpenFilm words in seconds.
+/** Convert only actual service timestamps, in milliseconds, to CapyCut words in seconds.
  * @param {any} body @param {string | null} status */
 export function doubaoResult(body, status) {
   if (status !== '20000000') throw new Error('Doubao did not report recognition success. Check Speech service access and balance. Not retried.');
@@ -89,7 +89,7 @@ async function flash(args, ctx) {
   const status = response.headers.get('X-Api-Status-Code');
   if (!response.ok) {
     if (response.status === 402) throw noBalance(NAME);
-    throw new Error(`Doubao HTTP ${response.status}. Use a Volcengine Speech API key with flash recognition access (not an Ark chat key), and check the balance. Volcengine no longer opens flash recognition to new accounts: OpenFilm's own service runs Doubao ASR 2.0. Request id: ${requestId}. Not retried.`);
+    throw new Error(`Doubao HTTP ${response.status}. Use a Volcengine Speech API key with flash recognition access (not an Ark chat key), and check the balance. Volcengine no longer opens flash recognition to new accounts: CapyCut's own service runs Doubao ASR 2.0. Request id: ${requestId}. Not retried.`);
   }
   const result = doubaoResult(await response.json(), status);
   return { files: [], index: [{ src, ...result, transcribed: true }],
@@ -103,7 +103,7 @@ async function flash(args, ctx) {
  */
 async function recognize(args, ctx) {
   const src = needed(args, 'src');
-  if (!ctx.link) throw new Error(`Doubao ASR 2.0 reads the recording from a web address, and with your own key OpenFilm has nowhere to put it. Use --model ${FLASH} if your account has flash recognition, or OpenFilm's own service.`);
+  if (!ctx.link) throw new Error(`Doubao ASR 2.0 reads the recording from a web address, and with your own key CapyCut has nowhere to put it. Use --model ${FLASH} if your account has flash recognition, or CapyCut's own service.`);
   const base = serviceUrl('DOUBAO_ASR', SPEECH);
   const headers = (/** @type {string} */ id) => ({ 'Content-Type': 'application/json', 'X-Api-Key': ctx.key, 'X-Api-Resource-Id': ASR, 'X-Api-Request-Id': id, 'X-Api-Sequence': '-1' });
   let id = text(ctx.resume?.task);

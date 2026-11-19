@@ -10,7 +10,7 @@
  * A keyless provider connected without a key keeps '' as its key. A kind of media with no model (or one its provider no
  * longer has) is made with the provider's first. Listing voices goes with voice-over: same provider, same model.
  *
- * The file is shared with every OpenFilm on this computer (`npx openfilm`, the app), which may be older or newer than
+ * The file is shared with every CapyCut on this computer (`npx openfilm`, the app), which may be older or newer than
  * this one: what this one does not know of it (a newer one's field) is written back as it was, never dropped.
  *
  * A key in the environment (the provider's variable, e.g. ELEVENLABS_API_KEY) wins over the file: it is how people
@@ -22,7 +22,7 @@
  * with '' left in `keys` for a keyless provider (nothing to hide) and no `key` on a custom service. The app's sealer is
  * AES-256-GCM with a key of its own that only the system's keychain opens for the app (macOS Keychain, Windows DPAPI):
  * each sealed key is bound to where it goes (its provider, or the service's id and address), so one moved to another
- * entry, or a service's address changed in the file, opens to nothing. Plain keys found in the file (an older OpenFilm
+ * entry, or a service's address changed in the file, opens to nothing. Plain keys found in the file (an older CapyCut
  * or `npx openfilm` wrote them, or this one before) are sealed when the app's Studio starts and on every write; a
  * plain key wins over a sealed one of the same entry, being the newer. Without a sealer (`npx openfilm`, an older app)
  * the sealed keys are not seen and stay in the file as they are: its own keys are kept plain, as before.
@@ -45,7 +45,7 @@ import { keptServices } from './custom-services.mjs';
 /** @typedef {import('./providers/contract.mjs').Provider} Provider */
 /**
  * `off`: the providers disconnected while the environment has a key for them (that key is not used). `custom`: the
- * person's own services. `libraryOff`: the library is searched by its words alone, not by meaning at OpenFilm's
+ * person's own services. `libraryOff`: the library is searched by its words alone, not by meaning at CapyCut's
  * service (src/library-semantic.mjs).
  * @typedef {{ keys: Record<string, string>, use: Record<string, string>, model: Record<string, string>, off: string[],
  *   custom: import('./custom-services.mjs').CustomService[], accounts: Record<string, string>, libraryOff: boolean }} ProviderSettings
@@ -193,7 +193,7 @@ export function changeSettings(/** @type {(s: ProviderSettings) => void} */ edit
   const next = changing.catch(() => {}).then(async () => {
     const settings = await readSettings(file);
     edit(settings);
-    /* what another OpenFilm keeps here, unknown to this one, stays */
+    /* what another CapyCut keeps here, unknown to this one, stays */
     const kept = plain(await readFile(file, 'utf8').then(JSON.parse, () => null));
     await mkdir(dirname(file), { recursive: true, mode: 0o700 });
     const tmp = `${file}.${randomBytes(6).toString('hex')}.tmp`;

@@ -1,4 +1,4 @@
-/** Keep the output name stable while an OpenFilm canvas request has no locally delivered result. */
+/** Keep the output name stable while an CapyCut canvas request has no locally delivered result. */
 export interface CanvasMediaRequest { verb: string; args: Record<string, string | string[]> }
 type Store = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 const stable = (value: unknown) => JSON.stringify(value, (_key, item) => item && typeof item === 'object' && !Array.isArray(item)

@@ -106,9 +106,9 @@ interface AppBridge {
     list(project: string, agent: string): Promise<SkillListing>;
     /** the skills a message names, as its agent reads each (its folder and its SKILL.md whole) */
     texts(project: string, agent: string, names: string[]): Promise<Array<{ name: string; text: string }>>;
-    /** one of the agent's own skills let into OpenFilm, or not */
+    /** one of the agent's own skills let into CapyCut, or not */
     allow(agent: string, name: string, allowed: boolean): Promise<{ ok: boolean }>;
-    /** OpenFilm's skills changed (one added, or turned on or off): the agents' sessions take them up */
+    /** CapyCut's skills changed (one added, or turned on or off): the agents' sessions take them up */
     changed?(): Promise<unknown>;
     /** a GitHub or GitLab address fetched to be looked at; then kept (`commit`) or let go (`discard`) */
     preview(url: string): Promise<{ ok: true; id: string; skills: SkillPreview[] } | { ok: false; error: string }>;
@@ -125,7 +125,7 @@ interface AppBridge {
 
 export interface DeveloperPrefs { logs: boolean; changes: boolean }
 
-/** One of OpenFilm's skills: the project's, the person's own, or official (openfilm/src/skills.mjs). */
+/** One of CapyCut's skills: the project's, the person's own, or official (openfilm/src/skills.mjs). */
 export interface SkillInfo {
   name: string;
   description: string;
@@ -144,7 +144,7 @@ export interface SkillInfo {
 /** A skill fetched from an address, before it is kept: `replaces`, one of the person's has its name. */
 export interface SkillPreview { name: string; description: string; scripts: string[]; size: number; replaces: boolean }
 
-/** A skill the person installed in their agent themselves, let into OpenFilm or not. */
+/** A skill the person installed in their agent themselves, let into CapyCut or not. */
 export interface OwnSkill { name: string; description: string; folder: string; allowed: boolean }
 
 export interface SkillListing {

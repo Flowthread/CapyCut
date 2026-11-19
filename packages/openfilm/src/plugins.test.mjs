@@ -22,10 +22,10 @@ test('the screening, the edit and the canvas are on until the person says, Color
   assert.throws(() => setPluginOn('colour', true, h), /no plugin/);
 });
 
-test('a plugin is got before it is the person\'s, as an editor\'s extensions: one OpenFilm comes with is only turned off', () => {
+test('a plugin is got before it is the person\'s, as an editor\'s extensions: one CapyCut comes with is only turned off', () => {
   const h = home();
   const state = (id) => { const p = pluginStates(h).find((x) => x.id === id); return [p.installed, p.on, p.builtIn]; };
-  /* on from the start: it comes with OpenFilm; off from the start: in the store until got */
+  /* on from the start: it comes with CapyCut; off from the start: in the store until got */
   assert.deepEqual(state('edit'), [true, true, true]);
   assert.deepEqual(state('color'), [false, false, false]);
   /* got, turned off, it stays the person's; removed, it is back to never got and nothing of it is kept */
@@ -35,8 +35,8 @@ test('a plugin is got before it is the person\'s, as an editor\'s extensions: on
   removePlugin('color', h);
   assert.deepEqual(state('color'), [false, false, false]);
   assert.deepEqual(JSON.parse(readFileSync(join(h, 'prefs.json'), 'utf8')).plugins, {});
-  /* one OpenFilm comes with is not removed: turned off, it is still there */
-  assert.throws(() => removePlugin('edit', h), /comes with OpenFilm/);
+  /* one CapyCut comes with is not removed: turned off, it is still there */
+  assert.throws(() => removePlugin('edit', h), /comes with CapyCut/);
   setPluginOn('edit', false, h);
   assert.deepEqual(state('edit'), [true, false, true]);
   assert.throws(() => removePlugin('colour', h), /no plugin/);
@@ -65,7 +65,7 @@ test('an agent is given the skills the plugins on bring and require, each after 
   const names = () => offeredSkills(where(h)).given.map((s) => s.name);
   /* as made: the edit, the canvas and Screening on; the film and the media are theirs to need, color is off */
   assert.deepEqual(names(), ['film', 'media', 'canvas']);
-  assert.equal(pluginsOffLine(h).startsWith('Plugins the person has turned off (Community › Added, in the OpenFilm menu, turns one on): color ('), true);
+  assert.equal(pluginsOffLine(h).startsWith('Plugins the person has turned off (Community › Added, in the CapyCut menu, turns one on): color ('), true);
   assert.match(promptSkills(h), /^- `canvas` \(after `media`\):/m);
 
   setPluginOn('color', true, h);
@@ -88,7 +88,7 @@ test('an agent is given the skills the plugins on bring and require, each after 
   assert.deepEqual(names(), ['film', 'media']);
 });
 
-test('a skill of OpenFilm\'s own has no switch of its own: the plugin it goes with turns it, and one that goes with none is there while needed', () => {
+test('a skill of CapyCut\'s own has no switch of its own: the plugin it goes with turns it, and one that goes with none is there while needed', () => {
   const h = home();
   const names = () => offeredSkills(where(h)).given.map((s) => s.name);
   setPluginOn('color', true, h);
@@ -183,7 +183,7 @@ test('every plugin says what it is for, and names skills there are', async () =>
   }
 });
 
-test('each plugin of OpenFilm\'s own is in one category, and one made is rated, for whom and at what cost, in every language', () => {
+test('each plugin of CapyCut\'s own is in one category, and one made is rated, for whom and at what cost, in every language', () => {
   const langs = ['en', 'zh-CN', 'ja', 'ko', 'es'];
   for (const p of PLUGINS) {
     assert.ok(CATEGORIES.includes(p.profile?.category ?? ''), `${p.id}: its category`);
@@ -285,7 +285,7 @@ test('a plugin\'s recording at work (showcase.video): a video and a poster in it
   assert.equal(byId.wrong, undefined);
 });
 
-test('OpenFilm\'s editors have their page words in every language', () => {
+test('CapyCut\'s editors have their page words in every language', () => {
   for (const p of readPlugins().filter((x) => ['edit', 'screening', 'canvas', 'color'].includes(x.id))) {
     for (const lang of ['en', 'zh-CN', 'ja', 'ko', 'es']) {
       assert.equal(p.examples?.[lang]?.length, 3, `${p.id} ${lang} examples`);

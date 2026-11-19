@@ -161,7 +161,7 @@ export function useWorkbenchShown(projectId: string, canvasProject: string | und
   React.useEffect(() => { if (canvasOpen) setCanvasKept(true); }, [canvasOpen]);
   React.useEffect(() => { setCanvasKept(canvasShown(projectId)); }, [projectId]);
   /*
-   * OpenFilm's own workbenches that are not in the page yet are warmed (their elements' modules loaded) once this
+   * CapyCut's own workbenches that are not in the page yet are warmed (their elements' modules loaded) once this
    * project has opened and the page has painted, while it is visible: the canvas is then put in its box, hidden. A
    * plugin someone made is loaded only when first shown. Each: its module, and whether it is the canvas's.
    */

@@ -1,6 +1,6 @@
 <p align="center">
-  <img src="docs/logo-light.svg#gh-light-mode-only" alt="OpenFilm" height="48">
-  <img src="docs/logo-dark.svg#gh-dark-mode-only" alt="OpenFilm" height="48">
+  <img src="docs/logo-light.svg#gh-light-mode-only" alt="CapyCut" height="48">
+  <img src="docs/logo-dark.svg#gh-dark-mode-only" alt="CapyCut" height="48">
 </p>
 <p align="center">オープンソースの AI 動画エージェント。</p>
 <p align="center">
@@ -40,13 +40,13 @@
   <a href="https://www.youtube.com/@riverisbuilding"><img alt="Watch on YouTube" src="docs/buttons/youtube.svg" /></a>
 </p>
 
-[![OpenFilm：エージェントが動画を作るのを見守り、そのあと自分の手で直す](docs/openfilm.webp)](https://openfilm.dev)
+[![CapyCut：エージェントが動画を作るのを見守り、そのあと自分の手で直す](docs/openfilm.webp)](https://openfilm.dev)
 
 ---
 
 ### 概要
 
-OpenFilm は、どんなコーディングエージェントも動画エージェントに変えます。エージェントが作ったものは、エディターで何でも直せます。
+CapyCut は、どんなコーディングエージェントも動画エージェントに変えます。エージェントが作ったものは、エディターで何でも直せます。
 
 あなたとエージェントは、同じ動画をリアルタイムで一緒に作ります。エージェントが変えたものはその場であなたに見え、あなたが変えたものはエージェントにも見えます。作業の大半はエージェントが担い、あなたは何でも指し示して変更を頼むか、自分で直すだけです。
 
@@ -68,25 +68,25 @@ npx skills add openfilm/openfilm
 
 ### エディター
 
-どのエディターも同じ動画に取り組むための別々の方法で、どのエディターでもあなたとエージェントが一緒に作業します。OpenFilm には 4 つのエディターが付属し、さまざまな人に向けた公式エディターをさらに開発中です。誰でもすぐ使えるシンプルなものから、望む人のためのプロ向けワークベンチまで。エディターはコミュニティのオープン標準に沿っているので、誰でも作って共有できます。
+どのエディターも同じ動画に取り組むための別々の方法で、どのエディターでもあなたとエージェントが一緒に作業します。CapyCut には 4 つのエディターが付属し、さまざまな人に向けた公式エディターをさらに開発中です。誰でもすぐ使えるシンプルなものから、望む人のためのプロ向けワークベンチまで。エディターはコミュニティのオープン標準に沿っているので、誰でも作って共有できます。
 
 - **試写**：動画を大きく表示して観ます。ある瞬間をクリックする、一区間をドラッグする、画面の一部を丸で囲む。それだけで、何を指しているのかエージェントに伝わります。
 - **編集**：クリップ、テキスト、字幕、ナレーション、サウンドを扱う本格的なタイムライン。ショットの中の何でも移動・拡大縮小・スタイル変更できます。動画として書き出すことも、タイムラインを Final Cut Pro、Premiere Pro、DaVinci Resolve に持っていくこともできます。
 - **キャンバス**：メモ、画像、クリップ、声を並べて構想を練るボード。接続したサービスでそれぞれを生成し、順番どおりにタイムラインへ送れます。
 - **カラー**：スコープ、カラーホイール、カーブで全クリップをグレーディング。カメラのログ素材にも、`.cube` LUT にも対応します。プレビューしたとおりに書き出されます。
 
-4 つのエディターは 1 つのライブラリを共有します。自分の素材はフォルダで整理され、コピーではなくリンクで扱うので、移動しても見つけ直せます。その隣には、OpenFilm の無料の音楽、効果音、声、ステッカーが並びます。
+4 つのエディターは 1 つのライブラリを共有します。自分の素材はフォルダで整理され、コピーではなくリンクで扱うので、移動しても見つけ直せます。その隣には、CapyCut の無料の音楽、効果音、声、ステッカーが並びます。
 
 ### コミュニティ
 
-コミュニティは、OpenFilm に追加できるあらゆるもののためのオープン標準で、誰でも作って参加できます。
+コミュニティは、CapyCut に追加できるあらゆるもののためのオープン標準で、誰でも作って参加できます。
 
-- **プラグイン**は、新しいエディターや外部サービスとのコネクタで OpenFilm 自体を拡張します。OpenFilm 自身のエディターもプラグインで、ほかの誰のものとも同じ方法で作られています。
+- **プラグイン**は、新しいエディターや外部サービスとのコネクタで CapyCut 自体を拡張します。CapyCut 自身のエディターもプラグインで、ほかの誰のものとも同じ方法で作られています。
 - **スキル**は、ある種類の動画の作り方をエージェントに教えます。
 - **アセット**は、音楽、効果音、トランジション、エフェクト、テキストスタイル、ステッカー、テンプレートです。
 - **サンプル**は、学んだりリミックスしたりできる完成済みのプロジェクトです。
 
-どれもただのフォルダです。OpenFilm のコミュニティウィンドウから追加するか、自分で作りましょう。[プラグインを作る](packages/openfilm/plugins/README.md)、[スキルを書く](https://github.com/openfilm/community/blob/main/SPEC.md)、[アセットを共有する](https://github.com/openfilm/community/blob/main/assets/CONTRIBUTING.md)、または完成した動画をサンプルとして共有し、[openfilm/community](https://github.com/openfilm/community) に登録します。
+どれもただのフォルダです。CapyCut のコミュニティウィンドウから追加するか、自分で作りましょう。[プラグインを作る](packages/openfilm/plugins/README.md)、[スキルを書く](https://github.com/openfilm/community/blob/main/SPEC.md)、[アセットを共有する](https://github.com/openfilm/community/blob/main/assets/CONTRIBUTING.md)、または完成した動画をサンプルとして共有し、[openfilm/community](https://github.com/openfilm/community) に登録します。
 
 ### 仕組み
 
@@ -114,11 +114,11 @@ window.film = {
 };
 ```
 
-**あなたの変更は消えません。** テキスト、色、位置、サイズなど、ショットの中を手で変更すると、OpenFilm はそれをページのコードではなくクリップの `overrides` に保存します。エージェントがページを書き直しても、あなたの変更はそのまま適用されます。形式の全容は [SPEC.md](packages/openfilm/SPEC.md) にあります。
+**あなたの変更は消えません。** テキスト、色、位置、サイズなど、ショットの中を手で変更すると、CapyCut はそれをページのコードではなくクリップの `overrides` に保存します。エージェントがページを書き直しても、あなたの変更はそのまま適用されます。形式の全容は [SPEC.md](packages/openfilm/SPEC.md) にあります。
 
 ### コントリビュート
 
-ソースから OpenFilm を動かしたり、プルリクエストを送ったりするには、[CONTRIBUTING.md](CONTRIBUTING.md) を読んでください。バグは「設定 → 開発者 → レポートをコピー」で得られるレポートを添えて [Issues](https://github.com/openfilm/openfilm/issues) へ、セキュリティの問題は [SECURITY.md](SECURITY.md) の手順で報告してください。
+ソースから CapyCut を動かしたり、プルリクエストを送ったりするには、[CONTRIBUTING.md](CONTRIBUTING.md) を読んでください。バグは「設定 → 開発者 → レポートをコピー」で得られるレポートを添えて [Issues](https://github.com/openfilm/openfilm/issues) へ、セキュリティの問題は [SECURITY.md](SECURITY.md) の手順で報告してください。
 
 ### Star History
 

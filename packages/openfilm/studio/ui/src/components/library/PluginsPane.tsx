@@ -1,7 +1,7 @@
 /**
- * The plugins (in their own window, components/PluginsWindow): everything that teaches OpenFilm one more kind of work.
+ * The plugins (in their own window, components/PluginsWindow): everything that teaches CapyCut one more kind of work.
  * A plugin is a package (skills, commands, a surface); one that shows only in the conversation is a skill, one that
- * also shows outside it is a plugin (lib/project-plugins isPlugin). People look for what OpenFilm can do, not for which
+ * also shows outside it is a plugin (lib/project-plugins isPlugin). People look for what CapyCut can do, not for which
  * of the two it is, so both are here, each in the one category of what it helps make (lib/plugin-profile).
  *
  * Mine: the person's workbenches as tiles in their order (dragged to change it), their skills as lines, what an agent
@@ -9,8 +9,8 @@
  * agents are given its skills; a skill: on, agents take it up when it fits; off, neither, and a film made with it
  * plays and exports the same). Discover and Favorites show each kind as what it is (library/CommunityViews). A click
  * opens its page, which sums it up at the top as a model's page does (library/PluginProfile), then
- * says what it does, where to open it and what it brings: a plugin of OpenFilm's own here, any other its skill's
- * (SkillPage). Discover lists everything there is to install, OpenFilm's and then the community's, each with Install,
+ * says what it does, where to open it and what it brings: a plugin of CapyCut's own here, any other its skill's
+ * (SkillPage). Discover lists everything there is to install, CapyCut's and then the community's, each with Install,
  * or said installed once it is (it stays there). Turning on a plugin with a workbench says where it now is, with the
  * way to show it (`onWorkbenchOn`).
  */
@@ -41,7 +41,7 @@ import { DocAgent, DocHighlights, DocKeys, DocLines, DocOff, DocSection, DocStep
 import { SettingsButton, SettingsGroup, SettingsSwitch } from '../settings/ui';
 import { LARGE_DIALOG_COLUMN as PAGE_INSET } from '../dialog-chrome';
 import { ASSET_KINDS, COMMUNITY_ICON, KindIcon, isCodeKind, type FeatureKind } from '../feature-kinds';
-import { byOpenFilm, libraryUrl, makerName, nameOf, packItems, packOf, posterUrl, previewUrl, setAdded, templatePreviewUrl, TEXT_COMPONENT, useLibraryAdded, useLibraryIndex, type LibraryItem, type LibraryPack } from '@/lib/library';
+import { byCapyCut, libraryUrl, makerName, nameOf, packItems, packOf, posterUrl, previewUrl, setAdded, templatePreviewUrl, TEXT_COMPONENT, useLibraryAdded, useLibraryIndex, type LibraryItem, type LibraryPack } from '@/lib/library';
 import { isClipMotion } from '@/lib/clip-presets';
 import { packKey, shelfActions, useLibraryPlaces } from '@/lib/library-places';
 import { PLAIN } from './OnPicture';
@@ -79,7 +79,7 @@ export function PluginDetails({ text, className = '', small = false }: { text: s
 }
 
 
-/** A page asked for of one of OpenFilm's own plugins: `plugin:<id>` (anything else names a skill). */
+/** A page asked for of one of CapyCut's own plugins: `plugin:<id>` (anything else names a skill). */
 export const PLUGIN_PAGE = 'plugin:';
 
 /** One of Discover's not installed is there only; the person's own and a project's are installed already. */
@@ -91,7 +91,7 @@ const FRESH_MS = 60 * 1000;
 let discoverFailed: 'failed' | 'partial' | null = null;
 let discoverRequest = 0;
 
-/** One of an agent's own skills, and whether OpenFilm lets it in. */
+/** One of an agent's own skills, and whether CapyCut lets it in. */
 type AgentSkill = { name: string; description: string; allowed: boolean };
 type AgentGroup = { id: HostAgentId; name: string; skills: AgentSkill[] };
 /** An agent's connectors (its own MCP servers): `filtered` false, it cannot be told, and has them all. */
@@ -101,7 +101,7 @@ export function PluginsPane({ line, query, projectId, opened, onOpen, onWorkbenc
   line: PluginsLine;
   query: string;
   projectId: string | null;
-  /** the page shown (a skill's uid or the name agents know it by; `plugin:<id>` one of OpenFilm's own plugins), none: the list */
+  /** the page shown (a skill's uid or the name agents know it by; `plugin:<id>` one of CapyCut's own plugins), none: the list */
   opened: string | null;
   onOpen: (key: string | null) => void;
   /** a plugin with a workbench was turned on here */
@@ -146,7 +146,7 @@ export function PluginsPane({ line, query, projectId, opened, onOpen, onWorkbenc
   const [stats, setStats] = React.useState<Record<string, { installs: number }>>({});
   React.useEffect(() => { let live = true; void sourcesApi.communityStats().then((r) => { if (live) setStats(r); }); return () => { live = false; }; }, []);
   const library = useLibraryIndex();
-  /* the community's packs and things added to the library; OpenFilm's own are in it unless taken out of the drawer */
+  /* the community's packs and things added to the library; CapyCut's own are in it unless taken out of the drawer */
   const added = useLibraryAdded();
   const { hidden } = useLibraryPlaces();
   const packIn = (p: LibraryPack) => (p.official ? !hidden.includes(packKey(p.group)) : added.includes(p.id));
@@ -156,7 +156,7 @@ export function PluginsPane({ line, query, projectId, opened, onOpen, onWorkbenc
     setAdded(p.id, true); seePackVersion(p);
   };
   /* a thing alone got: in the library under 社区 */
-  /* a pack taken out of the library: one of OpenFilm's own hidden from the drawer (got back here), any other let go
+  /* a pack taken out of the library: one of CapyCut's own hidden from the drawer (got back here), any other let go
      (media saved into a folder of the person's stay theirs) */
   const removePack = (p: LibraryPack) => {
     if (p.official) { void shelfActions.hide(packKey(p.group), true); return; }
@@ -200,7 +200,7 @@ export function PluginsPane({ line, query, projectId, opened, onOpen, onWorkbenc
 
   /* a plugin with a workbench turned on: where it now is said, with the way to show it */
   const workbenchOn = (plugin: Plugin) => { if (plugin.workbench) onWorkbenchOn?.(plugin); };
-  /* one of OpenFilm's own plugins: its skills go on and off with it, so what was last seen of them is let go and read again */
+  /* one of CapyCut's own plugins: its skills go on and off with it, so what was last seen of them is let go and read again */
   const turnPlugin = (plugin: Plugin, on: boolean) => {
     setError(null);
     void setPluginOn(plugin.id, on).then(() => {
@@ -211,7 +211,7 @@ export function PluginsPane({ line, query, projectId, opened, onOpen, onWorkbenc
   };
   /* a connector got: turned on, and its sign-in opened in the browser at once */
   const getConnector = (plugin: Plugin) => { turnPlugin(plugin, true); void connectConnector(plugin.id); };
-  /* one of OpenFilm's own the person got, removed: back in the store to get (one OpenFilm comes with is only turned off) */
+  /* one of CapyCut's own the person got, removed: back in the store to get (one CapyCut comes with is only turned off) */
   const dropPlugin = (plugin: Plugin) => {
     setError(null);
     void removePlugin(plugin.id).then(() => { forgetSeenSkills(); return sourcesApi.skills(projectId).then(setSkills); })
@@ -257,7 +257,7 @@ export function PluginsPane({ line, query, projectId, opened, onOpen, onWorkbenc
     ).finally(() => setInstalling(null));
   };
 
-  /* a page: one of OpenFilm's own plugins, or a skill asked for by uid or by the name agents know it by (the chat's) */
+  /* a page: one of CapyCut's own plugins, or a skill asked for by uid or by the name agents know it by (the chat's) */
   const ownPage = opened?.startsWith(PLUGIN_PAGE) ? own.find((p) => p.id === opened.slice(PLUGIN_PAGE.length)) : undefined;
   if (ownPage) {
     return <PluginPage plugin={ownPage} error={error} onBack={() => open(null)}
@@ -279,7 +279,7 @@ export function PluginsPane({ line, query, projectId, opened, onOpen, onWorkbenc
   /* a skill installed (or a workbench someone made, turned as the skill it is), on its switch */
   const fromOf = (skill: SkillEntry) => (communityOf(skill) ? makerOf(skill)
     : skill.source === 'mine' ? t('assetDrawer.source_mine') : skill.source === 'project' ? t('assetDrawer.skillProject') : undefined);
-  /* a workbench is what shows outside the conversation: OpenFilm's with a workbench or a tab of the library, anyone's with a page */
+  /* a workbench is what shows outside the conversation: CapyCut's with a workbench or a tab of the library, anyone's with a page */
   /* a plugin, not a skill: it brings an editor (a workbench, a tab) or connects the agent to a service */
   const ownBench = (p: Plugin) => Boolean(p.workbench || p.tab || p.mcpServers);
 
@@ -294,7 +294,7 @@ export function PluginsPane({ line, query, projectId, opened, onOpen, onWorkbenc
     );
   }
 
-  /* the other community indexes the person added, beside OpenFilm's own */
+  /* the other community indexes the person added, beside CapyCut's own */
   if (line === 'sources') {
     return (
       <PluginsPage title={t('assetDrawer.sourcesTitle')} note={t('assetDrawer.note_sources')}>
@@ -303,20 +303,20 @@ export function PluginsPane({ line, query, projectId, opened, onOpen, onWorkbenc
     );
   }
 
-  /* Discover: the catalog, as cards. OpenFilm's workbenches are here too, to turn on; what is installed or on stays,
+  /* Discover: the catalog, as cards. CapyCut's workbenches are here too, to turn on; what is installed or on stays,
      said so */
   const read = seenCatalog();
   const note = discover === 'partial' ? t('assetDrawer.discoverPartial') : discover === 'failed'
     ? (read ? t('assetDrawer.discoverOffline').replace('{when}', new Date(read).toLocaleString()) : t('assetDrawer.discoverNever'))
     : null;
   const waiting = discover === 'reading' && !offered.length && !q;
-  /* whose it is: OpenFilm's own with its tick, else its maker and how far the community vouches for it */
+  /* whose it is: CapyCut's own with its tick, else its maker and how far the community vouches for it */
   const publisher = (k?: SkillEntry) => (k && communityOf(k)
     ? <span className="inline-flex min-w-0 items-center gap-1.5"><span className="truncate">{makerOf(k)}</span><TrustMark skill={k} /></span>
-    : <span className="inline-flex items-center gap-1">OpenFilm<BadgeCheck size={13} strokeWidth={2} aria-label={t('gallery.trustOfficial')} className="text-[var(--text-muted)]" /></span>);
+    : <span className="inline-flex items-center gap-1">CapyCut<BadgeCheck size={13} strokeWidth={2} aria-label={t('gallery.trustOfficial')} className="text-[var(--text-muted)]" /></span>);
   /* how many use it, else what kind of thing it is */
   const metaOf = (installs: number | undefined, kind: string) => (installs ? t('assetDrawer.installs').replace('{n}', installs.toLocaleString()) : kind);
-  /* one of OpenFilm's own plugins in the store: Get, or said here (installed, or off) */
+  /* one of CapyCut's own plugins in the store: Get, or said here (installed, or off) */
   const pluginCard = (p: Plugin) => {
     const { title, summary } = pluginWords(p);
     const got = isInstalled(p);
@@ -328,7 +328,7 @@ export function PluginsPane({ line, query, projectId, opened, onOpen, onWorkbenc
         : got ? <StateMark off={!p.on} />
           : <AddButton label={t('assetDrawer.getNamed').replace('{name}', title)} onClick={() => turnPlugin(p, true)} />} />;
   };
-  /* a plugin or a skill of the catalog (OpenFilm's or the community's): Get installs it, asked first when it brings scripts */
+  /* a plugin or a skill of the catalog (CapyCut's or the community's): Get installs it, asked first when it brings scripts */
   const catalogCard = (k: SkillEntry) => (
     <StoreCard key={k.uid} icon={isPlugin(k) ? <WorkbenchMark plugin={pluginOfSkill(k)} size={44} /> : <SkillMark skill={k} size={44} />}
       cover={isPlugin(k) ? undefined : (hover) => <SkillCover skill={k} title={words(k).title} playing={hover} />}
@@ -417,7 +417,7 @@ export function PluginsPane({ line, query, projectId, opened, onOpen, onWorkbenc
     );
   }
 
-  /* what there is of each sort: OpenFilm's own plugins (turned on here), the catalog's plugins and skills (installed
+  /* what there is of each sort: CapyCut's own plugins (turned on here), the catalog's plugins and skills (installed
      here), what is still being made */
   const ownPlugins = ownMatched.filter((p) => ownBench(p) && !p.soon);
   const catalogPlugins = offered.filter((k) => isPlugin(k));
@@ -482,7 +482,7 @@ export function PluginsPane({ line, query, projectId, opened, onOpen, onWorkbenc
             items={manageItems({ on: !k.off, title: words(k).title, onTurn: (on) => turnSkill(k, on), onRemove: k.core ? undefined : () => dropSkill(k), onOpen: () => open(k.uid), trash: k.source !== 'official' })} />,
       })),
     ];
-    /* the library's packs the person got from the Community (OpenFilm's own taken out are put back from the drawer's + 添加) */
+    /* the library's packs the person got from the Community (CapyCut's own taken out are put back from the drawer's + 添加) */
     const packThumb = (p: LibraryPack) => (
       <span className="relative block h-9 w-9 overflow-hidden rounded-[9px] bg-[var(--bg-pressed)]"><PackCover pack={p} first={packItems(library, p)[0]} lang={lang} /></span>
     );
@@ -566,11 +566,11 @@ export function PluginsPane({ line, query, projectId, opened, onOpen, onWorkbenc
     );
   }
 
-  /* Plugins: a banner of what is put forward, OpenFilm's own (turned on here), the catalog's (installed here), each
+  /* Plugins: a banner of what is put forward, CapyCut's own (turned on here), the catalog's (installed here), each
      on a shelf */
   if (line === 'examples') return <ExamplesStore query={q} />;
   /* Plugins: what each kind is (editors: a way of working on the film; connectors: a service the agent reaches), each
-     a grid of cards; OpenFilm's own first, then the catalog's, then the community's. Get, then it is the person's */
+     a grid of cards; CapyCut's own first, then the catalog's, then the community's. Get, then it is the person's */
   if (line === 'plugins') {
     const officialCatalog = byInstalls(catalogPlugins.filter((k) => !communityOf(k)));
     const community = byInstalls(catalogPlugins.filter((k) => communityOf(k)));
@@ -597,7 +597,7 @@ export function PluginsPane({ line, query, projectId, opened, onOpen, onWorkbenc
     );
   }
 
-  /* Skills: a grid for each kind of work they help with (OpenFilm's and the community's together, the most used
+  /* Skills: a grid for each kind of work they help with (CapyCut's and the community's together, the most used
      first), one kind at a time when picked */
   if (line === 'skills') {
     const shelves = CATEGORIES.map((c) => ({ c, list: byInstalls(catalogSkills.filter((k) => categoryOfSkill(k) === c)) })).filter((x) => x.list.length);
@@ -699,7 +699,7 @@ export function PluginsPane({ line, query, projectId, opened, onOpen, onWorkbenc
 const EXAMPLES_REPO = 'https://github.com/openfilm/community#list-an-example';
 
 /**
- * Examples: whole projects made with OpenFilm, to start from or learn from (the projects window copies one into a new
+ * Examples: whole projects made with CapyCut, to start from or learn from (the projects window copies one into a new
  * project). A grid for each kind of film, each film by its poster (its preview playing under the pointer); one opened
  * is its page in the projects window. Anyone can send one; the foot says how.
  */
@@ -758,8 +758,8 @@ function ExampleTile({ example, kind }: { example: Example; kind: string }) {
 const EXAMPLE_GRID = 'grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-x-6 gap-y-8';
 
 /**
- * One of OpenFilm's own plugins on its page, as an editor's extension page: its mark, name, whose and what it is for;
- * what to do (Get; once got Turn off or Turn on, and Remove, which one OpenFilm comes with has not: it is turned off);
+ * One of CapyCut's own plugins on its page, as an editor's extension page: its mark, name, whose and what it is for;
+ * what to do (Get; once got Turn off or Turn on, and Remove, which one CapyCut comes with has not: it is turned off);
  * then what it does, how to use it and what it brings, its facts at the side.
  */
 function PluginPage({ plugin, error, onBack, onTurn, onRemove, connector }: {
@@ -768,7 +768,7 @@ function PluginPage({ plugin, error, onBack, onTurn, onRemove, connector }: {
   connector?: { state: HostConnector | undefined; onGet: () => void } | undefined;
   /** got and turned on, or off (none: not made yet) */
   onTurn?: ((on: boolean) => void) | undefined;
-  /** removed (none: OpenFilm comes with it) */
+  /** removed (none: CapyCut comes with it) */
   onRemove?: (() => void) | undefined;
 }) {
   const t = useT();
@@ -792,7 +792,7 @@ function PluginPage({ plugin, error, onBack, onTurn, onRemove, connector }: {
   return (
     <DetailShell onBack={onBack} data={{ 'data-plugin-page': plugin.id }} icon={<WorkbenchMark plugin={plugin} size={88} />} title={title}
       badges={plugin.beta ? <Beta>{t('assetDrawer.pluginBeta')}</Beta> : null}
-      byline={<><span className="inline-flex items-center gap-1 text-[var(--text-muted)]">OpenFilm<BadgeCheck size={13} strokeWidth={2} aria-hidden /></span><span aria-hidden>·</span><span>{kind}</span></>}
+      byline={<><span className="inline-flex items-center gap-1 text-[var(--text-muted)]">CapyCut<BadgeCheck size={13} strokeWidth={2} aria-hidden /></span><span aria-hidden>·</span><span>{kind}</span></>}
       summary={summary} actions={actions}
       notice={error ? <p role="alert" className="mt-4 text-[13.5px] text-[var(--warn)]">{error}</p> : null}
       >
@@ -802,7 +802,7 @@ function PluginPage({ plugin, error, onBack, onTurn, onRemove, connector }: {
         { key: 'kind', name: t('assetDrawer.factKind'), value: kind },
         plugin.profile?.difficulty ? { key: 'difficulty', name: t('assetDrawer.metric_difficulty'), value: <Meter value={plugin.profile.difficulty} mark="dot" />, note: t(`assetDrawer.difficulty_${plugin.profile.difficulty}`) } : null,
         plugin.profile?.ease ? { key: 'ease', name: t('assetDrawer.metric_ease'), value: <Meter value={plugin.profile.ease} mark="bolt" />, note: t(`assetDrawer.ease_${plugin.profile.ease}`) } : null,
-        { key: 'maker', name: t('assetDrawer.factMaker'), value: <span className="inline-flex items-center gap-1">OpenFilm<BadgeCheck size={14} strokeWidth={2} aria-hidden /></span> },
+        { key: 'maker', name: t('assetDrawer.factMaker'), value: <span className="inline-flex items-center gap-1">CapyCut<BadgeCheck size={14} strokeWidth={2} aria-hidden /></span> },
         connector ? { key: 'state', name: t('assetDrawer.factState'), value: t(connector.state?.connected ? 'assetDrawer.connectorConnected' : 'assetDrawer.connectorNotConnected') } : null,
       ]} />
       {connector ? <ConnectorBody plugin={plugin} title={title} state={connector.state} /> : (() => {
@@ -978,8 +978,8 @@ function PackPage({ pack, items, view, lang, here, newer, onBack, onAdd, onRemov
   const t = useT();
   const kinds = pack.cats.map((c) => t(`assetDrawer.cat_${c}`)).join(t('assetDrawer.listSep'));
   const by = pack.by && onAuthor
-    ? <button type="button" onClick={onAuthor} className="inline-flex items-center gap-1 text-[var(--text-muted)] underline-offset-2 hover:text-[var(--text)] hover:underline">{makerName(pack.by)}{byOpenFilm(pack.by) ? <BadgeCheck size={13} strokeWidth={2} aria-hidden /> : null}</button>
-    : <span className="inline-flex items-center gap-1 text-[var(--text-muted)]">{pack.by ?? 'OpenFilm'}{pack.by ? null : <BadgeCheck size={13} strokeWidth={2} aria-hidden />}</span>;
+    ? <button type="button" onClick={onAuthor} className="inline-flex items-center gap-1 text-[var(--text-muted)] underline-offset-2 hover:text-[var(--text)] hover:underline">{makerName(pack.by)}{byCapyCut(pack.by) ? <BadgeCheck size={13} strokeWidth={2} aria-hidden /> : null}</button>
+    : <span className="inline-flex items-center gap-1 text-[var(--text-muted)]">{pack.by ?? 'CapyCut'}{pack.by ? null : <BadgeCheck size={13} strokeWidth={2} aria-hidden />}</span>;
   const actions = !here ? <PageButton kind="main" onClick={onAdd}>{t('assetDrawer.get')}</PageButton> : (
     <>
       {newer ? <PageButton kind="main" onClick={onUpdate}><RefreshCw size={13} aria-hidden />{t('assetDrawer.packUpdate').replace('{v}', String(pack.version ?? ''))}</PageButton> : null}
@@ -1055,7 +1055,7 @@ function AssetLightbox({ items, at, lang, onAt, onClose, packOf: packOfItem, pac
           <div className="min-w-0 flex-1">
             <h3 className="truncate text-[18px] font-semibold tracking-[-0.01em] text-[var(--text)]">{name}</h3>
             <p className="mt-1 flex flex-wrap items-center gap-x-2 text-[13px] text-[var(--text-faint)]">
-              <span className="inline-flex items-center gap-1">{item.by ? makerName(item.by) : t('assetDrawer.skillsOfficial')}{byOpenFilm(item.by) ? <BadgeCheck size={13} strokeWidth={2} aria-hidden /> : null}</span>
+              <span className="inline-flex items-center gap-1">{item.by ? makerName(item.by) : t('assetDrawer.skillsOfficial')}{byCapyCut(item.by) ? <BadgeCheck size={13} strokeWidth={2} aria-hidden /> : null}</span>
               <span aria-hidden>·</span>
               <span className="inline-flex items-center gap-1.5"><KindIcon kind={item.cat} size={13} />{t(`assetDrawer.cat_${item.cat}`)}</span>
               {pack ? <><span aria-hidden>·</span>
@@ -1193,7 +1193,7 @@ function Step({ n, title, done, children }: { n: number; title: string; done: bo
 }
 
 /**
- * Publishing one's own, step by step, with no GitHub sign-in in OpenFilm: (1) read as the community's review will;
+ * Publishing one's own, step by step, with no GitHub sign-in in CapyCut: (1) read as the community's review will;
  * (2) put in a public repository of theirs at skills/<name>/, its address given, read there and compared with this
  * one; (3) its listing proposed on GitHub's page for a new file, prefilled (GitHub makes the pull request). The
  * address is kept for next time.
@@ -1286,8 +1286,8 @@ function PublishFlow({ skill, title, onBack }: { skill: SkillEntry; title: strin
 }
 
 /**
- * The community indexes Discover reads: OpenFilm's own (always, reviewed), then the ones the person added, each to
- * remove; and one more to add, after being told plainly that OpenFilm does not review what it lists.
+ * The community indexes Discover reads: CapyCut's own (always, reviewed), then the ones the person added, each to
+ * remove; and one more to add, after being told plainly that CapyCut does not review what it lists.
  */
 function SourcesPanel({ onChanged }: { onChanged: () => void }) {
   const t = useT();

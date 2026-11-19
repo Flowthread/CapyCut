@@ -1,6 +1,6 @@
 /**
  * A project's page: Studio's shell. What is worked in is a plugin's workbench, an element its plugin brings
- * (src/skills.mjs elementIn; OpenFilm's own in plugins/<id>, loaded as anyone's is), which the shell puts where the
+ * (src/skills.mjs elementIn; CapyCut's own in plugins/<id>, loaded as anyone's is), which the shell puts where the
  * layout says and tells the project (shell/workbenches).
  *
  * What is here is the project's frame (shell/ProjectFrame): the project and its files as read (shell/project-read),

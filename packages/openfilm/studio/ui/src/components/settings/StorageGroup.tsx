@@ -1,15 +1,15 @@
 /**
- * Settings → General → Storage: a row above About (StorageEntry, what OpenFilm takes and what is free) opens its page
+ * Settings → General → Storage: a row above About (StorageEntry, what CapyCut takes and what is free) opens its page
  * (StorageGroup): the projects library, the folder
  * every project is a folder of (studio/server's locations, src/locations.mjs). It shows its folder and the free space
  * on its disk, and can be changed (the system's folder dialog), opened in the file manager, or set back to its default.
  * When projects are in it, a change asks whether they move too; left behind, they stay where they are, and in the list.
  * Exports have no setting: the export dialog picks the folder and keeps the last one.
  *
- * Above it, what OpenFilm takes, as the system's storage page draws a disk: the whole, a bar of it by OpenFilm's areas,
+ * Above it, what CapyCut takes, as the system's storage page draws a disk: the whole, a bar of it by CapyCut's areas,
  * and the free space beside it (studio/server/storage.mjs). Under it the same areas as rows, apart so they add up to
  * the whole: its projects and those linked from elsewhere (each project a click away), the library, the person's
- * skills, the exports, the cache (with the button that clears it) and what OpenFilm keeps for itself. It opens at once
+ * skills, the exports, the cache (with the button that clears it) and what CapyCut keeps for itself. It opens at once
  * and fills in when the folders are measured (the server keeps that a moment).
  */
 import React from 'react';
@@ -34,7 +34,7 @@ function amount(bytes: number): string {
   return bytes < 5e5 ? '0 MB' : size(bytes);
 }
 
-/* OpenFilm's areas, as the sidebar has them (its projects, those linked from elsewhere, the library, the person's
+/* CapyCut's areas, as the sidebar has them (its projects, those linked from elsewhere, the library, the person's
    skills) and the rest it keeps (exports, the cache, its own): the bar draws them and the list under it names them,
    each in its color. Apart from one another (a project's cache is counted in the cache), so they add up to the whole */
 const KINDS = [
@@ -65,7 +65,7 @@ function byKind(u: StorageUsage): Record<Kind, number> {
 }
 
 /**
- * What OpenFilm takes, as the system's storage page draws a disk: its whole at the top, a bar of it in its kinds, and
+ * What CapyCut takes, as the system's storage page draws a disk: its whole at the top, a bar of it in its kinds, and
  * beside it how much is still free on the disk (its own size and what else is on it are the system's to say).
  */
 function Overview({ kinds, free }: { kinds: Record<Kind, number> | null; free: number | null }) {
@@ -144,7 +144,7 @@ function ProjectList({ projects }: { projects: ProjectUsage[] }) {
   );
 }
 
-/** General's row: how much OpenFilm takes and how much is free on the disk, the storage page a click away. */
+/** General's row: how much CapyCut takes and how much is free on the disk, the storage page a click away. */
 export function StorageEntry({ onOpen }: { onOpen: () => void }) {
   const t = useT();
   const [usage, setUsage] = React.useState<StorageUsage | null>(null);

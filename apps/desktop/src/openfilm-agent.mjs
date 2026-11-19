@@ -1,4 +1,4 @@
-/** OpenFilm's built-in Pi agent: the Services account and the cloud's model catalog, with no separate credentials. */
+/** CapyCut's built-in Pi agent: the Services account and the cloud's model catalog, with no separate credentials. */
 import { join } from 'node:path';
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { contextLength, effortLevels } from './pi-config.mjs';
@@ -19,7 +19,7 @@ export function agentOffer(body, baseUrl) {
     return [{ id: m.id, model: m.id, name: typeof m.name === 'string' ? m.name : m.id,
       api: 'openai-completions', baseUrl, keyEnv: 'OPENFILM_ACCOUNT_KEY', levels,
       effort: levels.includes(effort) ? effort : levels[0], context: contextLength(m.context_length) ?? 128_000,
-      // The address is OpenFilm's, but its wire format is OpenRouter's, including reasoning and tool history.
+      // The address is CapyCut's, but its wire format is OpenRouter's, including reasoning and tool history.
       compat: { supportsDeveloperRole: false, supportsStore: false, supportsUsageInStreaming: true,
         maxTokensField: 'max_tokens', thinkingFormat: 'openrouter', sendSessionAffinityHeaders: true, sessionAffinityFormat: 'openrouter' },
     }];
@@ -27,7 +27,7 @@ export function agentOffer(body, baseUrl) {
   return { models, model: models.some((m) => m.id === body?.default) ? body.default : models[0]?.id };
 }
 
-export function createOpenFilmAgent({ dataDir, readAccount, signIn, cancelSignIn, signOut, closeSessions, refreshSessions = () => {}, onChange, fetch: fetchImpl = fetch }) {
+export function createCapyCutAgent({ dataDir, readAccount, signIn, cancelSignIn, signOut, closeSessions, refreshSessions = () => {}, onChange, fetch: fetchImpl = fetch }) {
   let account = null;
   let offer = null;
   let askAfter = 0;
@@ -107,9 +107,9 @@ export function createOpenFilmAgent({ dataDir, readAccount, signIn, cancelSignIn
           if (needsSignIn) { offer = null; error = null; return; }
           /* status 0: Studio could not reach it */
           if (response.status) refused = true;
-          throw new Error(body?.error?.message || body?.message || `OpenFilm answered ${response.status}.`);
+          throw new Error(body?.error?.message || body?.message || `CapyCut answered ${response.status}.`);
         }
-        if (!Array.isArray(body?.data)) throw new Error('OpenFilm did not return its model catalog.');
+        if (!Array.isArray(body?.data)) throw new Error('CapyCut did not return its model catalog.');
         const got = agentOffer(body, account.baseUrl);
         if (JSON.stringify(got) !== JSON.stringify(offer)) {
           if (offer) refreshSessions();
@@ -118,7 +118,7 @@ export function createOpenFilmAgent({ dataDir, readAccount, signIn, cancelSignIn
         offer = got;
         needsSignIn = false;
         refused = false;
-        error = got.models.length ? null : 'OpenFilm has no agent models available right now.';
+        error = got.models.length ? null : 'CapyCut has no agent models available right now.';
         askAfter = Date.now() + FRESH_MS;
       } catch (e) {
         error = e instanceof Error ? e.message : String(e);
@@ -159,8 +159,8 @@ export function createOpenFilmAgent({ dataDir, readAccount, signIn, cancelSignIn
     switchAccount: () => action(async () => { closeSessions(); await cancelSignIn(); await signOut(); await signIn(); }),
     async harness() {
       await refresh();
-      if (!account?.key || needsSignIn) throw Object.assign(new Error('Sign in to OpenFilm in Settings → Agents or Services.'), { code: 'sign-in' });
-      if (!visibleModels().length) throw new Error(error || 'The OpenFilm agent has no visible models available.');
+      if (!account?.key || needsSignIn) throw Object.assign(new Error('Sign in to CapyCut in Settings → Agents or Services.'), { code: 'sign-in' });
+      if (!visibleModels().length) throw new Error(error || 'The CapyCut agent has no visible models available.');
       return { home: join(dataDir, 'agents', 'openfilm', 'pi'), models: visibleModels(), model: firstModel(), env: { OPENFILM_ACCOUNT_KEY: account.key } };
     },
   };

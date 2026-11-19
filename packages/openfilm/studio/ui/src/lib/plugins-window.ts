@@ -1,6 +1,6 @@
 /**
  * The Community window (components/PluginsWindow): whether it is open, on which place, and the page shown in it (a
- * skill's, by its uid or the name agents know it by, `plugin:<id>` one of OpenFilm's own, `asset:<id>` one of the
+ * skill's, by its uid or the name agents know it by, `plugin:<id>` one of CapyCut's own, `asset:<id>` one of the
  * library's things, `pack:<id>` a pack), for whoever opens it: the workbench switch's menu, the app's chat (its
  * button, a skill named in a message), the library drawer, a link.
  */

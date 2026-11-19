@@ -1,7 +1,7 @@
 // @ts-check
 /**
  * Saved: the person's own library, one for every project, kept as a folder (src/locations.mjs savedRoot,
- * ~/Movies/OpenFilm/Saved). Anything can go in it, in folders of the person's: files of any kind, uploaded or added from
+ * ~/Movies/CapyCut/Saved). Anything can go in it, in folders of the person's: files of any kind, uploaded or added from
  * a project, and what Studio saves from a film, each as a folder of its own holding what it needs (a bundle):
  *
  *   <bundle>/saved.json   { version, savedAt, kind: 'clip' | 'group' | 'page', clip | clips | path, durationMs?, w?,
@@ -42,7 +42,7 @@ export class SavedError extends Error {
   }
 }
 
-/** OpenFilm's line of words, in its library (the studio's lib/library TEXT_COMPONENT). */
+/** CapyCut's line of words, in its library (the studio's lib/library TEXT_COMPONENT). */
 export const TEXT_COMPONENT = 'text/text';
 /** The fonts a person added to a project for its lines of words (project-fonts addTextFont): its own, never the library's. */
 export const TEXT_OWN_FONTS = 'fonts/own.css';
@@ -394,7 +394,7 @@ export async function saveFile(root, rel, o = {}) {
 }
 
 /**
- * A thing of OpenFilm's library or a Community pack (`openfilm/<its place>`, fetched first when it has to be) copied
+ * A thing of CapyCut's library or a Community pack (`openfilm/<its place>`, fetched first when it has to be) copied
  * into the person's library folder `into` ('' its top): a file as itself, a page (a bundle) with what it loads, as it is
  * kept there, under its own name or `as` (a file's, its extension kept). A look or a line's style is no file: refused.
  * Returns its place in the library.
@@ -467,9 +467,9 @@ async function copyIn(from, files, to, fresh = false) {
 
 /**
  * What a project needs to use a thing of the library (`path`, a `saved/` path, or an `openfilm/` one for a thing of
- * OpenFilm's own library, library.mjs): a file imported into its assets/ (as one from the computer is), or a bundle's
- * files copied to `saved/<its place>/` there (a file there already is kept as it is, but OpenFilm's line of words) and
- * the clip, a group's clips or the page, with their files' places there. OpenFilm's things go to `saved/openfilm/<its place, one name>/`.
+ * CapyCut's own library, library.mjs): a file imported into its assets/ (as one from the computer is), or a bundle's
+ * files copied to `saved/<its place>/` there (a file there already is kept as it is, but CapyCut's line of words) and
+ * the clip, a group's clips or the page, with their files' places there. CapyCut's things go to `saved/openfilm/<its place, one name>/`.
  * @param {string} root @param {unknown} path
  * @param {{ mode?: 'copy' | 'link' }} [options]
  * @returns {Promise<{ clip: Record<string, unknown> & { src: string }, keyframes?: Record<string, string> } | { clips: { track: number, at: number, clip: Record<string, unknown> & { src: string } }[], keyframes?: Record<string, string> } | { path: string }>}
@@ -481,7 +481,7 @@ export async function takeSaved(root, path, options = {}) {
   if (!rel) throw new SavedError('a thing in Saved, please', 400);
   /* a filter (a look, no page of its own): the filter layer's page, under the filter's name */
   const filter = builtIn && rel !== FILTER_LAYER && /^filters\/[\w-]+$/.test(rel) && !existsSync(inside(lib, rel));
-  /* OpenFilm's own: in the package, or a published part fetched now (library.mjs) */
+  /* CapyCut's own: in the package, or a published part fetched now (library.mjs) */
   const at = filter ? inside(lib, FILTER_LAYER) : (builtIn ? await fetchLibrary(rel) : null) ?? readable(lib, rel);
   const info = await stat(at).catch(() => null);
   if (!info) throw new SavedError('That is not in Saved any more.', 404);
@@ -501,7 +501,7 @@ export async function takeSaved(root, path, options = {}) {
   const item = await readBundle(at);
   if (!item) throw new SavedError('That is a folder: open it and pick what is in it.', 400);
   /* its place in the project: the library's, made a name a page's address takes as it is */
-  /* OpenFilm's things one folder each under saved/openfilm/ (`effects-snow`), so their pages are no deeper than a
+  /* CapyCut's things one folder each under saved/openfilm/ (`effects-snow`), so their pages are no deeper than a
      project's pages are looked for (files.mjs listFiles) */
   const base = `saved/${placeName(builtIn ? `${BUILT_IN}/${rel.replaceAll('/', '-')}` : rel)}`;
   const from = join(at, 'files');

@@ -1,7 +1,7 @@
 /**
  * The library drawer's side bar (studio/server/library-places.mjs): the person's folders, those at the top of the
- * library folder (made here, or linked from another disk or a NAS), beside the Community's packs (OpenFilm's own among
- * them), in the person's order. The order is a list of keys, `saved/<folder>` and `pack:<group>`; OpenFilm's own packs
+ * library folder (made here, or linked from another disk or a NAS), beside the Community's packs (CapyCut's own among
+ * them), in the person's order. The order is a list of keys, `saved/<folder>` and `pack:<group>`; CapyCut's own packs
  * taken out are `hidden`. The first folder gets the person's word for it the first time any window reads them.
  */
 import React from 'react';
@@ -84,7 +84,7 @@ export const shelfActions = {
     if (state) { state = { ...state, shelf: next }; tell(); }
     return write(next).catch(() => refreshSaved());
   },
-  /** One of OpenFilm's own packs taken out of the library, or put back. */
+  /** One of CapyCut's own packs taken out of the library, or put back. */
   hide: (key: string, out: boolean) => {
     const had = state?.hidden ?? [];
     return write(state?.shelf ?? [], out ? [...new Set([...had, key])] : had.filter((k) => k !== key));
@@ -104,7 +104,7 @@ export function saveToEntry(folders: readonly OwnFolder[], o: { id: string; labe
 /** A library path (`saved/…`) as the media pane's folder (relative to Saved's top). */
 export const relOf = (path: string) => (path === SAVED ? '' : path.slice(SAVED.length + 1));
 
-/** A thing of OpenFilm's library or a pack (`openfilm/…`) copied into one of the person's folders. */
+/** A thing of CapyCut's library or a pack (`openfilm/…`) copied into one of the person's folders. */
 export async function copyFromLibrary(from: string, into: string, name?: string): Promise<string> {
   const response = await fetch('/api/saved/files/from-library', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ from, into, ...(name ? { name } : {}) }) });
   const body = await response.json().catch(() => ({})) as { path?: string; error?: string };

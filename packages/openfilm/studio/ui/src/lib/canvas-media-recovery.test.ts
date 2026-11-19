@@ -32,7 +32,7 @@ test('unreadable or unwritable recovery state stops before a paid request can st
   await assert.rejects(pendingCanvasMedia('another-node',request('second'),pick,{...storage,setItem:()=>{throw Error('quota');}}),/No new generation/);
 });
 
-test('a canvas retry with a new timestamp recovers the same OpenFilm task instead of paying for another generation',async t=>{
+test('a canvas retry with a new timestamp recovers the same CapyCut task instead of paying for another generation',async t=>{
   const root=await mkdtemp(join(tmpdir(),'canvas-media-'));t.after(()=>rm(root,{recursive:true,force:true}));
   let generations=0;
   const server=createServer(async(req,res)=>{

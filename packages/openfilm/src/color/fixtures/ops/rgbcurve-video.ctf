@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ProcessList version="2.5" id="fixture">
-    <Description>OpenFilm color fixture</Description>
+    <Description>CapyCut color fixture</Description>
     <GradingRGBCurve inBitDepth="32f" outBitDepth="32f" style="video">
         <Red>
             <ControlPoints>0 0.02 0.3 0.35 0.7 0.72 1 1</ControlPoints>

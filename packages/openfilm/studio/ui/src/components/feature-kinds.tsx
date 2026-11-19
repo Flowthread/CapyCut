@@ -20,7 +20,7 @@ export const FEATURE_KINDS: readonly FeatureKind[] = [...CODE_KINDS, ...ASSET_KI
 export const isCodeKind = (kind: FeatureKind): kind is CodeKind => (CODE_KINDS as readonly string[]).includes(kind);
 
 const CODE_ICONS: Record<CodeKind, LucideIcon> = { plugins: Blocks, skills: BookOpenText };
-/** The community's own mark (the chat's button, the OpenFilm menu): things of many kinds that people make. */
+/** The community's own mark (the chat's button, the CapyCut menu): things of many kinds that people make. */
 export const COMMUNITY_ICON: LucideIcon = Shapes;
 
 /** A kind's mark, at a size. */

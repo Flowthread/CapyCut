@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // @ts-check
 /**
- * The library's voices (library/voices.json): the ready-made voices of the voice-over services OpenFilm offers
+ * The library's voices (library/voices.json): the ready-made voices of the voice-over services CapyCut offers
  * (ElevenLabs Eleven v4, Inworld TTS-2, Cartesia Sonic 3.6, Doubao TTS 2.0), as each service lists them, each with its
  * service's own sample, or an AAC preview synthesized in the same voice.
  *
@@ -163,7 +163,7 @@ async function inworld(key) {
 }
 
 /**
- * What a voice says in a sample made for it, in its own language (library-voice-lines.json): its name, and OpenFilm's
+ * What a voice says in a sample made for it, in its own language (library-voice-lines.json): its name, and CapyCut's
  * welcome. Thai says who speaks as a man (`m`) or a woman does.
  * @type {Record<string, string | { m: string, f: string }>}
  */

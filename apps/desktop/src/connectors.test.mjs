@@ -38,7 +38,7 @@ async function service() {
       return json(201, { ...meta, client_id: id });
     }
     if (url.pathname === '/authorize') {
-      /* the person signs in and allows OpenFilm: back to its redirect with a code */
+      /* the person signs in and allows CapyCut: back to its redirect with a code */
       const client = clients.get(url.searchParams.get('client_id'));
       const redirect = url.searchParams.get('redirect_uri');
       assert.ok(client?.redirect_uris.includes(redirect), 'the redirect it registered');

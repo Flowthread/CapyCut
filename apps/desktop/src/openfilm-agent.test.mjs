@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { agentOffer, createOpenFilmAgent } from './openfilm-agent.mjs';
+import { agentOffer, createCapyCutAgent } from './openfilm-agent.mjs';
 import { createRoster } from './agent-roster.mjs';
 import { orderedModels } from './openfilm-models.mjs';
 
@@ -20,7 +20,7 @@ function setup(dataDir = mkdtempSync(join(tmpdir(), 'of-account-agent-'))) {
   let updates = 0;
   let renewed = 0;
   let answer = () => Response.json(catalog);
-  const agent = createOpenFilmAgent({ dataDir, readAccount: async () => ({ ...account }),
+  const agent = createCapyCutAgent({ dataDir, readAccount: async () => ({ ...account }),
     signIn: async () => { calls.push('sign-in'); account.signingIn = true; },
     cancelSignIn: async () => { account.signingIn = false; },
     signOut: async () => { account.key = null; account.email = null; account.signingIn = false; calls.push('sign-out'); },
@@ -94,7 +94,7 @@ test('an unavailable relay can be refreshed; a revoked account needs sign-in and
   assert.equal(s.calls.at(-1), 'sign-in');
 });
 
-test('the OpenFilm roster entry follows Claude, shares auth actions, and never invokes a local CLI', async () => {
+test('the CapyCut roster entry follows Claude, shares auth actions, and never invokes a local CLI', async () => {
   const s = setup();
   const roster = createRoster({ dataDir: s.dataDir, openfilm: s.agent,
     localAgents: async () => [], localAgent: async () => { throw new Error('not a CLI'); },
@@ -208,15 +208,15 @@ test('temporary cloud failures keep usable metadata, while an authoritative empt
 test('until the cloud answers it is checking, and while it cannot be reached it is offline, never "not available yet"', async () => {
   const s = setup();
   const seen = [];
-  const agent = createOpenFilmAgent({ dataDir: s.dataDir, readAccount: async () => ({ ...s.account }),
+  const agent = createCapyCutAgent({ dataDir: s.dataDir, readAccount: async () => ({ ...s.account }),
     signIn() {}, cancelSignIn() {}, signOut() {}, closeSessions() {}, onChange: () => seen.push(agent.state().status) });
   s.account.key = 'ofk-account';
   s.account.connection = { status: 200, catalog, error: null };
   await agent.refresh();
   assert.deepEqual(seen, ['checking', 'ready']);
-  const fresh = createOpenFilmAgent({ dataDir: s.dataDir, readAccount: async () => ({ ...s.account }),
+  const fresh = createCapyCutAgent({ dataDir: s.dataDir, readAccount: async () => ({ ...s.account }),
     signIn() {}, cancelSignIn() {}, signOut() {}, closeSessions() {}, onChange() {} });
-  s.account.connection = { status: 0, catalog: null, error: 'OpenFilm could not be reached. Try connecting again.' };
+  s.account.connection = { status: 0, catalog: null, error: 'CapyCut could not be reached. Try connecting again.' };
   await fresh.refresh();
   assert.equal(fresh.state().status, 'offline');
   assert.match(fresh.state().error, /could not be reached/);
@@ -229,8 +229,8 @@ test('an account that cannot be read for a moment keeps the account, its catalog
   let failing = false;
   let closed = 0;
   const account = { key: 'ofk-account', baseUrl: 'https://openfilm.test/v1/agent', connection: { status: 200, catalog, error: null } };
-  const agent = createOpenFilmAgent({ dataDir: mkdtempSync(join(tmpdir(), 'of-account-agent-')),
-    readAccount: async () => { if (failing) throw new Error('The OpenFilm account could not be read.'); return { ...account }; },
+  const agent = createCapyCutAgent({ dataDir: mkdtempSync(join(tmpdir(), 'of-account-agent-')),
+    readAccount: async () => { if (failing) throw new Error('The CapyCut account could not be read.'); return { ...account }; },
     signIn() {}, cancelSignIn() {}, signOut() {}, closeSessions: () => { closed++; }, onChange() {} });
   await agent.refresh();
   failing = true;

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ProcessList version="2.4" id="openfilm:in-hlg">
-    <Description>OpenFilm input: HLG (Rec.2100, 1000 nit) HDR footage into ACEScct (the inverse of ACES 2.0 HDR 1000 nit Rec.2020)</Description>
+    <Description>CapyCut input: HLG (Rec.2100, 1000 nit) HDR footage into ACEScct (the inverse of ACES 2.0 HDR 1000 nit Rec.2020)</Description>
     <LUT1D inBitDepth="32f" outBitDepth="32f">
         <Array dim="4096 1">
           0

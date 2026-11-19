@@ -100,7 +100,7 @@ const VIDEO = {
 for (const model of MODELS.image) Object.assign(model, { spec: { ratios: RATIOS, refs: REFS[model.id] ?? MAX_REFS, sizes: SIZES[model.id] ?? ['1k', '2k', '4k'], ...(QUALITY[model.id] ? { qualities: QUALITY[model.id], transparent: true } : {}) } });
 for (const model of MODELS.video) Object.assign(model, { spec: videoModelSpec(model.id) });
 
-/** The inputs usable on this route. OpenRouter video and audio URLs need OpenFilm's file relay. */
+/** The inputs usable on this route. OpenRouter video and audio URLs need CapyCut's file relay. */
 export function videoModelSpec(/** @type {string} */ id, canLink = false) {
   const v = VIDEO[id];
   if (!v) return undefined;
@@ -134,14 +134,14 @@ function length(/** @type {{ seconds?: [number, number], only?: number[] }} */ s
 
 /**
  * A recording or a clip as an address the model fetches it from: a temporary web address when the run can make one
- * (`ctx.link`, as OpenFilm's service does), else the file inline for a model that takes it so; Seedance takes them from
+ * (`ctx.link`, as CapyCut's service does), else the file inline for a model that takes it so; Seedance takes them from
  * a web address only.
  * @param {string} path @param {'voice' | 'video'} flag @param {{ name: string, inline?: true }} spec @param {RunContext} ctx
  */
 async function addressOf(path, flag, spec, ctx) {
   if (ctx.link) return ctx.link(path);
   if (spec.inline) return dataUri(path, ctx);
-  throw new Error(`--${flag}: ${spec.name} at OpenRouter takes a ${flag === 'voice' ? 'recording' : 'clip'} only from a web address, and with your own key OpenFilm has nowhere to put your file for it, so this can't be done here. fal takes it straight from the project, and OpenFilm's own service gives it an address. Anyone who needs it with their own key can add their own storage in providers/openrouter.mjs, for themselves or in a pull request.`);
+  throw new Error(`--${flag}: ${spec.name} at OpenRouter takes a ${flag === 'voice' ? 'recording' : 'clip'} only from a web address, and with your own key CapyCut has nowhere to put your file for it, so this can't be done here. fal takes it straight from the project, and CapyCut's own service gives it an address. Anyone who needs it with their own key can add their own storage in providers/openrouter.mjs, for themselves or in a pull request.`);
 }
 
 /** What OpenRouter reported a run cost, when it did. */
@@ -304,7 +304,7 @@ async function video(args, ctx) {
     const bytes = await ctx.read(src);
     if (bytes.byteLength <= HEYGEN_INLINE_IMAGE_MAX_BYTES) return `data:${mimeOf(src)};base64,${Buffer.from(bytes).toString('base64')}`;
     if (ctx.link) return ctx.link(src);
-    throw new Error(`HeyGen limits inline images to 5 MB. Use a smaller copy of ${src} or use OpenFilm's service to send it as a temporary link.`);
+    throw new Error(`HeyGen limits inline images to 5 MB. Use a smaller copy of ${src} or use CapyCut's service to send it as a temporary link.`);
   };
   const frame = async (/** @type {string} */ src, /** @type {'first_frame' | 'last_frame'} */ type) => ({ type: 'image_url', image_url: { url: await imageUrl(src) }, frame_type: type });
   const frames = fromRefs ? [] : [...(first ? [await frame(first, 'first_frame')] : []), ...(last ? [await frame(last, 'last_frame')] : [])];

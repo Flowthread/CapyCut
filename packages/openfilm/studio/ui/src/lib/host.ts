@@ -140,7 +140,7 @@ export interface StudioHost {
     /** Codex: what is left of its plan, as it says for the account signed in (null: it can't say; other agents, null) */
     usage?: (id: HostAgentId, fresh?: boolean) => Promise<HostAgentUsage | null>;
     setShown: (id: HostAgentId, shown: boolean) => Promise<unknown>;
-    saveOpenFilmModels?: (config: { order: string[]; hidden: string[] }) => Promise<{ ok: boolean; error?: string }>;
+    saveCapyCutModels?: (config: { order: string[]; hidden: string[] }) => Promise<{ ok: boolean; error?: string }>;
     locate?: (id: HostAgentId, words?: { title?: string; button?: string; kind?: 'file' | 'folder' }) => Promise<{ ok: boolean; error?: string; path?: string; version?: string; code?: 'not-a-program' | 'did-not-start' | 'app' | 'not-cursor-agent' | string }>;
     install?: (id: HostAgentId) => Promise<{ ok: boolean; error?: string }>;
     useAutomatic?: (id: HostAgentId) => Promise<unknown>;
@@ -167,7 +167,7 @@ export interface StudioHost {
      */
     mcp?: (id: HostAgentId) => Promise<{ filtered: boolean; servers: Array<{ name: string; detail: string; allowed: boolean }> }>;
     allowMcp?: (id: HostAgentId, name: string, allowed: boolean) => Promise<unknown>;
-    /** The same for the skills the person installed in an agent themselves (OpenFilm's own skill for terminal agents is never among them). */
+    /** The same for the skills the person installed in an agent themselves (CapyCut's own skill for terminal agents is never among them). */
     skills?: (id: HostAgentId) => Promise<{ filtered: boolean; skills: Array<{ name: string; description: string; allowed: boolean }> }>;
     allowSkill?: (id: HostAgentId, name: string, allowed: boolean) => Promise<unknown>;
     onChange: (listener: (agents: HostAgent[]) => void) => () => void;
@@ -331,7 +331,7 @@ export interface HostAgent {
   signOut?: boolean;
   /** The own key's models, each set up on its own; the first is the one a conversation starts on. */
   byok?: { models: HostOwnModel[] };
-  openfilm?: { order: string[]; hidden: string[]; defaultOrder: string[]; model?: string; models: HostOpenFilmModel[] };
+  openfilm?: { order: string[]; hidden: string[]; defaultOrder: string[]; model?: string; models: HostCapyCutModel[] };
   catalog?: HostAgentCatalog;
 }
 
@@ -350,7 +350,7 @@ export interface HostAgentCatalog {
   error?: string;
 }
 
-export interface HostOpenFilmModel { id: string; name: string; shown: boolean; available: boolean; levels?: string[]; effort?: string }
+export interface HostCapyCutModel { id: string; name: string; shown: boolean; available: boolean; levels?: string[]; effort?: string }
 
 /**
  * One of the person's own models: its `id` (the app's), the `name` the chat's menu shows, its service (API `format`
@@ -503,7 +503,7 @@ export interface HostWorkbench {
 
 /**
  * A skill or an example to open on its page (a pill of one clicked); `plugins`, the plugins' window (the chat's button);
- * `discover`, OpenFilm's skills to install (an empty project's "More skills"); or `examples`, the examples to start
+ * `discover`, CapyCut's skills to install (an empty project's "More skills"); or `examples`, the examples to start
  * from (its "Start from an example").
  */
 export type CommunityItem = { kind: 'skill'; name: string } | { kind: 'example'; id: string } | { kind: 'discover' } | { kind: 'plugins' } | { kind: 'examples' }

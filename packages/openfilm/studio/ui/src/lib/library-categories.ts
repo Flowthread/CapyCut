@@ -1,7 +1,7 @@
 /**
  * The library drawer's categories as the person arranges them in Settings › Advanced (Studio's prefs,
  * `libraryCategories`): their order and which are shown. The media always comes first and is always shown; a category
- * the arrangement does not name (one added since) takes its place in OpenFilm's order. Kept and read by
+ * the arrangement does not name (one added since) takes its place in CapyCut's order. Kept and read by
  * components/library/arrangement (Studio's prefs).
  */
 
@@ -25,8 +25,8 @@ function inTodaysNames(all: readonly string[], arranged: LibraryArrangement): Li
 }
 
 /**
- * Every category in the person's order (`all`: OpenFilm's), with whether it is shown: the media first; then the ones
- * the arrangement names, in its order; then the rest where OpenFilm has them.
+ * Every category in the person's order (`all`: CapyCut's), with whether it is shown: the media first; then the ones
+ * the arrangement names, in its order; then the rest where CapyCut has them.
  */
 export function arrangedCategories<C extends string>(all: readonly C[], kept: LibraryArrangement | null | undefined): { id: C; on: boolean }[] {
   const arranged = kept ? inTodaysNames(all, kept) : null;
@@ -35,7 +35,7 @@ export function arrangedCategories<C extends string>(all: readonly C[], kept: Li
   const order = [...named];
   for (const c of rest) {
     if (order.includes(c)) continue;
-    /* one not named: after the one before it in OpenFilm's order, else first */
+    /* one not named: after the one before it in CapyCut's order, else first */
     const before = rest.slice(0, rest.indexOf(c)).reverse().find((b) => order.includes(b));
     order.splice(before ? order.indexOf(before) + 1 : 0, 0, c);
   }

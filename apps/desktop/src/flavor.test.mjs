@@ -12,7 +12,7 @@ test('which app this is: packaged, the release unless built as the preview; from
   assert.equal(flavorName({}, false), 'release');
 });
 
-test('the preview shares nothing with an installed OpenFilm or the dev app', () => {
+test('the preview shares nothing with an installed CapyCut or the dev app', () => {
   const { release, preview, dev } = FLAVORS;
   for (const other of [release, dev]) {
     assert.notEqual(preview.productName, other.productName);
@@ -44,7 +44,7 @@ test('a lane of the dev app shares nothing but the library with the dev app or a
     assert.notEqual(sound.studioHome, other.studioHome);
     assert.ok(Math.abs(sound.studioPort - other.studioPort) >= 3, 'a Studio uses its port and the two after it');
   }
-  assert.equal(sound.productName, 'OpenFilm Dev sound');
+  assert.equal(sound.productName, 'CapyCut Dev sound');
   assert.equal(sound.library, null);
   assert.equal(sound.sharedHome, join(homedir(), '.openfilm'));
 });

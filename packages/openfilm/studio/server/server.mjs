@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * OpenFilm Studio's server: one process for the whole editor. Three origins, so a web page can never reach the editor:
+ * CapyCut Studio's server: one process for the whole editor. Three origins, so a web page can never reach the editor:
  *
  *   http://127.0.0.1:<port>      the editor's pages and its API. The API needs the launch key: as a cookie, set by
  *                                any page's address with ?key=… (/open?key=… too), or as `x-studio-key` (the CLI).
@@ -56,7 +56,7 @@ import { PROXY_HEIGHTS, readPrefs, writePrefs } from './prefs.mjs';
 import { ensurePlayback, ensureProxies, playChecks, readyProxy } from './proxies.mjs';
 import { ensurePreviews, knownLate, pausePreviews, cancelPreviews, clearPreviews, retryPreviews } from './preview-cache.mjs';
 import { stopVisionDownloads } from '../../src/vision-assets.mjs';
-import { npmOpenfilm, olderThanThis } from '../client.mjs';
+import { npmCapyCut, olderThanThis } from '../client.mjs';
 import { createWatchers } from './watch.mjs';
 import { projectMissing } from './project-presence.mjs';
 import { installedFonts } from './fonts.mjs';
@@ -128,8 +128,8 @@ const DESKTOP_FILES = (() => { try { return String(JSON.parse(readFileSync(new U
  */
 export function desktopInstaller(os, arch, base = DESKTOP_FILES) {
   if (!base || (arch !== 'arm64' && arch !== 'x64')) return null;
-  if (os === 'mac') return `${base}/mac/${arch}/OpenFilm-${arch}.dmg`;
-  if (os === 'win') return `${base}/win/${arch}/OpenFilm-Setup-${arch}.exe`;
+  if (os === 'mac') return `${base}/mac/${arch}/CapyCut-${arch}.dmg`;
+  if (os === 'win') return `${base}/win/${arch}/CapyCut-Setup-${arch}.exe`;
   return null;
 }
 
@@ -190,7 +190,7 @@ export async function startStudio({ port = 4747, key, openBrowser = systemBrowse
   });
   const sweepMedia = indexMedia ? setTimeout(() => { void mediaIndex.sweep().catch(() => {}); }, 20_000) : null;
   sweepMedia?.unref();
-  /* the routes OpenFilm's own plugins bring (plugin-servers.mjs), each told to the pages of a project as it says */
+  /* the routes CapyCut's own plugins bring (plugin-servers.mjs), each told to the pages of a project as it says */
   const pluginServers = createPluginServers({ emit: (root, event) => watchers.emit(root, event) });
   /** questions about spending for the person, in the pages showing a project (see get.mjs) */
   const asks = createAsks({ emit: (root, event) => watchers.emit(root, event), roots: watchers.roots });
@@ -387,7 +387,7 @@ export async function startStudio({ port = 4747, key, openBrowser = systemBrowse
       if (whenIdle && exports.busy()) return json(res, 409, { error: 'an export is running' });
       if (whenIdle && making) return json(res, 409, { error: 'media is being made' });
       /* not busy, but kept (423, not 409: the app asks its own Studio whether it is busy this way) */
-      if (stays) return json(res, 423, { error: 'it is the OpenFilm app\'s, which keeps it' });
+      if (stays) return json(res, 423, { error: 'it is the CapyCut app\'s, which keeps it' });
       json(res, 200, { pages: editorPages.size });
       setImmediate(() => (onQuit ?? (() => { void studio.close(); }))());
       return;
@@ -427,7 +427,7 @@ export async function startStudio({ port = 4747, key, openBrowser = systemBrowse
     /* this Studio's version, and the latest on npm (Settings → General; `?check=1` asks npm now) */
     if (parts[0] === 'version' && parts.length === 1 && req.method === 'GET') {
       const now = url.searchParams.get('check') === '1';
-      const { latest, checkedAt } = await npmOpenfilm({ force: now, waitMs: 4000 });
+      const { latest, checkedAt } = await npmCapyCut({ force: now, waitMs: 4000 });
       return json(res, 200, { version: VERSION, latest, newer: Boolean(latest && olderThanThis(VERSION, latest)), checkedAt, checking: !process.env.OPENFILM_NO_UPDATE_CHECK && !FROM_SOURCE, source: FROM_SOURCE,
         ...(updating ? { update: updating } : {}) });
     }
@@ -451,14 +451,14 @@ export async function startStudio({ port = 4747, key, openBrowser = systemBrowse
       return json(res, 200, made);
     }
     /* the top bar's Update (Studio run with npm, not the app's nor a checkout): the newest openfilm run in the
-       background as `openfilm update` (client.mjs updateOpenfilm), which starts Studio again on it; the pages come back
+       background as `openfilm update` (client.mjs updateCapyCut), which starts Studio again on it; the pages come back
        on the new version and reload. Not while an export runs or media is made. `/api/version` says how it goes */
     if (parts[0] === 'update' && parts.length === 1 && req.method === 'POST') {
       if (stays || FROM_SOURCE) return json(res, 409, { error: 'this Studio does not update itself', code: stays ? 'app' : 'source' });
       if (exports.busy()) return json(res, 409, { error: 'an export is running', code: 'exporting' });
       if (making) return json(res, 409, { error: 'media is being made', code: 'making' });
       if (updating?.status === 'updating') return json(res, 202, { update: updating });
-      const { latest } = await npmOpenfilm({ waitMs: 4000 });
+      const { latest } = await npmCapyCut({ waitMs: 4000 });
       if (!latest || !olderThanThis(VERSION, latest)) return json(res, 409, { error: 'this is the newest openfilm', code: 'newest' });
       updating = runUpdate(latest, (next) => { updating = next; });
       return json(res, 202, { update: updating });
@@ -520,7 +520,7 @@ export async function startStudio({ port = 4747, key, openBrowser = systemBrowse
     }
     /* Saved, the person's own library for every project (saved.mjs): its files and folders as a project's media are
        (files.mjs), by their `saved/` paths; a file's bytes, a bundle's picture, and what Studio works out from a file */
-    /* OpenFilm's recycle bin (recycle-bin.mjs): what is in it, put back (a project is listed again), deleted for good,
+    /* CapyCut's recycle bin (recycle-bin.mjs): what is in it, put back (a project is listed again), deleted for good,
        emptied */
     if (parts[0] === 'recycle') {
       if (parts.length === 1 && req.method === 'GET') return json(res, 200, { items: await binList() });
@@ -551,7 +551,7 @@ export async function startStudio({ port = 4747, key, openBrowser = systemBrowse
         const { shelf, hidden } = /** @type {{ shelf?: unknown, hidden?: unknown }} */ (await readJson(req) ?? {});
         try { return json(res, 200, { shelf: writeShelf(shelf, hidden), hidden: readHidden() }); } catch (e) { throw new HttpError(400, /** @type {Error} */ (e).message); }
       }
-      /* a thing of OpenFilm's library or a Community pack copied into one of the person's folders (dropped on it in
+      /* a thing of CapyCut's library or a Community pack copied into one of the person's folders (dropped on it in
          the drawer): a file as itself, a page with what it loads as the folder it is kept in. { path } */
       if (sub === 'files/from-library' && req.method === 'POST') {
         const { from, into, name } = /** @type {{ from?: unknown, into?: unknown, name?: unknown }} */ (await readJson(req) ?? {});
@@ -635,7 +635,7 @@ export async function startStudio({ port = 4747, key, openBrowser = systemBrowse
         return res.end(jpeg);
       }
     }
-    /* OpenFilm's library (library.mjs): what is in it, its voices, its files (a poster, a preview, a page, a sound, a waveform, a voice's sample), and
+    /* CapyCut's library (library.mjs): what is in it, its voices, its files (a poster, a preview, a page, a sound, a waveform, a voice's sample), and
        the things the person starred */
     if (parts[0] === 'library') {
       if (parts.length === 1 && req.method === 'GET') {
@@ -663,7 +663,7 @@ export async function startStudio({ port = 4747, key, openBrowser = systemBrowse
         res.writeHead(200, { 'content-type': type, 'cache-control': 'private, no-cache' });
         return res.end(readFileSync(file));
       }
-      /* the community's packs and things the person added to the library (OpenFilm's own are always in it): { ids } */
+      /* the community's packs and things the person added to the library (CapyCut's own are always in it): { ids } */
       if (parts[1] === 'added' && parts.length === 2) {
         if (req.method === 'GET') { await refreshCommunity(); return json(res, 200, { ids: libraryAdded() }); }
         if (req.method === 'PUT') { await refreshCommunity(); return json(res, 200, { ids: setLibraryAdded((/** @type {{ ids?: unknown }} */ (await readJson(req) ?? {})).ids) }); }
@@ -710,17 +710,17 @@ export async function startStudio({ port = 4747, key, openBrowser = systemBrowse
       }
       return json(res, 200, { freed, ...await storage({ fresh: true }) });
     }
-    /* OpenFilm's plugins (src/plugins.mjs): each with whether it is on; one turned on or off (PUT plugins/:id { on }),
+    /* CapyCut's plugins (src/plugins.mjs): each with whether it is on; one turned on or off (PUT plugins/:id { on }),
        answered with them all. 409 for one not made yet */
     if (parts[0] === 'plugins' && parts.length === 1 && req.method === 'GET') return json(res, 200, { plugins: pluginsShown(), order: workbenchOrder() });
-    /* one of OpenFilm's own plugins' app icon (icon.svg, .png or .webp in its folder: src/skills.mjs appIconIn) */
+    /* one of CapyCut's own plugins' app icon (icon.svg, .png or .webp in its folder: src/skills.mjs appIconIn) */
     if (parts[0] === 'plugin-icon' && parts.length === 2 && req.method === 'GET') {
       const id = decodeURIComponent(parts[1]);
       const folder = /^[a-z][a-z0-9-]{0,31}$/.test(id) ? join(pluginsDir(), id) : null;
       const file = folder ? appIconIn(folder) : undefined;
       return sendMedia(req, res, folder && file ? join(folder, file) : null, { keep: true });
     }
-    /* one of OpenFilm's own plugins' recording at work, or its poster: only the files its showcase names (src/plugins.mjs) */
+    /* one of CapyCut's own plugins' recording at work, or its poster: only the files its showcase names (src/plugins.mjs) */
     if (parts[0] === 'plugin-preview' && parts.length === 3 && req.method === 'GET') {
       const id = decodeURIComponent(parts[1]), name = decodeURIComponent(parts[2]);
       const video = /^[a-z][a-z0-9-]{0,31}$/.test(id) ? pluginsShown().find((p) => p.id === id)?.showcase?.video : undefined;
@@ -736,7 +736,7 @@ export async function startStudio({ port = 4747, key, openBrowser = systemBrowse
     if (parts[0] === 'plugins' && parts.length > 2) return pluginServers.route(req, res, parts[1], parts.slice(2), url);
     if (parts[0] === 'plugins' && parts.length === 2 && req.method === 'PUT') {
       const { on } = /** @type {{ on?: unknown }} */ (await readJson(req) ?? {});
-      /* on: true or false; null: removed (one that comes with OpenFilm is only turned off) */
+      /* on: true or false; null: removed (one that comes with CapyCut is only turned off) */
       if (typeof on !== 'boolean' && on !== null) throw new HttpError(400, 'on: true, false or null');
       try { if (on === null) removePlugin(parts[1]); else setPluginOn(parts[1], on); } catch (e) { throw new HttpError(/there is no plugin/i.test(/** @type {Error} */ (e).message) ? 404 : 409, /** @type {Error} */ (e).message); }
       return json(res, 200, { plugins: pluginsShown(), order: workbenchOrder() });
@@ -793,7 +793,7 @@ export async function startStudio({ port = 4747, key, openBrowser = systemBrowse
       const folder = await exampleFolderHere(decodeURIComponent(parts[1]));
       return sendMedia(req, res, inside(folder, parts.slice(3).map(decodeURIComponent).join('/')), { keep: true });
     }
-    /* the skills a project can be made with (../../src/skills.mjs): OpenFilm's own first (`core`, which can only be
+    /* the skills a project can be made with (../../src/skills.mjs): CapyCut's own first (`core`, which can only be
        turned off), then the project's, the person's, those installed, then Discover's not installed (skill-catalog.mjs,
        `installed: false`). Each is told by its uid (owner/name) here and in every route below, so two of the same name
        are both there; `as` is the name agents are given it by. An installed one says when Discover has a newer commit
@@ -805,7 +805,7 @@ export async function startStudio({ port = 4747, key, openBrowser = systemBrowse
       const skills = listSkills({ project: project?.path ?? null });
       const catalog = readCatalog();
       const standing = installedStanding(catalog);
-      /* listed by another community index the person added, not OpenFilm's: its address (skill-catalog.mjs communitySources) */
+      /* listed by another community index the person added, not CapyCut's: its address (skill-catalog.mjs communitySources) */
       const fromOther = entrySources(catalog);
       const had = new Set(skills.map((k) => k.uid));
       const offered = catalogSkills(catalog).filter((k) => !had.has(k.uid));
@@ -817,7 +817,7 @@ export async function startStudio({ port = 4747, key, openBrowser = systemBrowse
       /* a project's own the person has not allowed in it (src/skills.mjs projectSkillAllowed): listed, waiting, with
          nothing of it shown or run (no page, element, program, tab or commands) until it is allowed */
       const waits = (/** @type {typeof skills[number]} */ k) => k.source === 'project' && !projectSkillAllowed(k, project?.path ?? null);
-      /* one OpenFilm withdrew (its index's `revoked`): nothing of it shown or run, its program stopped, and why said */
+      /* one CapyCut withdrew (its index's `revoked`): nothing of it shown or run, its program stopped, and why said */
       const revoked = revokedNow();
       const withheld = (/** @type {typeof skills[number]} */ k) => {
         const withdrawn = revocationOf(k, revoked);
@@ -841,7 +841,7 @@ export async function startStudio({ port = 4747, key, openBrowser = systemBrowse
           ...(k.source === 'official' && fromOther.get(k.uid) ? { from: fromOther.get(k.uid) } : {}),
           /* the hosts its page may reach (src/skills.mjs networkOf), none but these */
           ...(k.network ? { network: k.network } : {}),
-          /* what it needs beyond OpenFilm, the computers it runs on, and whether this one is not among them */
+          /* what it needs beyond CapyCut, the computers it runs on, and whether this one is not among them */
           ...(k.needs ? { needs: k.needs } : {}), ...(k.platforms ? { platforms: k.platforms, ...(k.platforms.includes(thisPlatform()) ? {} : { elsewhere: true }) } : {}),
           ...(k.cover ? { cover: `${media(k.uid, 'cover')}${id ? '&' : '?'}v=${encodeURIComponent(k.cover)}` } : {}), ...(k.preview ? { preview: media(k.uid, 'preview') } : {}),
           /* its app icon (src/skills.mjs appIconIn): none, the default for its kind */
@@ -873,7 +873,7 @@ export async function startStudio({ port = 4747, key, openBrowser = systemBrowse
             const at = pluginPages.surface({ uid: k.uid, source: k.source, folder: k.folder, page: k.page, ...(k.network ? { network: k.network } : {}) }, project ?? null);
             return { surface: at.page, ...(at.project ? { files: at.project } : {}), ...(pluginWrites(k, project ?? null) ? { writes: true } : {}) };
           })() : {}),
-          /* a project's own, not allowed in it yet; one OpenFilm withdrew, and why (`withheld` above) */
+          /* a project's own, not allowed in it yet; one CapyCut withdrew, and why (`withheld` above) */
           ...('waits' in k && k.waits ? { waits: true } : {}),
           ...('revoked' in k && k.revoked ? { revoked: k.revoked } : {}),
           /* the person's own: where it came from (none kept: made where it is) */
@@ -883,8 +883,8 @@ export async function startStudio({ port = 4747, key, openBrowser = systemBrowse
           ...(k.installed && k.source === 'official' && !k.core ? standing.get(k.uid) ?? {} : {}),
           /* turned off: offered to no agent until it is turned on again */
           ...(k.installed && !k.core && keeps(off, k) ? { off: true } : {}),
-          /* one of OpenFilm's own that goes with a plugin now off (src/plugins.mjs): off with it, and on again with it */
-          /* one of OpenFilm's own that no plugin on brings or requires (src/skills.mjs ownSkills): given to no agent until
+          /* one of CapyCut's own that goes with a plugin now off (src/plugins.mjs): off with it, and on again with it */
+          /* one of CapyCut's own that no plugin on brings or requires (src/skills.mjs ownSkills): given to no agent until
              one does; turning its plugin on (the plugin it goes with, when it has one) gives it again */
           ...(k.core && !given.has(k.name) ? { off: true, ...(pluginOfSkill(k.name) ? { plugin: pluginOfSkill(k.name) } : {}) } : {}),
         })),
@@ -901,7 +901,7 @@ export async function startStudio({ port = 4747, key, openBrowser = systemBrowse
         throw new HttpError(502, `Discover could not be read now: ${e instanceof Error ? e.message : String(e)}`);
       }
     }
-    /* a skill of the project shown (`?project=`), or the library's, by its uid; OpenFilm's own with `core` */
+    /* a skill of the project shown (`?project=`), or the library's, by its uid; CapyCut's own with `core` */
     const skillAt = async (/** @type {string} */ uid, { core = false } = {}) => {
       const id = url.searchParams.get('project');
       const project = id ? (await listProjects()).find((p) => p.id === id && !p.missing) : null;
@@ -916,7 +916,7 @@ export async function startStudio({ port = 4747, key, openBrowser = systemBrowse
       const uid = decodeURIComponent(parts[1]);
       if (installed) {
         try { await installSkill(uid); } catch (e) { throw new HttpError(/** @type {any} */ (e).status ?? 500, e instanceof Error ? e.message : String(e)); }
-        /* one more counted, for one OpenFilm's community lists (not another index's): its uid alone (community-stats.mjs) */
+        /* one more counted, for one CapyCut's community lists (not another index's): its uid alone (community-stats.mjs) */
         if (!entrySources().has(uid)) countInstall(uid);
       } else if (!(await uninstallSkill(uid))) throw new HttpError(404, 'no such installed skill');
       return json(res, 200, { installed });
@@ -971,7 +971,7 @@ export async function startStudio({ port = 4747, key, openBrowser = systemBrowse
       const project = id ? (await listProjects()).find((p) => p.id === id && !p.missing) ?? null : null;
       if (!project) throw new HttpError(404, 'no such project');
       if (keeps(new Set(skillsOff()), skill)) throw new HttpError(409, 'This plugin is off.');
-      if (revocationOf(skill)) throw new HttpError(409, 'OpenFilm withdrew this plugin: it does not run.');
+      if (revocationOf(skill)) throw new HttpError(409, 'CapyCut withdrew this plugin: it does not run.');
       try {
         return json(res, 200, { url: await pluginPrograms.ensure({ uid: skill.uid, source: skill.source, folder: skill.folder, program }, { id: project.id, path: project.path }) });
       } catch (e) { throw new HttpError(/** @type {any} */ (e).status ?? 500, e instanceof Error ? e.message : String(e)); }
@@ -980,7 +980,7 @@ export async function startStudio({ port = 4747, key, openBrowser = systemBrowse
     if (parts[0] === 'community' && parts[1] === 'stats' && parts.length === 2 && req.method === 'GET') {
       return json(res, 200, { stats: await communityStats() });
     }
-    /* the other community indexes the person added (GET: { sources }; PUT { sources }): read after OpenFilm's own, the
+    /* the other community indexes the person added (GET: { sources }; PUT { sources }): read after CapyCut's own, the
        next time Discover is read (skill-catalog.mjs communitySources) */
     if (parts[0] === 'community' && parts[1] === 'sources' && parts.length === 2 && (req.method === 'GET' || req.method === 'PUT')) {
       if (req.method === 'PUT') {
@@ -1037,7 +1037,7 @@ export async function startStudio({ port = 4747, key, openBrowser = systemBrowse
       if (typeof on !== 'boolean') throw new HttpError(400, 'on: true or false');
       const skill = await skillAt(decodeURIComponent(parts[1]), { core: true });
       if (!skill) throw new HttpError(404, 'no such skill');
-      /* one of OpenFilm's own has no switch of its own: it is on while its plugin is (src/plugins.mjs), so turning it
+      /* one of CapyCut's own has no switch of its own: it is on while its plugin is (src/plugins.mjs), so turning it
          turns the plugin; one that goes with no plugin (`film`, `media`) is given while a plugin on requires it */
       const core = coreSkills().some((k) => k.uid === skill.uid);
       const plugin = core ? pluginOfSkill(skill.name) : undefined;
@@ -1828,7 +1828,7 @@ export async function startStudio({ port = 4747, key, openBrowser = systemBrowse
   await listenLocal(editor, port);
   /* the examples index is asked for as Studio starts, so the Examples tab has GitHub's newest when it opens */
   void listExamples().catch(() => {});
-  /* and what each service offers (OpenFilm's models are its service's to say), so Settings → Services opens with them */
+  /* and what each service offers (CapyCut's models are its service's to say), so Settings → Services opens with them */
   void freshProviders().catch(() => {});
   const address = /** @type {import('node:net').AddressInfo} */ (editor.address());
   origin = `http://127.0.0.1:${address.port}`;
@@ -1848,9 +1848,9 @@ export async function startStudio({ port = 4747, key, openBrowser = systemBrowse
   const pluginOptions = { secret: key, editorOrigin: () => origin, mayWrite: (/** @type {{ uid: string, source: string }} */ plugin, /** @type {{ id: string }} */ project) => pluginWrites(plugin, project) || pluginRuns(plugin, project) };
   const pluginPages = await startPluginPages({ port: port ? address.port + 2 : 0, ...pluginOptions }).catch(() => startPluginPages({ port: 0, ...pluginOptions }));
   /**
-   * OpenFilm's plugins as the editor is told them: each with whether it is on, where the module of its element is
+   * CapyCut's plugins as the editor is told them: each with whether it is on, where the module of its element is
    * (its package.json's `browser`, src/skills.mjs elementIn), on the plugins' origin as anyone's is, and the commands it
-   * brings, by name (src/skills.mjs commandsIn). Its own ship with OpenFilm, so they are not asked leave to run.
+   * brings, by name (src/skills.mjs commandsIn). Its own ship with CapyCut, so they are not asked leave to run.
    */
   const pluginsShown = () => pluginStates().map((p) => {
     const folder = join(pluginsDir(), p.id);
@@ -2012,7 +2012,7 @@ function sendEditor(/** @type {Res} */ res, /** @type {string} */ dir, /** @type
   const page = join(root, 'index.html');
   /* no referrer: the page's address holds the key, and a link it opens must not carry it to another site */
   res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'referrer-policy': 'no-referrer', ...headers });
-  res.end(existsSync(page) ? readFileSync(page) : '<!doctype html><meta charset="utf-8"><title>OpenFilm Studio</title><p>The editor is not built: run <code>npm run build:ui</code>.</p>');
+  res.end(existsSync(page) ? readFileSync(page) : '<!doctype html><meta charset="utf-8"><title>CapyCut Studio</title><p>The editor is not built: run <code>npm run build:ui</code>.</p>');
 }
 
 /** A file in the system's file manager, selected. */

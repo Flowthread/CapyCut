@@ -1,5 +1,5 @@
 /**
- * The examples (films made with OpenFilm), to start from or to learn from: the projects window's "Examples" (also
+ * The examples (films made with CapyCut), to start from or to learn from: the projects window's "Examples" (also
  * opened by the app's chat, lib/host.ts `show-examples`). One is copied into a new project to change, or, over a film,
  * it or a part of it (a segment, or a stretch dragged on its strip) is pointed at in its chat for the agent to follow
  * (`onReference`), its canvas laid down on the film's, or how it was made asked.
@@ -15,7 +15,7 @@ import { useT } from '@/i18n';
 import { seenExamples, sourcesApi, type Example } from '@/lib/project-sources';
 import { readCanvasDoc, type CanvasDoc } from '@/lib/canvas';
 import { Tooltip } from './Tooltip';
-import { byOpenFilm, makerName } from '@/lib/library';
+import { byCapyCut, makerName } from '@/lib/library';
 
 /* an example's canvas, only looked at: the board's code is loaded when one is shown */
 const CanvasPreview = React.lazy(() => import('./canvas/CanvasView').then((m) => ({ default: m.CanvasPreview })));
@@ -354,13 +354,13 @@ function ExampleDetail({ example, onStart, onReference, onUseCanvas, onExplain, 
   );
 }
 
-/** Who published an example: OpenFilm with its tick, else the publisher's GitHub name. */
+/** Who published an example: CapyCut with its tick, else the publisher's GitHub name. */
 export function Publisher({ owner, className = '' }: { owner?: string; className?: string }) {
   if (!owner) return null;
   return (
     <div data-example-publisher="" className={`flex min-w-0 items-center gap-1 ${className}`}>
       <span className="truncate">{makerName(owner)}</span>
-      {byOpenFilm(owner) ? <BadgeCheck size={12} strokeWidth={2} aria-label="OpenFilm" className="shrink-0" /> : null}
+      {byCapyCut(owner) ? <BadgeCheck size={12} strokeWidth={2} aria-label="CapyCut" className="shrink-0" /> : null}
     </div>
   );
 }

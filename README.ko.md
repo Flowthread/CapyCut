@@ -1,6 +1,6 @@
 <p align="center">
-  <img src="docs/logo-light.svg#gh-light-mode-only" alt="OpenFilm" height="48">
-  <img src="docs/logo-dark.svg#gh-dark-mode-only" alt="OpenFilm" height="48">
+  <img src="docs/logo-light.svg#gh-light-mode-only" alt="CapyCut" height="48">
+  <img src="docs/logo-dark.svg#gh-dark-mode-only" alt="CapyCut" height="48">
 </p>
 <p align="center">오픈소스 AI 영상 에이전트.</p>
 <p align="center">
@@ -40,13 +40,13 @@
   <a href="https://www.youtube.com/@riverisbuilding"><img alt="Watch on YouTube" src="docs/buttons/youtube.svg" /></a>
 </p>
 
-[![OpenFilm: 에이전트가 영상을 만드는 모습을 지켜본 뒤, 직접 손으로 고칩니다](docs/openfilm.webp)](https://openfilm.dev)
+[![CapyCut: 에이전트가 영상을 만드는 모습을 지켜본 뒤, 직접 손으로 고칩니다](docs/openfilm.webp)](https://openfilm.dev)
 
 ---
 
 ### 소개
 
-OpenFilm은 어떤 코딩 에이전트든 영상 에이전트로 바꿔 주고, 에이전트가 만든 것은 무엇이든 고칠 수 있는 편집기를 함께 제공합니다.
+CapyCut은 어떤 코딩 에이전트든 영상 에이전트로 바꿔 주고, 에이전트가 만든 것은 무엇이든 고칠 수 있는 편집기를 함께 제공합니다.
 
 여러분과 에이전트는 같은 영상을 함께, 실시간으로 작업합니다. 에이전트가 바꾸는 것은 바뀌는 그 순간 여러분 눈에 보이고, 여러분이 바꾸는 것은 에이전트도 봅니다. 작업 대부분은 에이전트가 맡습니다. 여러분은 무엇이든 가리키며 수정을 요청하거나, 직접 고치면 됩니다.
 
@@ -68,25 +68,25 @@ npx skills add openfilm/openfilm
 
 ### 편집기
 
-편집기마다 같은 영상을 다루는 방식이 다르고, 어느 편집기에서든 여러분과 에이전트가 함께 작업합니다. OpenFilm에는 편집기 네 가지가 들어 있으며, 다양한 사람을 위한 공식 편집기를 더 개발하고 있습니다. 누구나 바로 쓸 수 있을 만큼 쉬운 것부터, 원하는 사람을 위한 전문 작업대까지입니다. 편집기는 커뮤니티의 오픈 표준을 따르므로 누구나 직접 만들어 공유할 수 있습니다.
+편집기마다 같은 영상을 다루는 방식이 다르고, 어느 편집기에서든 여러분과 에이전트가 함께 작업합니다. CapyCut에는 편집기 네 가지가 들어 있으며, 다양한 사람을 위한 공식 편집기를 더 개발하고 있습니다. 누구나 바로 쓸 수 있을 만큼 쉬운 것부터, 원하는 사람을 위한 전문 작업대까지입니다. 편집기는 커뮤니티의 오픈 표준을 따르므로 누구나 직접 만들어 공유할 수 있습니다.
 
 - **시사**: 영상을 큰 화면으로 봅니다. 한 순간을 클릭하거나, 한 구간을 드래그하거나, 화면 일부에 동그라미를 그리면 에이전트가 무엇을 가리키는지 압니다.
 - **편집**: 클립, 텍스트, 자막, 내레이션, 사운드를 모두 다루는 타임라인입니다. 샷 안의 무엇이든 옮기고, 크기를 바꾸고, 스타일을 바꿀 수 있습니다. 영상으로 내보내거나, 타임라인을 그대로 Final Cut Pro, Premiere Pro, DaVinci Resolve로 가져갈 수 있습니다.
 - **캔버스**: 노트, 이미지, 클립, 목소리를 나란히 놓고 구상하는 보드입니다. 연결한 서비스로 하나씩 생성한 다음, 순서대로 타임라인에 보냅니다.
 - **컬러**: 스코프, 컬러 휠, 커브로 모든 클립을 색 보정합니다. 카메라 로그 촬영본도, `.cube` LUT도 쓸 수 있습니다. 미리 본 그대로 내보내집니다.
 
-네 편집기는 하나의 라이브러리를 함께 씁니다. 여러분의 소재는 폴더로 정리되고, 복사하지 않고 링크로 연결되어 위치를 옮겨도 다시 찾아냅니다. 그 옆에는 OpenFilm의 무료 음악, 효과음, 목소리, 스티커가 있습니다.
+네 편집기는 하나의 라이브러리를 함께 씁니다. 여러분의 소재는 폴더로 정리되고, 복사하지 않고 링크로 연결되어 위치를 옮겨도 다시 찾아냅니다. 그 옆에는 CapyCut의 무료 음악, 효과음, 목소리, 스티커가 있습니다.
 
 ### 커뮤니티
 
-커뮤니티는 OpenFilm에 더할 수 있는 모든 것을 위한 오픈 표준이며, 누구나 만들어 기여할 수 있습니다.
+커뮤니티는 CapyCut에 더할 수 있는 모든 것을 위한 오픈 표준이며, 누구나 만들어 기여할 수 있습니다.
 
-- **플러그인**은 새 편집기와 외부 서비스용 커넥터로 OpenFilm 자체를 확장합니다. OpenFilm의 기본 편집기도 플러그인이며, 다른 누구의 플러그인과도 똑같은 방식으로 만들어졌습니다.
+- **플러그인**은 새 편집기와 외부 서비스용 커넥터로 CapyCut 자체를 확장합니다. CapyCut의 기본 편집기도 플러그인이며, 다른 누구의 플러그인과도 똑같은 방식으로 만들어졌습니다.
 - **스킬**은 에이전트에게 특정한 종류의 영상을 만드는 방법을 가르칩니다.
 - **에셋**은 음악, 효과음, 트랜지션, 이펙트, 텍스트 스타일, 스티커, 템플릿입니다.
 - **예제**는 보고 배우고 리믹스할 수 있는 완성된 프로젝트입니다.
 
-각각은 평범한 폴더 하나입니다. OpenFilm의 커뮤니티 창에서 추가하거나 직접 만드세요. [플러그인 만들기](packages/openfilm/plugins/README.md), [스킬 작성하기](https://github.com/openfilm/community/blob/main/SPEC.md), [에셋 공유하기](https://github.com/openfilm/community/blob/main/assets/CONTRIBUTING.md), 또는 완성한 영상을 예제로 공유한 뒤 [openfilm/community](https://github.com/openfilm/community)에 등록하면 됩니다.
+각각은 평범한 폴더 하나입니다. CapyCut의 커뮤니티 창에서 추가하거나 직접 만드세요. [플러그인 만들기](packages/openfilm/plugins/README.md), [스킬 작성하기](https://github.com/openfilm/community/blob/main/SPEC.md), [에셋 공유하기](https://github.com/openfilm/community/blob/main/assets/CONTRIBUTING.md), 또는 완성한 영상을 예제로 공유한 뒤 [openfilm/community](https://github.com/openfilm/community)에 등록하면 됩니다.
 
 ### 작동 방식
 
@@ -114,11 +114,11 @@ window.film = {
 };
 ```
 
-**여러분의 수정은 그대로 남습니다.** 샷 안의 텍스트, 색상, 위치, 크기처럼 무언가를 손으로 바꾸면, OpenFilm은 이를 페이지 코드가 아니라 클립의 `overrides`에 저장합니다. 에이전트가 페이지를 다시 작성해도 여러분의 수정은 계속 적용됩니다. 전체 형식은 [SPEC.md](packages/openfilm/SPEC.md)에 있습니다.
+**여러분의 수정은 그대로 남습니다.** 샷 안의 텍스트, 색상, 위치, 크기처럼 무언가를 손으로 바꾸면, CapyCut은 이를 페이지 코드가 아니라 클립의 `overrides`에 저장합니다. 에이전트가 페이지를 다시 작성해도 여러분의 수정은 계속 적용됩니다. 전체 형식은 [SPEC.md](packages/openfilm/SPEC.md)에 있습니다.
 
 ### 기여하기
 
-소스에서 OpenFilm을 실행하거나 풀 리퀘스트를 보내려면 [CONTRIBUTING.md](CONTRIBUTING.md)를 읽어 주세요. 버그는 설정 → 개발자 → 보고서 복사로 얻은 보고서와 함께 [Issues](https://github.com/openfilm/openfilm/issues)에 올려 주시고, 보안 문제는 [SECURITY.md](SECURITY.md)에 안내된 대로 알려 주세요.
+소스에서 CapyCut을 실행하거나 풀 리퀘스트를 보내려면 [CONTRIBUTING.md](CONTRIBUTING.md)를 읽어 주세요. 버그는 설정 → 개발자 → 보고서 복사로 얻은 보고서와 함께 [Issues](https://github.com/openfilm/openfilm/issues)에 올려 주시고, 보안 문제는 [SECURITY.md](SECURITY.md)에 안내된 대로 알려 주세요.
 
 ### Star History
 

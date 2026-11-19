@@ -1,11 +1,11 @@
 name: Bug report
-description: Something in OpenFilm does not work as it should.
+description: Something in CapyCut does not work as it should.
 labels: [bug]
 body:
   - type: input
     id: version
     attributes:
-      label: OpenFilm version
+      label: CapyCut version
       description: What `openfilm --version` prints.
       placeholder: 0.1.2
     validations:
@@ -21,7 +21,7 @@ body:
     id: agent
     attributes:
       label: Agent
-      description: Which coding agent ran OpenFilm, if any.
+      description: Which coding agent ran CapyCut, if any.
       options:
         - None (Studio or the command by hand)
         - Claude Code

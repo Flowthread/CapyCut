@@ -11,7 +11,7 @@ export const DOUBAO_TTS_MODELS = [
 ];
 /**
  * The same complete stock catalog the resource library shows, refreshed by scripts/library-voices.mjs. Where the
- * providers run without the library beside them (OpenFilm's service ships this folder alone), none: the person's
+ * providers run without the library beside them (CapyCut's service ships this folder alone), none: the person's
  * Studio has the catalog, and a voice's language is then the text's own.
  */
 export const DOUBAO_VOICES = /** @type {{ provider: string, id: string, name: string, language: string | null, gender: string | null, description: string | null }[]} */ ((() => {

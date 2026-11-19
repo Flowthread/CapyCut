@@ -113,14 +113,14 @@ test('skills are listed from the project, yours and the official ones, each by i
   skill(join(mine, 'lyric-pv'), 'lyric-pv', 'Lyric videos', 'Use the engine.', { 'scripts/build.sh': 'echo', 'lib/engine.js': '' });
   skill(join(official, 'brand'), 'brand', 'Official brand');
   skill(join(official, 'kinetic'), 'kinetic', 'Official kinetic');
-  /* the person's kinetic, added from OpenFilm's own repository: that official one */
-  skill(join(mine, 'kinetic'), 'kinetic', 'Kinetic from OpenFilm');
+  /* the person's kinetic, added from CapyCut's own repository: that official one */
+  skill(join(mine, 'kinetic'), 'kinetic', 'Kinetic from CapyCut');
   writeFileSync(join(mine, '.origins.json'), JSON.stringify({ kinetic: { from: 'link', address: 'https://github.com/openfilm/skills' } }));
   mkdirSync(join(mine, 'not-a-skill'), { recursive: true });
   const all = listSkills({ project, mine, official });
   assert.deepEqual(all.map((s) => [s.uid, s.source, s.description]), [
     ['project/brand', 'project', 'This film\'s brand'], ['local/brand', 'mine', 'My brand'], ['openfilm/brand', 'official', 'Official brand'],
-    ['openfilm/kinetic', 'mine', 'Kinetic from OpenFilm'], ['local/lyric-pv', 'mine', 'Lyric videos'],
+    ['openfilm/kinetic', 'mine', 'Kinetic from CapyCut'], ['local/lyric-pv', 'mine', 'Lyric videos'],
   ]);
   assert.deepEqual(all[3].over, ['official']);
   const lyric = all[4];
@@ -202,13 +202,13 @@ test('yours are kept beside the projects, and those kept in Studio\'s home befor
   const before = { library: process.env.OPENFILM_LIBRARY, skills: process.env.OPENFILM_SKILLS };
   const root = mkdtempSync(join(tmpdir(), 'of-mine-'));
   delete process.env.OPENFILM_SKILLS;
-  process.env.OPENFILM_LIBRARY = join(root, 'OpenFilm', 'Projects');
+  process.env.OPENFILM_LIBRARY = join(root, 'CapyCut', 'Projects');
   try {
-    assert.equal(mySkillsDir(), join(root, 'OpenFilm', 'Skills'));
+    assert.equal(mySkillsDir(), join(root, 'CapyCut', 'Skills'));
     const old = join(root, 'home', 'skills');
     skill(join(old, 'brand'), 'brand', 'Mine');
     skill(join(old, 'kinetic'), 'kinetic', 'Old copy');
-    skill(join(root, 'OpenFilm', 'Skills', 'kinetic'), 'kinetic', 'Already there');
+    skill(join(root, 'CapyCut', 'Skills', 'kinetic'), 'kinetic', 'Already there');
     assert.deepEqual(migrateMySkills({ from: old, to: mySkillsDir() }), ['brand']);
     assert.ok(existsSync(join(mySkillsDir(), 'brand', 'SKILL.md')));
     assert.match(readFileSync(join(mySkillsDir(), 'kinetic', 'SKILL.md'), 'utf8'), /Already there/, 'one there already is not overwritten');
@@ -282,7 +282,7 @@ test('openfilm skills and skill: the list, one printed whole, one added from an 
     const listed = skillsCommand('openfilm', { cwd: film });
     assert.ok(listed.lines.some((l) => /project\/brand\s+this project/.test(l)));
     assert.ok(listed.lines.some((l) => l.includes('This film\'s brand')));
-    /* outside a project: none of this film's; OpenFilm's own once installed, and not while off */
+    /* outside a project: none of this film's; CapyCut's own once installed, and not while off */
     assert.match(skillsCommand('openfilm', { cwd: root }).lines[0], /^No skills installed\./);
     /* one installed from Discover (studio/server/skill-catalog.mjs): its folder, with where it came from */
     const installed = skill(join(root, 'studio-home', 'skills-installed', 'openfilm-replicate'), 'replicate', 'Remake a video');
@@ -383,7 +383,7 @@ test("a cover's format is what its bytes are, and a cover chosen before goes whe
   assert.throws(() => setSkillCover('own', `data:image/png;base64,${Buffer.from('GIF89a......').toString('base64')}`, { mine }), /PNG, JPEG or WebP/);
 });
 
-test("OpenFilm's own skills: in order, each listed after the system prompt, printed with the command as run here, never in the library", async () => {
+test("CapyCut's own skills: in order, each listed after the system prompt, printed with the command as run here, never in the library", async () => {
   const manual = promptSkills(mkdtempSync(join(tmpdir(), 'of-prompt-skills-')));
   const core = coreSkills();
   assert.deepEqual(core.map((s) => s.uid), ['openfilm/film', 'openfilm/media', 'openfilm/canvas', 'openfilm/color'], 'in the order they are listed');
@@ -431,7 +431,7 @@ test('two skills of a name are both had, each by its uid; an agent is given the 
   const root = mkdtempSync(join(tmpdir(), 'of-skill-uids-'));
   const mine = join(root, 'mine'), official = join(root, 'official'), project = join(root, 'project');
   const write = (dir, name, body = 'Steps.') => { mkdirSync(dir, { recursive: true }); writeFileSync(join(dir, 'SKILL.md'), `---\nname: ${name}\ndescription: ${body}\n---\n${body}`); };
-  write(join(official, 'keynote'), 'keynote', 'OpenFilm');
+  write(join(official, 'keynote'), 'keynote', 'CapyCut');
   write(join(project, 'skills', 'keynote'), 'keynote', 'The project');
   write(join(root, 'from-river', 'keynote'), 'keynote', 'River');
   write(join(root, 'from-ana', 'keynote'), 'keynote', 'Ana');
@@ -451,7 +451,7 @@ test('two skills of a name are both had, each by its uid; an agent is given the 
   rmSync(root, { recursive: true, force: true });
 });
 
-test('an installed skill is its repository\'s account\'s: OpenFilm\'s own is openfilm, anyone else\'s is theirs', () => {
+test('an installed skill is its repository\'s account\'s: CapyCut\'s own is openfilm, anyone else\'s is theirs', () => {
   const root = mkdtempSync(join(tmpdir(), 'of-installed-owner-'));
   const ours = skill(join(root, 'openfilm-replicate'), 'replicate', 'Ours');
   writeFileSync(join(ours, '.source.json'), JSON.stringify({ repo: 'https://github.com/openfilm/skill-replicate', path: 'skills/replicate', commit: 'a'.repeat(40), version: '0.1.0' }));
@@ -569,12 +569,12 @@ test('skills are resolved as dependencies: each once, after what it builds on; a
   assert.ok(!r.skills.some((s) => ['a', 'b', 'top'].includes(s.name)), 'a cycle, and what builds on it, given to no agent');
 });
 
-test('a skill of OpenFilm\'s own says only what it adds: no section of a skill it requires is said again in it', () => {
+test('a skill of CapyCut\'s own says only what it adds: no section of a skill it requires is said again in it', () => {
   const core = new Map(coreSkills().map((s) => [s.name, s]));
   const sections = (name) => new Set(readFileSync(core.get(name).file, 'utf8').split('\n').filter((l) => /^#{2,3} /.test(l)).map((l) => l.replace(/^#+ /, '').trim().toLowerCase()));
   for (const s of core.values()) {
     for (const need of s.requires ?? []) {
-      assert.ok(core.has(need), `${s.name} requires ${need}, one of OpenFilm's own`);
+      assert.ok(core.has(need), `${s.name} requires ${need}, one of CapyCut's own`);
       const again = [...sections(s.name)].filter((t) => sections(need).has(t));
       assert.deepEqual(again, [], `${s.name} says again what ${need} says`);
     }
@@ -613,7 +613,7 @@ test('a project\'s own skill reaches no agent until allowed in that project, and
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
 
-test('what OpenFilm withdraws reaches no agent: by its uid and commit when installed from Discover, by its files wherever a copy is', () => {
+test('what CapyCut withdraws reaches no agent: by its uid and commit when installed from Discover, by its files wherever a copy is', () => {
   const root = mkdtempSync(join(tmpdir(), 'of-revoked-'));
   const before = process.env.OPENFILM_SHARED_HOME;
   process.env.OPENFILM_SHARED_HOME = join(root, 'shared');

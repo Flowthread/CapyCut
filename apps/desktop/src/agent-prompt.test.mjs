@@ -4,7 +4,7 @@ import { INSTRUCTIONS, ownAgentPrompt } from './agents.mjs';
 
 const count = (text, part) => text.split(part).length - 1;
 
-test("the app's own agent's prompt is OpenFilm's system prompt for an agent in the app: where it is and how it talks; how any work is done is in the skills", () => {
+test("the app's own agent's prompt is CapyCut's system prompt for an agent in the app: where it is and how it talks; how any work is done is in the skills", () => {
   const prompt = ownAgentPrompt();
   assert.ok(prompt.split(/\s+/).length < 330, 'a few lines');
   for (const word of ['## film.html', 'window.film', '`edit`', 'openfilm look', 'openfilm render', 'openfilm get']) assert.ok(!prompt.includes(word), `nothing of one kind of work: ${word}`);

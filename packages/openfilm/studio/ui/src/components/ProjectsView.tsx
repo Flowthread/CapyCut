@@ -123,7 +123,7 @@ export function ProjectsView({
   display: ResourceView;
   onDisplay: (view: ResourceView) => void;
   navigation: { folderId: string | null; seq: number };
-  /** Open OpenFilm's recycle bin (the button at the end of the projects' tools). */
+  /** Open CapyCut's recycle bin (the button at the end of the projects' tools). */
   onBin?: () => void;
 }) {
   const t = useT();
@@ -820,7 +820,7 @@ export function ProjectsView({
                 <SortButton sort={sort} onSort={next => { setSort(next); setReversed(false); }} />
                 <FileViewControl value={display} onChange={onDisplay} />
                 <Tooltip label={t('projectMenu.more')}><button type="button" className={styles.iconButton} aria-label={t('projectMenu.more')} onClick={event => { const rect = event.currentTarget.getBoundingClientRect(); setContext({ x: rect.left, y: rect.bottom, keys: [...selected] }); }}><MoreHorizontal size={16} /></button></Tooltip>
-                {/* OpenFilm's recycle bin: what was deleted in OpenFilm, projects and everything else, to put back */}
+                {/* CapyCut's recycle bin: what was deleted in CapyCut, projects and everything else, to put back */}
                 {onBin ? <Tooltip label={t('recycleBin.title')}><button type="button" className={styles.iconButton} aria-label={t('recycleBin.title')} data-open-recycle-bin="" onClick={onBin}><Trash2 size={16} strokeWidth={1.7} /></button></Tooltip> : null}
               </span>
             </div>

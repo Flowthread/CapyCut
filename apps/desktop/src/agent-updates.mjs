@@ -1,4 +1,4 @@
-/** Version checks for the exact programs OpenFilm uses. Updating always belongs to their original installer. */
+/** Version checks for the exact programs CapyCut uses. Updating always belongs to their original installer. */
 import { mkdirSync, readFileSync, realpathSync, statSync, writeFileSync, renameSync } from 'node:fs';
 import { join, posix, win32 } from 'node:path';
 import { AGENT_DEFINITIONS, OWN_AGENT_IDS } from './agent-definitions.mjs';
@@ -94,7 +94,7 @@ export async function latestAgentVersion(id, { fetch: get = fetch, platform = pr
   else if (id === 'antigravity') url = `https://antigravity-cli-auto-updater-974169037036.us-central1.run.app/manifests/${platform === 'win32' ? 'windows' : platform}_${arch === 'arm64' ? 'arm64' : platform === 'win32' ? 'amd64' : 'x64'}.json`;
   else if (id === 'deepseek') { url = deepseekUpdateFeed(program, { platform }); if (!url) return null; }
   else return null;
-  const response = await get(url, { signal: AbortSignal.timeout(8000), headers: { accept: 'application/json, text/plain', 'user-agent': 'OpenFilm update check' } });
+  const response = await get(url, { signal: AbortSignal.timeout(8000), headers: { accept: 'application/json, text/plain', 'user-agent': 'CapyCut update check' } });
   if (!response.ok) throw new Error(`Version service answered ${response.status}.`);
   const text = await response.text();
   let latest;

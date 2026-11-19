@@ -125,7 +125,7 @@ export function VoicesPane({ group, query, favorites, onServices, onAll, onMyVoi
     try { await operation(); } catch (error) { setProblem(error instanceof Error ? error.message : String(error)); }
     finally { setBusy(false); }
   };
-  /* voices are made with OpenFilm's service: signed out, Settings → Services opens to sign in */
+  /* voices are made with CapyCut's service: signed out, Settings → Services opens to sign in */
   const openDialog = () => {
     if (!mine.services.some((s) => s.connected)) { onServices(); return; }
     player.pause(); setDialog(true);

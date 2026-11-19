@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ProcessList version="2.4" id="openfilm:out-rec709">
-    <Description>OpenFilm output: ACEScct to an SDR Rec.709 display (ACES 2.0 Output Transform, 100 nit, Rec.1886)</Description>
+    <Description>CapyCut output: ACEScct to an SDR Rec.709 display (ACES 2.0 Output Transform, 100 nit, Rec.1886)</Description>
     <Log inBitDepth="32f" outBitDepth="32f" style="cameraLogToLin">
         <LogParams base="2" linSideSlope="1" linSideOffset="0" logSideSlope="0.0570776255707763" logSideOffset="0.554794520547945" linSideBreak="0.0078125" />
     </Log>

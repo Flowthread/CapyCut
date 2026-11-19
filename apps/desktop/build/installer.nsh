@@ -1,5 +1,5 @@
-!macro OpenFilmDefineInstallCheck PREFIX
-  Function ${PREFIX}OpenFilmCheckInstallPath
+!macro CapyCutDefineInstallCheck PREFIX
+  Function ${PREFIX}CapyCutCheckInstallPath
     Exch $0
     Push $1
     ${If} $0 != ""
@@ -17,21 +17,21 @@
       ${If} $1 != "0"
         ${If} $1 == "10"
           ${If} $LANGUAGE == 2052
-            StrCpy $1 "为保护你的工程和素材，OpenFilm 已停止安装或卸载。请把下方目录里的工程、素材库和其他个人文件移到安装目录之外，并更新「设置 → 通用 → 存储」里的项目位置，再重试。$\r$\n$\r$\n$0"
+            StrCpy $1 "为保护你的工程和素材，CapyCut 已停止安装或卸载。请把下方目录里的工程、素材库和其他个人文件移到安装目录之外，并更新「设置 → 通用 → 存储」里的项目位置，再重试。$\r$\n$\r$\n$0"
           ${Else}
-            StrCpy $1 "OpenFilm stopped to protect your projects and media. Move your personal files outside the installation folder below and update the project location in Settings before trying again.$\r$\n$\r$\n$0"
+            StrCpy $1 "CapyCut stopped to protect your projects and media. Move your personal files outside the installation folder below and update the project location in Settings before trying again.$\r$\n$\r$\n$0"
           ${EndIf}
         ${Else}
           ${If} $LANGUAGE == 2052
-            StrCpy $1 "OpenFilm 无法确认下方目录可以安全清理，安装或卸载已停止。请确认目录可访问后重试。$\r$\n$\r$\n$0"
+            StrCpy $1 "CapyCut 无法确认下方目录可以安全清理，安装或卸载已停止。请确认目录可访问后重试。$\r$\n$\r$\n$0"
           ${Else}
-            StrCpy $1 "OpenFilm could not verify that the folder below was safe to clean up. Check that the folder is accessible before trying again.$\r$\n$\r$\n$0"
+            StrCpy $1 "CapyCut could not verify that the folder below was safe to clean up. Check that the folder is accessible before trying again.$\r$\n$\r$\n$0"
           ${EndIf}
         ${EndIf}
         DetailPrint "$1"
         ${If} ${Silent}
           ${If} ${isUpdated}
-            System::Call 'user32::MessageBoxW(p 0, w r1, w "OpenFilm", i 0x11010)'
+            System::Call 'user32::MessageBoxW(p 0, w r1, w "CapyCut", i 0x11010)'
           ${EndIf}
         ${Else}
           MessageBox MB_OK|MB_ICONSTOP "$1" /SD IDOK
@@ -45,7 +45,7 @@
   FunctionEnd
 !macroend
 
-!macro OpenFilmCheckPreviousInstallation ROOT
+!macro CapyCutCheckPreviousInstallation ROOT
   ReadRegStr $0 ${ROOT} "${INSTALL_REGISTRY_KEY}" "InstallLocation"
   ${If} $0 == ""
     ReadRegStr $0 ${ROOT} "${UNINSTALL_REGISTRY_KEY}" "UninstallString"
@@ -67,27 +67,27 @@
   ${EndIf}
   ${If} $0 != $INSTDIR
     Push $0
-    Call OpenFilmCheckInstallPath
+    Call CapyCutCheckInstallPath
   ${EndIf}
 !macroend
 
 !macro customHeader
   !ifdef BUILD_UNINSTALLER
-    !insertmacro OpenFilmDefineInstallCheck "un."
+    !insertmacro CapyCutDefineInstallCheck "un."
   !else
-    !insertmacro OpenFilmDefineInstallCheck ""
+    !insertmacro CapyCutDefineInstallCheck ""
     # This section runs before electron-builder calls the old, already installed uninstaller.
-    Section "-Protect OpenFilm projects"
+    Section "-Protect CapyCut projects"
       SectionIn RO
       Push $INSTDIR
-      Call OpenFilmCheckInstallPath
-      !insertmacro OpenFilmCheckPreviousInstallation HKCU
+      Call CapyCutCheckInstallPath
+      !insertmacro CapyCutCheckPreviousInstallation HKCU
       # A silent update can elevate to the existing all-users installation later in the install section.
       ${If} $installMode == "all"
-        !insertmacro OpenFilmCheckPreviousInstallation HKLM
+        !insertmacro CapyCutCheckPreviousInstallation HKLM
       ${ElseIf} ${Silent}
         ${If} $hasPerMachineInstallation == "1"
-          !insertmacro OpenFilmCheckPreviousInstallation HKLM
+          !insertmacro CapyCutCheckPreviousInstallation HKLM
         ${EndIf}
       ${EndIf}
       ClearErrors
@@ -97,5 +97,5 @@
 
 !macro customUnInstall
   Push $INSTDIR
-  Call un.OpenFilmCheckInstallPath
+  Call un.CapyCutCheckInstallPath
 !macroend

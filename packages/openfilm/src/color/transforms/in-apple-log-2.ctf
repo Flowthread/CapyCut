@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ProcessList version="2" id="openfilm:in-apple-log-2">
-    <Description>OpenFilm input: Apple Log 2 (Apple Wide Gamut) footage into ACEScct</Description>
+    <Description>CapyCut input: Apple Log 2 (Apple Wide Gamut) footage into ACEScct</Description>
     <LUT1D inBitDepth="32f" outBitDepth="32f">
         <Array dim="4096 1">
 -0.056410879

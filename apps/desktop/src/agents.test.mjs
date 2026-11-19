@@ -223,13 +223,13 @@ test("the person's own developer_instructions in Codex's config, read as TOML wr
 });
 
 test("an agent is told to run the app's openfilm by its whole path: its shell may find another one first on the PATH", () => {
-  const command = openfilmCommand('/Users/me/Library/Application Support/OpenFilm/bin', 'darwin');
-  assert.equal(command, "'/Users/me/Library/Application Support/OpenFilm/bin/openfilm'", 'quoted, for the space in it');
+  const command = openfilmCommand('/Users/me/Library/Application Support/CapyCut/bin', 'darwin');
+  assert.equal(command, "'/Users/me/Library/Application Support/CapyCut/bin/openfilm'", 'quoted, for the space in it');
   const told = agentInstructions(command);
   assert.ok(told.includes(`run \`${command}\` with no arguments`));
-  assert.match(told, /run every OpenFilm command by it, also where a skill says `openfilm`,\nas your shell may find another one first/);
+  assert.match(told, /run every CapyCut command by it, also where a skill says `openfilm`,\nas your shell may find another one first/);
   assert.ok(!told.includes('on your PATH'));
-  assert.equal(openfilmCommand('C:\\Users\\me\\AppData\\Roaming\\OpenFilm\\bin', 'win32'), null, 'on Windows the name on the PATH');
+  assert.equal(openfilmCommand('C:\\Users\\me\\AppData\\Roaming\\CapyCut\\bin', 'win32'), null, 'on Windows the name on the PATH');
   assert.equal(agentInstructions(null), INSTRUCTIONS);
   assert.match(INSTRUCTIONS, /run `openfilm` with no arguments/);
   assert.match(INSTRUCTIONS, /The `openfilm` on your PATH is this app's own/);
@@ -277,12 +277,12 @@ test("a sign-in in Terminal runs in a folder of the app's own, not the home fold
 });
 
 test('a Windows sign-in is a PowerShell script: each path whole however it is spelled, read as UTF-8', () => {
-  const script = powerShellScript('Claude Code sign-in', 'C:\\Program Files\\OpenFilm\\OpenFilm.exe',
-    ['C:\\Program Files\\OpenFilm\\app.asar\\src\\as-node.mjs', 'D:\\用户\\it\'s\\index.js', '--cli', 'auth', 'login', '--claudeai']);
+  const script = powerShellScript('Claude Code sign-in', 'C:\\Program Files\\CapyCut\\CapyCut.exe',
+    ['C:\\Program Files\\CapyCut\\app.asar\\src\\as-node.mjs', 'D:\\用户\\it\'s\\index.js', '--cli', 'auth', 'login', '--claudeai']);
   assert.ok(script.startsWith('\ufeff'), 'a BOM: Windows PowerShell reads it as UTF-8');
   const lines = script.slice(1).split('\r\n');
   assert.equal(lines[0], "$Host.UI.RawUI.WindowTitle = 'Claude Code sign-in'");
-  assert.equal(lines[1], "& 'C:\\Program Files\\OpenFilm\\OpenFilm.exe' 'C:\\Program Files\\OpenFilm\\app.asar\\src\\as-node.mjs' "
+  assert.equal(lines[1], "& 'C:\\Program Files\\CapyCut\\CapyCut.exe' 'C:\\Program Files\\CapyCut\\app.asar\\src\\as-node.mjs' "
     + "'D:\\用户\\it''s\\index.js' '--cli' 'auth' 'login' '--claudeai'");
 });
 
@@ -509,7 +509,7 @@ test('a Codex older than the ones tried, that did not start, is said to need an 
   const failed = new Error('Pending response rejected since connection got disposed');
   const old = codexTooOld('codex', '/usr/local/bin/codex', failed, () => '0.104.0');
   assert.equal(old.code, 'outdated');
-  assert.match(old.message, /^Codex 0\.104\.0 is older than OpenFilm needs \(0\.132\.0 or later\): update Codex, then try again\. Pending response/);
+  assert.match(old.message, /^Codex 0\.104\.0 is older than CapyCut needs \(0\.132\.0 or later\): update Codex, then try again\. Pending response/);
   assert.equal(codexTooOld('codex', '/usr/local/bin/codex', failed, () => '0.163.0'), failed);
   assert.equal(codexTooOld('codex', '/usr/local/bin/codex', failed, () => null), failed, 'a version it cannot tell');
   const signIn = Object.assign(new Error('Codex is not signed in.'), { code: 'sign-in' });
@@ -521,7 +521,7 @@ test('an Antigravity older than 1.5.1, that did not start, is said to need an up
   const failed = new Error('Process exited with code 2');
   const old = antigravityTooOld('antigravity', '/usr/local/bin/agy', failed, () => '1.4.2');
   assert.equal(old.code, 'outdated');
-  assert.match(old.message, /^Google Antigravity 1\.4\.2 is older than OpenFilm needs \(1\.5\.1 or later\): update agy, then try again\./);
+  assert.match(old.message, /^Google Antigravity 1\.4\.2 is older than CapyCut needs \(1\.5\.1 or later\): update agy, then try again\./);
   assert.equal(antigravityTooOld('antigravity', '/usr/local/bin/agy', failed, () => '1.5.0').code, 'outdated');
   assert.equal(antigravityTooOld('antigravity', '/usr/local/bin/agy', failed, () => '1.5.1'), failed);
   assert.equal(antigravityTooOld('antigravity', '/usr/local/bin/agy', failed, () => '1.5.3'), failed);

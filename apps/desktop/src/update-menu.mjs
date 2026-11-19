@@ -11,14 +11,14 @@ import { UPDATE_DIALOG_WORDS } from './i18n/update-dialogs.mjs';
  *           showMessage: (options: Electron.MessageBoxOptions) => Promise<{ response: number }>, focusWindow: () => void,
  *           productName?: string }} options
  */
-export function createManualUpdateCheck({ controller, showMessage, focusWindow, productName = 'OpenFilm' }) {
+export function createManualUpdateCheck({ controller, showMessage, focusWindow, productName = 'CapyCut' }) {
   /** one check, one dialog: the menu clicked again while it is open waits on the same one */
   let pending = null;
 
   return function manualCheck(language = 'en') {
     pending ??= (async () => {
       const words = UPDATE_DIALOG_WORDS[language] ?? UPDATE_DIALOG_WORDS.en;
-      /* a version not known yet leaves no gap ("Downloading OpenFilm") */
+      /* a version not known yet leaves no gap ("Downloading CapyCut") */
       const fill = (text, values = {}) => Object.entries({ name: productName, ...values })
         .reduce((out, [key, value]) => out.replaceAll(`{${key}}`, value), text).replace(/ {2,}/g, ' ').trim();
       const error = (code) => fill(words.errors[code] ?? words.errors.failed);

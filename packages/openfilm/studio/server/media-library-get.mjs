@@ -2,7 +2,7 @@
 /**
  * `openfilm get my-media`: the person's own media for an agent (media-library.mjs): what they kept in Saved to use in
  * every film, and the footage, pictures and sound in the folders of this computer they added. An agent looks there
- * before OpenFilm's library and before making anything: what the person shot or already paid for is the film's first
+ * before CapyCut's library and before making anything: what the person shot or already paid for is the film's first
  * material. Free, offline, and answered here from the index, with no Studio running.
  *
  * A file is named by its fingerprint, so the name holds while the file is renamed or moved. `--take <id>` brings it
@@ -18,10 +18,10 @@ import { listProjects } from './projects.mjs';
 
 export const MY_MEDIA = 'my-media';
 
-/** The verb as `openfilm get` lists it, with OpenFilm's own library's. */
+/** The verb as `openfilm get` lists it, with CapyCut's own library's. */
 export const myMediaVerb = () => ({
   verb: MY_MEDIA,
-  help: 'Free and offline: the person\'s own media (Mine), what they keep to use in every film and the footage, pictures and sound they linked into it from this computer. Look here first, before OpenFilm\'s library and before making anything. '
+  help: 'Free and offline: the person\'s own media (Mine), what they keep to use in every film and the footage, pictures and sound they linked into it from this computer. Look here first, before CapyCut\'s library and before making anything. '
     + 'Words find a file by its name, its folders, or the prompt a generated one was made with; without words, the newest. '
     + 'Each match says its id, what it is, where it is and which projects use it. --take <id> brings it into the project and says its path.',
   options: {
@@ -65,7 +65,7 @@ export async function myMediaGet(flags, folder) {
   const what = kind ?? '';
   if (!files.length) {
     return { code: 0, lines: [`Nothing in the person's media library${q ? ` for “${q}”` : ''}${what ? ` (${what})` : ''}. `
-      + 'It finds a file by its name, folders and prompt, not by what is in the picture: try other words, or fewer. Then OpenFilm\'s library (`openfilm get`), or make it.'] };
+      + 'It finds a file by its name, folders and prompt, not by what is in the picture: try other words, or fewer. Then CapyCut\'s library (`openfilm get`), or make it.'] };
   }
   /* which projects have each, and the prompt of what a service made: what tells a file from its neighbours */
   const projects = (await listProjects()).filter((p) => !p.missing);

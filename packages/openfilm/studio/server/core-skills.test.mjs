@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { startStudio } from './server.mjs';
 
-test("Studio lists OpenFilm's own skills first, in their order, installed, and only turned off", async (t) => {
+test("Studio lists CapyCut's own skills first, in their order, installed, and only turned off", async (t) => {
   const root = mkdtempSync(join(tmpdir(), 'of-core-skills-'));
   const variables = { OPENFILM_HOME: join(root, 'home'), OPENFILM_SHARED_HOME: join(root, 'shared'), OPENFILM_LIBRARY: join(root, 'library'), OPENFILM_SKILLS: join(root, 'mine') };
   const previous = Object.fromEntries(Object.keys(variables).map((key) => [key, process.env[key]]));
@@ -31,7 +31,7 @@ test("Studio lists OpenFilm's own skills first, in their order, installed, and o
   ]);
   assert.equal(core[0].shown.title['zh-CN'], '影片');
   assert.deepEqual(core.slice(3).map((s) => [s.off, s.plugin]), [[true, 'color']]);
-  assert.deepEqual(skills.slice(0, core.length), core, 'OpenFilm’s own skills precede the library’s');
+  assert.deepEqual(skills.slice(0, core.length), core, 'CapyCut’s own skills precede the library’s');
   assert.equal((await api('/api/skills/openfilm%2Fcanvas/on', { method: 'PUT', body: { on: false } })).status, 200);
   assert.equal((await listed()).find((s) => s.uid === 'openfilm/canvas').off, true);
   assert.equal((await api('/api/skills/openfilm%2Fcanvas/installed', { method: 'PUT', body: { installed: false } })).status, 404, 'never uninstalled');

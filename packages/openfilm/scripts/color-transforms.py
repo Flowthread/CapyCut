@@ -1,8 +1,8 @@
-"""OpenFilm's color management transforms, written as OpenColorIO CTF files into src/color/transforms/.
+"""CapyCut's color management transforms, written as OpenColorIO CTF files into src/color/transforms/.
 
 Each graded clip's --of-lut (SPEC.md) runs: an input transform (its footage into the working space, ACEScct), the
 grade's own files, then the project's output transform (ACEScct to the display). The input and output transforms are
-these files. They are made once, here, with OpenColorIO itself, and kept in the repository: OpenFilm never runs this.
+these files. They are made once, here, with OpenColorIO itself, and kept in the repository: CapyCut never runs this.
 
   out-rec709.ctf     ACEScct to an SDR Rec.709 display: the ACES 2.0 Output Transform (100 nit), Rec.1886 encoding
   in-rec709.ctf      its exact inverse: SDR footage into ACEScct, so a clip with nothing graded looks as it was
@@ -183,9 +183,9 @@ def main():
     os.makedirs(OUT, exist_ok=True)
     written = []
     out = processor(OUTPUT)
-    written.append(write('out-rec709', out.createGroupTransform(), 'OpenFilm output: ACEScct to an SDR Rec.709 display (ACES 2.0 Output Transform, 100 nit, Rec.1886)'))
+    written.append(write('out-rec709', out.createGroupTransform(), 'CapyCut output: ACEScct to an SDR Rec.709 display (ACES 2.0 Output Transform, 100 nit, Rec.1886)'))
     back = processor(OUTPUT, INV)
-    written.append(write('in-rec709', back.createGroupTransform(), 'OpenFilm input: SDR Rec.709 footage into ACEScct (the exact inverse of out-rec709)'))
+    written.append(write('in-rec709', back.createGroupTransform(), 'CapyCut input: SDR Rec.709 footage into ACEScct (the exact inverse of out-rec709)'))
     # HDR footage is display-referred: back through ACES 2.0's own 1000 nit Rec.2020 rendering, as HLG or PQ shows it
     hdr = B('ACES-OUTPUT - ACES2065-1_to_CIE-XYZ-D65 - HDR-1000nit-REC2020_2.0')
     for name, label, display in (('hlg', 'HLG (Rec.2100, 1000 nit)', 'DISPLAY - CIE-XYZ-D65_to_REC.2100-HLG-1000nit'), ('pq', 'PQ (Rec.2100, ST 2084)', 'DISPLAY - CIE-XYZ-D65_to_REC.2100-PQ')):
@@ -194,7 +194,7 @@ def main():
         # OpenColorIO's PQ function and its own table differ by up to 0.2 % of the light (at 10 000 nit; under 0.1 %
         # below 1000): a few codes of ACEScct at the very top, gone in an SDR rendering, for a file 900 KB smaller
         check(f'{name} (resampled)', p, CFG.getProcessor(g), 0.25 if name == 'hlg' else 4)
-        written.append(write(f'in-{name}', g, f'OpenFilm input: {label} HDR footage into ACEScct (the inverse of ACES 2.0 HDR 1000 nit Rec.2020)'))
+        written.append(write(f'in-{name}', g, f'CapyCut input: {label} HDR footage into ACEScct (the inverse of ACES 2.0 HDR 1000 nit Rec.2020)'))
     # round trip: SDR in, then out, is the identity
     x = np.linspace(0, 1, 1024, dtype=np.float32)
     rgb = np.stack([x, np.roll(x, 300), np.roll(x, 700)], 1)
@@ -212,7 +212,7 @@ def main():
         p = processor(ts + [TO_CCT])
         g = resampled(p.createGroupTransform())
         check(name, p, CFG.getProcessor(g), 0.05)
-        written.append(write(f'in-{name}', g, f'OpenFilm input: {label} footage into ACEScct'))
+        written.append(write(f'in-{name}', g, f'CapyCut input: {label} footage into ACEScct'))
     # makers who write their curve on the stored code: a video-range file (the usual), and a full-range one
     coded = {
         'sony-slog3': ('Sony S-Log3, S-Gamut3.Cine', B('SONY_SLOG3-SGAMUT3.CINE_to_ACES2065-1')),
@@ -224,7 +224,7 @@ def main():
             p = processor(([t] if full else video_range_cv(t)) + [TO_CCT])
             g = resampled(p.createGroupTransform())
             check(name + ('-full' if full else ''), p, CFG.getProcessor(g), 0.05)
-            written.append(write(f'in-{name}{"-full" if full else ""}', g, f'OpenFilm input: {label} footage ({"a full-range" if full else "a video-range"} file) into ACEScct'))
+            written.append(write(f'in-{name}{"-full" if full else ""}', g, f'CapyCut input: {label} footage ({"a full-range" if full else "a video-range"} file) into ACEScct'))
     formulas = {
         'fujifilm-flog': ('Fujifilm F-Log', fujifilm(0.555556, 0.009468, 0.344676, 0.790453, 8.735631, 0.092864, 0.100537775223865), 'bt2020'),
         'fujifilm-flog2': ('Fujifilm F-Log2', fujifilm(5.555556, 0.064829, 0.245281, 0.384316, 8.799461, 0.092864, 0.100686685370811), 'bt2020'),
@@ -234,9 +234,9 @@ def main():
     for name, (label, curve, gamut) in formulas.items():
         for full in (False, True):
             g = from_formula(curve, gamut, cv=not full)
-            written.append(write(f'in-{name}{"-full" if full else ""}', g, f'OpenFilm input: {label} footage ({"a full-range" if full else "a video-range"} file) into ACEScct'))
+            written.append(write(f'in-{name}{"-full" if full else ""}', g, f'CapyCut input: {label} footage ({"a full-range" if full else "a video-range"} file) into ACEScct'))
     g = from_formula(bmd_film5, 'bmdwg', cv=False)
-    written.append(write('in-bmd-film5', g, 'OpenFilm input: Blackmagic Film Gen 5, Wide Gamut footage into ACEScct'))
+    written.append(write('in-bmd-film5', g, 'CapyCut input: Blackmagic Film Gen 5, Wide Gamut footage into ACEScct'))
     # the formula path against OpenColorIO's own, on a camera both have: Apple Log
     check('formula vs OCIO (Apple)', processor([B('APPLE_LOG_to_ACES2065-1'), TO_CCT]), CFG.getProcessor(from_formula(apple_log, 'bt2020', cv=False)), 0.5)
     for path in written:

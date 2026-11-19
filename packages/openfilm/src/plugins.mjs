@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * Plugins: what OpenFilm can do, each a folder in `plugins/` of this package, listed in Studio's Community window (as workbenches, or as skills when they have none).
+ * Plugins: what CapyCut can do, each a folder in `plugins/` of this package, listed in Studio's Community window (as workbenches, or as skills when they have none).
  * What every project stands on is no plugin and has no switch: the conversation, the project's folder and the system
  * prompt. No skill is: the skills an agent is given are those the plugins on bring and require (src/skills.mjs
  * ownSkills), so with only the canvas on it is not told how a film is written.
@@ -10,7 +10,7 @@
  * what it brings: a `workbench` (a whole surface of its own in Studio, named: the edit, the canvas, and any other,
  * which Studio shows in their place when picked; Motion, a view of the edit's timeline), a `tab` (a tab of the library
  * drawer, after its own, showing the element its package.json's `browser` brings: `{ "icon": …, "title": {…} }`, each
- * optional, the plugin's own when left out), `skills` (OpenFilm's own,
+ * optional, the plugin's own when left out), `skills` (CapyCut's own,
  * by name: what teaches an agent what the plugin adds to film making, each in the plugin's folder at `skills/<name>/`,
  * the Agent Skills layout: pluginSkillDir; none when it adds no way of writing, only a way of seeing) and `requires`
  * (the skills it builds on, by name, as a package names its dependencies: `film`, how a film is written; `media`). Its commands are its package.json's `bin` (src/plugin-commands.mjs), so a plugin is
@@ -20,7 +20,7 @@
  *   `details` a few lines on what it is for, by language, on its page
  *   `category`, `difficulty`, `ease`, `audience`, `cost`   how it is listed and rated for people (profileOf)
  *   `beta`    still being made good
- *   `soon`    listed so the whole of OpenFilm is in sight, but not made yet: never on, with no switch, and no agent is
+ *   `soon`    listed so the whole of CapyCut is in sight, but not made yet: never on, with no switch, and no agent is
  *             told of it
  *
  * A connector is a plugin that links the agent to an outside service: its folder's `.mcp.json` (as an agent's plugin
@@ -29,7 +29,7 @@
  * (connectorServers). Signing in to the service is the agent's own, as in its terminal. An editor is one with a
  * `workbench`.
  *
- * A plugin is one thing OpenFilm can do, in its two halves: what an agent knows of it (its skills) and where the
+ * A plugin is one thing CapyCut can do, in its two halves: what an agent knows of it (its skills) and where the
  * person sees and adjusts it (its workbench, its part of the library), under one switch. No plugin is on for good, as
  * no skill of an agent's is. Turned off, a plugin's workbench is not shown and its skills are offered to no agent, so
  * a person who only cuts films has nothing else in the way, and an agent reads nothing it has no use for. It never changes what a film is:
@@ -46,7 +46,7 @@ import { fileURLToPath } from 'node:url';
 import { setSharedPref, sharedPref } from './locations.mjs';
 import { readBlocks } from './plugin-blocks.mjs';
 
-/** The plugins that come with OpenFilm, each a folder (OPENFILM_PLUGINS: another folder of them, which a test makes). */
+/** The plugins that come with CapyCut, each a folder (OPENFILM_PLUGINS: another folder of them, which a test makes). */
 export const pluginsDir = () => process.env.OPENFILM_PLUGINS || join(dirname(fileURLToPath(import.meta.url)), '..', 'plugins');
 
 /** Where one of a plugin's skills is: `skills/<name>/` in its folder. @param {string} id @param {string} skill its name @param {string} [dir] */
@@ -63,7 +63,7 @@ const WORKBENCH = /^[a-z][a-z0-9-]{0,31}$/;
  * }} Plugin
  * @typedef {{ type: 'http', url: string, headers?: Record<string, string> } | { type: 'stdio', command: string, args?: string[], env?: Record<string, string> }} McpServer
  *   `id`: its folder's name; `workbench`: the way of working it shows; `blocks`: the blocks its workbench is laid out in
- *   (src/plugin-blocks.mjs); `tab`: the library's tab it shows; `skills`: OpenFilm's own skills (by name) that go with
+ *   (src/plugin-blocks.mjs); `tab`: the library's tab it shows; `skills`: CapyCut's own skills (by name) that go with
  *   it; `requires`: the skills it builds on (by name); `on`: whether it is on until the person says
  * @typedef {string | { say: string, does?: string }} Example
  *   what a person could say to use it, and what the agent then does (its page shows them as a conversation)
@@ -256,7 +256,7 @@ export function readPlugins(dir = pluginsDir()) {
     .sort((a, b) => a.order - b.order || a.id.localeCompare(b.id)).map(({ order: _order, ...p }) => Object.freeze(p)));
 }
 
-/** OpenFilm's own plugins, in the order they are listed. */
+/** CapyCut's own plugins, in the order they are listed. */
 export const PLUGINS = readPlugins();
 
 const known = (/** @type {string} */ id) => PLUGINS.find((p) => p.id === id);
@@ -280,7 +280,7 @@ function chosen(home) {
  */
 export function pluginStates(home) {
   const said = chosen(home);
-  /* got as an app's extensions are: one on from the start comes with OpenFilm (`builtIn`: turned off, never removed);
+  /* got as an app's extensions are: one on from the start comes with CapyCut (`builtIn`: turned off, never removed);
      any other is there once the person got it (said on or off), and removed it is back to never got */
   return PLUGINS.map((p) => ({ ...p, on: chosenBy(p) ? said[p.id] ?? p.on : false,
     installed: chosenBy(p) && (p.on || said[p.id] !== undefined), builtIn: chosenBy(p) && p.on }));
@@ -298,14 +298,14 @@ export function setPluginOn(id, on, home) {
 }
 
 /**
- * Remove a plugin the person got: back to never got, as if it was never there. One that comes with OpenFilm is turned
- * off instead, never removed. Throws for one there is not, and for one that comes with OpenFilm.
+ * Remove a plugin the person got: back to never got, as if it was never there. One that comes with CapyCut is turned
+ * off instead, never removed. Throws for one there is not, and for one that comes with CapyCut.
  * @param {string} id @param {string} [home]
  */
 export function removePlugin(id, home) {
   const state = pluginStates(home).find((p) => p.id === id);
   if (!state) throw new Error(`There is no plugin "${id}".`);
-  if (state.builtIn) throw new Error(`The ${id} plugin comes with OpenFilm: turn it off instead.`);
+  if (state.builtIn) throw new Error(`The ${id} plugin comes with CapyCut: turn it off instead.`);
   const { [id]: _gone, ...rest } = chosen(home);
   setSharedPref('plugins', rest, home);
 }
@@ -335,7 +335,7 @@ export const inPersonsOrder = (list, order) => {
   return list.map((item, i) => ({ item, i, o: at.get(item.id) ?? order.length + i })).sort((a, b) => a.o - b.o || a.i - b.i).map((x) => x.item);
 };
 
-/** The plugin one of OpenFilm's own skills goes with (its id), or undefined. @param {string} skill its name */
+/** The plugin one of CapyCut's own skills goes with (its id), or undefined. @param {string} skill its name */
 export const pluginOfSkill = (skill) => PLUGINS.find((p) => p.skills.includes(skill))?.id;
 
 /** The workbenches on, in the person's order. @param {string} [home] */
@@ -351,7 +351,7 @@ export function pluginsOffLine(home) {
      given to the agent: nothing of it to send them to) */
   const off = pluginStates(home).filter((p) => !p.on && !p.soon && (p.workbench || p.tab));
   if (!off.length) return null;
-  return `Plugins the person has turned off (Community › Added, in the OpenFilm menu, turns one on): ${off.map((p) => `${p.id} (${p.about})`).join('; ')}. `
+  return `Plugins the person has turned off (Community › Added, in the CapyCut menu, turns one on): ${off.map((p) => `${p.id} (${p.about})`).join('; ')}. `
     + 'Their workbenches are not shown, so do not send the person to one; when a task would be better done there, say so in a line.';
 }
 

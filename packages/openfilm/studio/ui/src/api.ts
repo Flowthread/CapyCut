@@ -39,8 +39,8 @@ export type ProjectSettings = { fps?: number; trackNames?: { name: string; index
 export type Listing = { files: MediaFile[]; folders: string[]; pages: { path: string; size: number; mtime: number }[]; links?: Record<string, { to: string; missing?: boolean }> };
 /** Media a project is missing (studio/server/media-reconnect.mjs): a link that leads nowhere (`linked`), or a file its clips name that is gone; `was`: where it was. */
 /** What the listed projects take on disk, the biggest first, in bytes: `clearable` is the cache that is made again when needed. */
-/** What OpenFilm takes on disk (studio/server/storage.mjs): each project by kind (`linked`: a folder elsewhere, opened in
-    place), and OpenFilm's other folders */
+/** What CapyCut takes on disk (studio/server/storage.mjs): each project by kind (`linked`: a folder elsewhere, opened in
+    place), and CapyCut's other folders */
 export type ProjectUsage = { id: string; name: string; path: string; linked?: boolean; total: number; media: number; cache: number; clearable: number; history: number; talk: number };
 export type StorageUsage = {
   projects: ProjectUsage[]; total: number; clearable: number;
@@ -130,7 +130,7 @@ export interface StudioPrefs {
   keys?: unknown;
   /** whether open projects save versions on their own (studio/server/auto-versions.mjs) */
   autoVersions?: boolean;
-  /** the library drawer's categories as arranged in Settings › Advanced (lib/library-categories), null: OpenFilm's */
+  /** the library drawer's categories as arranged in Settings › Advanced (lib/library-categories), null: CapyCut's */
   libraryCategories?: { order: string[]; off: string[] } | null;
 }
 /** Where the projects library is (src/locations.mjs): the folder, its default, whether the person chose it, the free space on its disk, how many projects are in it. */
@@ -373,7 +373,7 @@ export type FolderEvent = { type: 'film'; rev: string } | { type: 'files'; paths
   | { type: 'film-missing' }
   /* the project was deleted, or its folder is missing: its pages leave it */
   | { type: 'gone' }
-  /* what one of OpenFilm's own plugins told the pages, from its server code (lib/plugin-api `events`) */
+  /* what one of CapyCut's own plugins told the pages, from its server code (lib/plugin-api `events`) */
   | { type: 'plugin'; plugin: string; data: unknown };
 
 /**

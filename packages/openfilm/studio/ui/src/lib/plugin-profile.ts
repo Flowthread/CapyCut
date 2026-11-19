@@ -12,12 +12,12 @@ import type { SkillEntry } from './project-sources.ts';
 export const CATEGORIES = ['material', 'edit', 'picture', 'sound', 'recipe', 'tool'] as const;
 export type Category = (typeof CATEGORIES)[number];
 
-/** One of OpenFilm's own plugins: the category it says (each says one). */
+/** One of CapyCut's own plugins: the category it says (each says one). */
 export const categoryOfPlugin = (plugin: Pick<Plugin, 'profile'>): Category => plugin.profile?.category ?? 'tool';
 
 /**
  * A skill: the category it says; else a look is the picture's, and any other is a way of making a kind of film, as
- * skills of OpenFilm's, the community's and the person's are.
+ * skills of CapyCut's, the community's and the person's are.
  */
 export const categoryOfSkill = (skill: Pick<SkillEntry, 'profile' | 'kind'>): Category => skill.profile?.category ?? (skill.kind === 'style' ? 'picture' : 'recipe');
 

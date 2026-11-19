@@ -2,7 +2,7 @@
  * The assets drawer's library (in the app's panel, over the chat, its composer under it), laid out as an editor's
  * library is: the categories along the top — the media (the project's and Saved, the media pane as it was), the
  * voices to speak a voice-over in or a recording from the microphone (VoicesPane, RecordPane), the captions a caption
- * track is made with (CaptionsPane), then OpenFilm's own templates, sounds, music, text, stickers, filters, effects and
+ * track is made with (CaptionsPane), then CapyCut's own templates, sounds, music, text, stickers, filters, effects and
  * transitions (lib/library),
  * then the tabs plugins bring (plugin-tabs) — and down the left the starred ones and the library's own,
  * its groups under it (a plugin's tab is its own, whole). What is shown is in
@@ -51,9 +51,9 @@ import { GENERATABLE, type GenerationActions } from '@/lib/asset-generation';
 import { GenerationPane } from './GenerationPane';
 
 type OwnCategory = 'media' | 'voice' | 'captions' | 'cover' | 'coverPicture' | LibraryCategory;
-/** One of OpenFilm's own categories, or a plugin's tab (by its plugin's id). */
+/** One of CapyCut's own categories, or a plugin's tab (by its plugin's id). */
 type Category = OwnCategory | (string & {});
-/* OpenFilm's order (the person's own in Settings › Advanced, lib/library-categories): the media, the voice-over and the
+/* CapyCut's order (the person's own in Settings › Advanced, lib/library-categories): the media, the voice-over and the
    captions, then the templates, the most a film is made with at once; the plugins' tabs come after these (the plugins
    themselves have a window of their own, PluginsWindow) */
 export const CATEGORIES: OwnCategory[] = ['media', 'voice', 'captions', 'cover', 'coverPicture', 'template', 'sound', 'music', 'text', 'sticker', 'filter', 'effect', 'transition'];
@@ -83,7 +83,7 @@ const HOVER_PREVIEW_MS = 280;
 /* a clip's motions (how it comes in, goes out, moves while shown) are not among the effects either: they are put on a
    clip from the inspector's Animation (ClipMotionSection); a camera move on a cut stays a transition */
 const NEW_TEXT = 'new';
-/* a namespace of the side bar shown whole: OpenFilm's own things of the category, or those got from the Community */
+/* a namespace of the side bar shown whole: CapyCut's own things of the category, or those got from the Community */
 const OFFICIAL_ALL = '@official';
 const COMMUNITY_ALL = '@community';
 const GENERATE = '@generate';
@@ -169,9 +169,9 @@ export function LibraryDrawer({ media, mediaScope, onMediaScope, onUpload, onKee
   const t = useT();
   const lang = useLanguage();
   const index = useLibraryIndex(true);
-  /* the community's packs and things the person added: in the library beside OpenFilm's own */
+  /* the community's packs and things the person added: in the library beside CapyCut's own */
   const added = useLibraryAdded();
-  /* the person's folders, the order of the side bar, OpenFilm's own packs taken out */
+  /* the person's folders, the order of the side bar, CapyCut's own packs taken out */
   const { folders, order, hidden } = useLibraryPlaces();
   /* the categories shown, in the person's order, the tabs of the plugins on among them */
   const arranged = useLibraryArrangement();
@@ -309,9 +309,9 @@ export function LibraryDrawer({ media, mediaScope, onMediaScope, onUpload, onKee
       if (q) return Object.values(item.name).some((n) => n?.toLowerCase().includes(q)) || item.tags?.some((tag) => tag.toLowerCase().includes(q));
       /* the starred of this category, whatever their groups */
       if (group === STARRED) return favorites.includes(item.id);
-      /* a namespace whole: OpenFilm's own, or the Community's got (the text's looks and templates, not its new line) */
+      /* a namespace whole: CapyCut's own, or the Community's got (the text's looks and templates, not its new line) */
       if (group === OFFICIAL_ALL || group === COMMUNITY_ALL) return Boolean(item.by) === (group === COMMUNITY_ALL) && (cat !== 'text' || text === ART || text === TEMPLATES);
-      /* the text's looks or templates: OpenFilm's own all (a section alone), or a pack's */
+      /* the text's looks or templates: CapyCut's own all (a section alone), or a pack's */
       if (cat === 'text') return text === section && (of ? item.group === of : !item.by);
       return item.group === group;
     }).sort((a, b) => Number(Boolean(a.still)) - Number(Boolean(b.still)));
@@ -378,7 +378,7 @@ export function LibraryDrawer({ media, mediaScope, onMediaScope, onUpload, onKee
     if (e.key === 'Enter') { e.preventDefault(); addWhenHere(pickedItem); }
   };
 
-  /* OpenFilm's own groups of this category (each a pack of the library), the moving ones before the stills; a group its
+  /* CapyCut's own groups of this category (each a pack of the library), the moving ones before the stills; a group its
      things name that the index does not list is a pack too, by its id, so nothing of the library is out of reach */
   const listed = index?.groups[cat as LibraryCategory] ?? [];
   const unlisted = [...new Set((index?.items ?? []).filter((it) => it.cat === cat && !it.by && it.group && !isClipMotion(it)).map((it) => it.group))]
@@ -440,7 +440,7 @@ export function LibraryDrawer({ media, mediaScope, onMediaScope, onUpload, onKee
   /* the side bar's lines: first what is the person's here (a new line of words, this project, their looks), then their
      folders and the packs as one list in their order */
   /* the media's side bar is where the person's files are (this project, their folders); every other category's is its
-     groups, in folding sections (OpenFilm's, the Community's added packs; the text's looks and templates) */
+     groups, in folding sections (CapyCut's, the Community's added packs; the text's looks and templates) */
   const sectioned = cat !== 'media' && cat !== 'voice' && cat !== 'captions' && cat !== 'cover' && cat !== 'coverPicture';
   const head: Line[] = [
     ...(cat === 'text' ? [{ key: NEW_TEXT, kind: 'new' as const, name: t('assetDrawer.textNew') }] : []),
@@ -449,10 +449,10 @@ export function LibraryDrawer({ media, mediaScope, onMediaScope, onUpload, onKee
   ];
   const packs: Line[] = cat === 'text'
     ? [ART, TEMPLATES].flatMap((section) => textGroups[section as TextSection]
-      /* OpenFilm's own text is under 官方 as its looks and its templates, not pack by pack: the Community's packs got */
+      /* CapyCut's own text is under 官方 as its looks and its templates, not pack by pack: the Community's packs got */
       .filter((g) => g.by && (added.includes(g.id) || (index?.items ?? []).some((it) => it.cat === 'text' && it.group === g.id && inLibrary(it, added))))
       .map((g) => ({ key: packKey(g.id), kind: 'pack' as const, name: g.name, group: `${section}:${g.id}` })))
-    /* the media's too: OpenFilm's own packs of footage, pictures and sounds, and the Community's got (lines under 社区,
+    /* the media's too: CapyCut's own packs of footage, pictures and sounds, and the Community's got (lines under 社区,
        not copies in 我的; one is kept there as well from its menu or by a drag) */
     : [...own.map((g) => ({ key: packKey(g.id), kind: 'pack' as const, name: g.name, group: g.id, official: true })),
       ...addedPacks.map((g) => ({ key: packKey(g.id), kind: 'pack' as const, name: g.name, group: g.id }))];
@@ -461,7 +461,7 @@ export function LibraryDrawer({ media, mediaScope, onMediaScope, onUpload, onKee
   const movable = sectioned ? packsShown : inOrder(
     folders.map((f): Line => ({ key: f.path, kind: 'folder', name: f.name, ...(f.link ? { link: f.link } : {}) })),
     (line) => line.key, order);
-  /* the packs of a category, under its namespaces: OpenFilm's own (官方), those got from the Community (社区) */
+  /* the packs of a category, under its namespaces: CapyCut's own (官方), those got from the Community (社区) */
   const officialPacks = cat === 'text' ? [] : packsShown.filter((p) => p.official);
   const communityPacks = packsShown.filter((p) => !p.official);
   const [folded, setFolded] = React.useState<Record<string, boolean>>(readFolded);
@@ -524,7 +524,7 @@ export function LibraryDrawer({ media, mediaScope, onMediaScope, onUpload, onKee
     ?? (cat === 'media' ? head[0] : lines.find((line) => line.kind === 'new') ?? movable.find((line) => line.kind === 'pack') ?? head[0])!;
   /* the media's files (this project's, a folder of the person's), unless one of its namespaces is shown (`group`) */
   const ownShown = !ownLines && (current.kind === 'project' || current.kind === 'folder') && !(cat === 'media' && group !== '');
-  /* a namespace shown whole (or the text's looks or templates, OpenFilm's): no line in it lit */
+  /* a namespace shown whole (or the text's looks or templates, CapyCut's): no line in it lit */
   const wholeShown = group === STARRED || group === GENERATE || group === OFFICIAL_ALL || group === COMMUNITY_ALL || (cat === 'text' && (group === ART || group === TEMPLATES));
   const lineOn = (line: Line) => !(q && !ownShown) && (cat === 'media'
     ? (line.kind === 'pack' ? group === line.group : group === '' && line.key === current.key)
@@ -541,7 +541,7 @@ export function LibraryDrawer({ media, mediaScope, onMediaScope, onUpload, onKee
   const ofLine = (line: Line): RailNode => ({ key: line.key, name: line.name, on: lineOn(line), onPick: () => pickLine(line), line });
   /* the voice-over's own: the person's (recording, then their voices cloned), the starred, the services */
   const inMine = cat === 'voice' && (group === MY_VOICES || group === RECORD);
-  /* a category's namespaces: OpenFilm's own (shown only when it has some), then the Community's (always: the way to
+  /* a category's namespaces: CapyCut's own (shown only when it has some), then the Community's (always: the way to
      get more); each box shows all it holds, its lines below it one pack each */
   const officialChildren: RailNode[] = cat === 'text'
     ? [ART, TEMPLATES].filter((section) => textGroups[section as TextSection].some((g) => !g.by))
@@ -609,7 +609,7 @@ export function LibraryDrawer({ media, mediaScope, onMediaScope, onUpload, onKee
     { id: 'publish', label: t('assetDrawer.contribute'), icon: <Upload size={14} />, onSelect: () => openPlugins({ line: 'publish' }) },
     { id: 'delete', label: t(line.link ? 'resourceCenter.removeLink' : 'assets.delete'), icon: <Trash2 size={14} />, danger: true, onSelect: () => setGone(line) },
   ] : line.kind === 'pack' ? [
-    /* the Community's packs only: OpenFilm's own are not in the Community (they are its 官方) */
+    /* the Community's packs only: CapyCut's own are not in the Community (they are its 官方) */
     ...(inCommunity && !line.official ? [{ id: 'community', label: t('assetDrawer.seeInCommunity'), icon: <Community size={14} />, onSelect: () => openPlugins({ line: `kind:${cat as LibraryCategory}` }) }] : []),
     /* a pack of the Community's media: its files kept as a folder of the person's own too */
     ...(cat === 'media' && !line.official && line.group ? [{ id: 'save', label: t('assetDrawer.saveToMine'), icon: <BookmarkPlus size={14} />,
@@ -648,12 +648,12 @@ export function LibraryDrawer({ media, mediaScope, onMediaScope, onUpload, onKee
     { id: 'how', label: t('assetDrawer.howToMake').replace('{kind}', kindName), icon: <CircleHelp size={14} />, onSelect: () => { window.open(MAKING_GUIDE, '_blank', 'noreferrer'); } },
     { id: 'publish', label: t('assetDrawer.contribute'), icon: <Upload size={14} />, onSelect: () => openPlugins({ line: 'publish' }) },
   ];
-  /* OpenFilm's own packs taken out of this category: the menu that puts them back */
+  /* CapyCut's own packs taken out of this category: the menu that puts them back */
   const hiddenBack = (): ContextMenuItem[] => hidden.some((key) => packs.some((p) => p.key === key && p.official))
     ? [{ id: 'hidden', label: t('assetDrawer.removedPacks'), icon: <Package size={14} />,
       submenu: packs.filter((p) => p.official && hidden.includes(p.key)).map((p) => ({ id: p.key, label: p.name, onSelect: () => void shelfActions.hide(p.key, false) })) }]
     : [];
-  /* "+ Add" of a category's side bar: more of it from the Community, how to make it, sending one, and OpenFilm's packs
+  /* "+ Add" of a category's side bar: more of it from the Community, how to make it, sending one, and CapyCut's packs
      taken out, put back */
   const kindMenu = (): ContextMenuItem[] => [
     { id: 'community', label: t('assetDrawer.getMore'), icon: <Community size={14} />, onSelect: () => openPlugins(inCommunity ? { line: `kind:${cat as LibraryCategory}` } : {}) },
@@ -823,7 +823,7 @@ export function LibraryDrawer({ media, mediaScope, onMediaScope, onUpload, onKee
           <RailEdge width={rail} onWidth={setRail} />
           <nav ref={railNav} data-studio-host-panel="" className="flex min-w-0 flex-1 flex-col gap-1 overflow-y-auto border-r border-[var(--border)] px-2.5 pb-[var(--drawer-foot)] pt-2.5">
             {/* the side bar is the library's folders: this project's, the person's own (the library folder's), the packs
-                of the Community (OpenFilm's own among them), as one list in the person's order; the right side shows
+                of the Community (CapyCut's own among them), as one list in the person's order; the right side shows
                 what of this category the line picked holds */}
             {/* the voice-over's, the captions' and every category's but the media's: namespaces, as boxes; one that holds
                 others opens to them, each a line of its words (the media's are its folders, below) */}
@@ -1160,7 +1160,7 @@ function AddButton({ item, onAdd, className }: { item: LibraryItem; onAdd: () =>
 }
 
 /** A template's clips for the person's own pictures, and how long it runs. */
-/** Where a thing of the library comes from: the community's when someone sent it (`by`), else OpenFilm's own. */
+/** Where a thing of the library comes from: the community's when someone sent it (`by`), else CapyCut's own. */
 const sourceOf = (item: LibraryItem): Source => (item.by ? 'community' : 'official');
 
 function TemplateBadge({ item }: { item: LibraryItem }) {

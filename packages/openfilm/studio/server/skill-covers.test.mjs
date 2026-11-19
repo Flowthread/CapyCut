@@ -7,7 +7,7 @@ import { addSkills } from '../../src/skills.mjs';
 import { skillsCommand } from '../../src/skills-cli.mjs';
 import { startStudio } from './server.mjs';
 
-/** Discover as last read (skill-catalog.mjs): the index naming one skill of OpenFilm's, kept at its commit. */
+/** Discover as last read (skill-catalog.mjs): the index naming one skill of CapyCut's, kept at its commit. */
 function discover(/** @type {string} */ home) {
   const entry = { name: 'replicate', repo: 'https://github.com/openfilm/skill-replicate', path: 'skills/replicate', version: '0.1.0', commit: 'a'.repeat(40) };
   const folder = join(home, 'skill-catalog', 'openfilm', `replicate@${entry.commit}`);
@@ -212,7 +212,7 @@ test('a plugin someone made: its page on the plugins\' origin, the project read 
   assert.equal((await fetch(new URL('own.md', let_.files), { method: 'PUT', body: 'from the app', headers: { origin: studio.origin } })).status, 201);
   assert.equal(readFileSync(join(project.path, 'own.md'), 'utf8'), 'from the app');
   assert.equal((await fetch(new URL('own.md', let_.files), { method: 'PUT', body: 'x', headers: { origin: studio.filmOrigin } })).status, 403);
-  /* OpenFilm's own plugins bring their workbench the same way: the edit's element is a module in its folder, on the
+  /* CapyCut's own plugins bring their workbench the same way: the edit's element is a module in its folder, on the
      plugins' origin, read by the editor's page; it names what was built with the editor, which the page's map finds */
   const ours = (await (await api('/api/plugins')).json()).plugins;
   const edit = ours.find((p) => p.id === 'edit');
@@ -226,7 +226,7 @@ test('a plugin someone made: its page on the plugins\' origin, the project read 
     assert.ok(own.element.startsWith(`${studio.pluginOrigin}/s/`) && own.element.endsWith('/ui.js'), own.element);
     assert.ok((await (await fetch(own.element, { headers: { origin: studio.origin } })).text()).includes(`export { default } from 'openfilm/workbench/${workbench}';`));
   }
-  /* OpenFilm's own are not plugins of this kind */
+  /* CapyCut's own are not plugins of this kind */
   assert.ok((await listed()).filter((k) => k.core).every((k) => k.surface === undefined && k.commands === undefined));
 
   /* its page: on the plugins' origin (another than the editor's and the film's), as its author wrote it, nothing hidden */

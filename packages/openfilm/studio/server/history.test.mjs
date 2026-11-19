@@ -28,7 +28,7 @@ const project = () => {
 };
 /* who writes the versions an earlier edition made, as Studio does (history-store.mjs): a CI runner has no git identity */
 const gitEnv = (root) => ({ ...process.env, GIT_DIR: join(root, '.film', 'history'), GIT_WORK_TREE: root, GIT_CONFIG_NOSYSTEM: '1',
-  GIT_AUTHOR_NAME: 'OpenFilm Studio', GIT_AUTHOR_EMAIL: 'studio@openfilm.local', GIT_COMMITTER_NAME: 'OpenFilm Studio', GIT_COMMITTER_EMAIL: 'studio@openfilm.local' });
+  GIT_AUTHOR_NAME: 'CapyCut Studio', GIT_AUTHOR_EMAIL: 'studio@openfilm.local', GIT_COMMITTER_NAME: 'CapyCut Studio', GIT_COMMITTER_EMAIL: 'studio@openfilm.local' });
 const gitOut = (root, args, input) => execFileSync('git', args, { cwd: root, env: gitEnv(root), ...(input ? { input } : {}) }).toString();
 /** What a version holds. */
 const tracked = (root, rev = 'HEAD') => gitOut(root, ['ls-tree', '-r', '--name-only', rev]).trim().split('\n').filter(Boolean).sort();
@@ -70,7 +70,7 @@ test('nothing is committed unless the person commits; a version holds the projec
   assert.deepEqual((await status(root)).changes.files, [{ path: 'title.html', change: 'modified' }]);
   const second = await saveVersion(root, { message: '  Second   cut ' });
   assert.deepEqual((await versions(root)).map((v) => [v.kind, v.name, v.parents]), [['named', 'Second cut', [first]], ['saved', '', []]]);
-  assert.match(gitOut(root, ['log', '-1', '--format=%B']), /^Second cut\n\nOpenfilm-Version: named\n/, 'readable in git too');
+  assert.match(gitOut(root, ['log', '-1', '--format=%B']), /^Second cut\n\nCapyCut-Version: named\n/, 'readable in git too');
   assert.deepEqual(await versionFilesChanged(root, second), [{ path: 'title.html', change: 'modified' }], 'what a version changed');
   assert.equal((await versionFilesChanged(root, first)).length, 5, 'the first: all it holds');
   writeFileSync(join(root, 'notes.md'), 'more notes');

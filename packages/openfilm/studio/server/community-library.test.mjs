@@ -101,7 +101,7 @@ test('a pack is a group of every category it has things in; a thing listed alone
   assert.ok(index.groups.sound.some((g) => g.id === 'maker/weather' && g.by === 'Maker'));
   const bell = index.packs.find((p) => p.lone);
   assert.equal(bell.id, 'other/sound-bell', 'one listed alone: a pack of its own');
-  assert.ok(index.packs.some((p) => p.official && p.id.startsWith('openfilm/')), 'OpenFilm\'s groups are its packs');
+  assert.ok(index.packs.some((p) => p.official && p.id.startsWith('openfilm/')), 'CapyCut\'s groups are its packs');
   assert.ok(!index.packs.some((p) => p.official && p.group === 'maker/weather'));
 
   const thing = index.items.find((it) => it.group === 'other/sound-bell').id;

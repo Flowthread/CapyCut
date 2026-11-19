@@ -98,7 +98,7 @@ test('a voice from a recording: cloned once at Inworld under a name made from it
   const sample = (fill) => { const pcm = new Uint8Array(48000 * 40).fill(fill); return wav(pcm, 24000); };
   const voices = [];
   const now = Date.now();
-  voices.push({ voiceId: 'ws__old', displayName: 'openfilm-old', description: `OpenFilm voice sample, made ${new Date(now - 8 * 86_400_000).toISOString()}`, source: 'IVC' });
+  voices.push({ voiceId: 'ws__old', displayName: 'openfilm-old', description: `CapyCut voice sample, made ${new Date(now - 8 * 86_400_000).toISOString()}`, source: 'IVC' });
   voices.push({ voiceId: 'ws__mine', displayName: 'My narrator', description: '', source: 'IVC' });
   let full = false;
   reply = (call) => {
@@ -121,7 +121,7 @@ test('a voice from a recording: cloned once at Inworld under a name made from it
   const clone = seen.slice(from).find((c) => c.url.pathname === '/voices/v1/voices:clone');
   const sent = JSON.parse(clone.body);
   assert.match(sent.displayName, /^openfilm-[0-9a-f]{32}$/);
-  assert.match(sent.description, /^OpenFilm voice sample, made \d{4}-/);
+  assert.match(sent.description, /^CapyCut voice sample, made \d{4}-/);
   assert.equal(Buffer.from(sent.voiceSamples[0].audioData, 'base64').length, 44 + 30 * 48000, 'Inworld gets the first 30 s');
   assert.ok(!seen.slice(from).some((c) => c.method === 'DELETE'), 'clones are kept while there is room, however old');
   assert.match(sent.displayName, new RegExp(`^${sampleVoiceName('person-a', createHash('sha256').update(sample(1)).digest('hex'))}$`), 'the name the service finds it by to delete it');

@@ -1,8 +1,8 @@
 // @ts-check
 /**
- * OpenFilm, connected by signing in to the person's OpenFilm account (`signIn`, sign-in.mjs: the computer gets a key
- * of its own, which OPENFILM_API_KEY can also hold): media made with other providers' models, run by OpenFilm's
- * service with its keys and paid from the person's OpenFilm balance. What it offers is the service's to say
+ * CapyCut, connected by signing in to the person's CapyCut account (`signIn`, sign-in.mjs: the computer gets a key
+ * of its own, which OPENFILM_API_KEY can also hold): media made with other providers' models, run by CapyCut's
+ * service with its keys and paid from the person's CapyCut balance. What it offers is the service's to say
  * (`GET /v1/media/models`, read again every few minutes by `refresh`): only models it can run now, each
  * `<provider>/<its model>`, e.g. `elevenlabs/eleven_v4`. One run is one `POST /v1/media/run`: the verb, the model, the
  * flags, and the project files the flags name; the answer is what that provider made, as it made it. It runs
@@ -26,7 +26,7 @@ import openrouter, { videoModelSpec } from './openrouter.mjs';
  * @typedef {import('./contract.mjs').Verb} Verb
  */
 
-const NAME = 'OpenFilm';
+const NAME = 'CapyCut';
 /**
  * How often a run that is still going is asked about, at most (tests make it short): first soon after it began, as
  * most runs (a voice found, a line spoken) are done in a second, then less and less often.
@@ -240,7 +240,7 @@ export default {
   /* every model it runs takes MP3 speech, and it is the smallest to send */
   speechFormat: 'mp3',
   checkKey(key) {
-    if (!key.startsWith('ofk_')) throw new Error('An OpenFilm key starts with ofk_: connect OpenFilm in Settings → Services instead.');
+    if (!key.startsWith('ofk_')) throw new Error('An CapyCut key starts with ofk_: connect CapyCut in Settings → Services instead.');
   },
   async run(verb, args, ctx) {
     const base = service();
@@ -300,7 +300,7 @@ export default {
         if (res.status === 202) {
           const progress = await res.clone().json().catch(() => null);
           if (progress?.status === 'reconciliation' || progress?.phase === 'reconciliation') {
-            throw new Error(`OpenFilm could not confirm the supplier's result. Keep request ${runKey} to recover it later.`);
+            throw new Error(`CapyCut could not confirm the supplier's result. Keep request ${runKey} to recover it later.`);
           }
         }
         if (Date.now() > until) throw new Error(`${NAME} has not delivered this after ${Math.round(polling.most / 60_000)} minutes. It may already be complete and charged. Keep request ${runKey} to recover it; do not start a new generation just to fetch its result.`);

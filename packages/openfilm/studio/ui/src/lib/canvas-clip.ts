@@ -32,7 +32,7 @@ export const CLIP_TOOLS: readonly ClipTool[] = [
 
 export interface ClipChoice { via: string; model?: string; name: string; spec?: ModelSpec }
 
-/** whether a model is the one made for a tool (its id at any provider: `fal`'s, or through OpenFilm `openfilm/fal/…`) */
+/** whether a model is the one made for a tool (its id at any provider: `fal`'s, or through CapyCut `openfilm/fal/…`) */
 export const isOwn = (tool: ClipTool, choice: ClipChoice) => choice.model === tool.own || Boolean(choice.model?.endsWith(`/${tool.own}`));
 
 /**

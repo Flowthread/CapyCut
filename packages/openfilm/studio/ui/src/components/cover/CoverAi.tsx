@@ -10,7 +10,7 @@ import { Bot, Sparkles, X } from 'lucide-react';
 import { useT } from '@/i18n';
 import { receiptOf } from '@/lib/canvas';
 
-/** The words a picture made for a cover is asked with: OpenFilm's own, in English (every model reads it), then the person's. */
+/** The words a picture made for a cover is asked with: CapyCut's own, in English (every model reads it), then the person's. */
 export const COVER_PICTURE_LEAD = 'A striking video cover picture: a bold clear composition with one focal point, high contrast and rich light, readable at a small size, and no words, letters or logos anywhere in it. ';
 export const COVER_REDRAW_LEAD = 'Redraw the reference picture as a striking video cover picture: keep its people and main subject recognizable, a bold clear composition with one focal point, high contrast and rich light, readable at a small size, and no words, letters or logos anywhere in it. ';
 export const COVER_BACKGROUND_LEAD = 'A background for a video cover, with empty room in the middle for a person placed over it later: a bold clear scene, rich light, no people, and no words, letters or logos anywhere in it. ';

@@ -8,7 +8,7 @@ import openfilm, { polling } from './openfilm.mjs';
 import { steadily } from './common.mjs';
 
 const KEY = 'ofk_test0123456789';
-/** A fake OpenFilm service on 127.0.0.1: `reply` answers each request; `seen` keeps them. */
+/** A fake CapyCut service on 127.0.0.1: `reply` answers each request; `seen` keeps them. */
 let server;
 let reply = () => [404, {}];
 const seen = [];
@@ -295,7 +295,7 @@ test('an account out of credits is out of balance, like any provider; a refused 
   reply = () => [402, { error: 'insufficient_credits', message: 'Not enough credits.' }];
   await assert.rejects(openfilm.run('tts', { text: 'hi', voice: 'v' }, ctx()), (e) => e.code === 'balance');
   reply = () => [401, { message: 'Invalid key' }];
-  await assert.rejects(openfilm.run('tts', { text: 'hi', voice: 'v' }, ctx()), /OpenFilm did not accept your key/);
+  await assert.rejects(openfilm.run('tts', { text: 'hi', voice: 'v' }, ctx()), /CapyCut did not accept your key/);
   assert.throws(() => openfilm.checkKey('sk-123'), /ofk_/);
 });
 

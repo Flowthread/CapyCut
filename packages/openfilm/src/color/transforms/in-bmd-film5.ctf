@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ProcessList version="2" id="openfilm:in-bmd-film5">
-    <Description>OpenFilm input: Blackmagic Film Gen 5, Wide Gamut footage into ACEScct</Description>
+    <Description>CapyCut input: Blackmagic Film Gen 5, Wide Gamut footage into ACEScct</Description>
     <LUT1D inBitDepth="32f" outBitDepth="32f">
         <Array dim="4096 1">
  -0.0111625

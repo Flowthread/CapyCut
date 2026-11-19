@@ -1,9 +1,9 @@
 /**
- * The Community: everything that can be added to OpenFilm and shared, in a large window of its own (components/
+ * The Community: everything that can be added to CapyCut and shared, in a large window of its own (components/
  * LargeDialog, as Settings is), laid out as an app store is. Its side: the search; Mine (the person's plugins and
  * skills, managed as Settings lists things); the Community's plugins, skills, things for the library and examples (whole
  * projects), each a store page of its own; and at its foot Publish and Add (import a folder or a link, or another catalog to read). A thing added goes back to where it is used (the top right, the conversation, the
- * agent, the library drawer). Opened from the chat's Community button, the OpenFilm menu and links (lib/plugins-window).
+ * agent, the library drawer). Opened from the chat's Community button, the CapyCut menu and links (lib/plugins-window).
  */
 import React from 'react';
 import { Blocks, CircleUserRound, Clapperboard, BookOpenText, Import, LibraryBig, Plus, Rss, Upload } from 'lucide-react';

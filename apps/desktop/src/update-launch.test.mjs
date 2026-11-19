@@ -38,23 +38,23 @@ test('a launch steps aside only while ShipIt installs the update it was quit for
   const dir = folder();
   const started = [];
   const start = (file, args, options) => { started.push({ file, args, options }); return { unref() {} }; };
-  const base = { dir, version: '0.2.0', bundleId: 'dev.openfilm.desktop', execPath: '/Applications/OpenFilm.app/Contents/MacOS/OpenFilm', argv: ['OpenFilm'], start };
+  const base = { dir, version: '0.2.0', bundleId: 'dev.openfilm.desktop', execPath: '/Applications/CapyCut.app/Contents/MacOS/CapyCut', argv: ['CapyCut'], start };
   /* nothing waiting */
   assert.equal(stepAside({ ...base, pidOf: () => 4242 }), false);
   writePendingUpdate(dir, '0.2.1');
   /* waiting, and ShipIt not running: the launch installs it itself (readyToInstall) */
   assert.equal(stepAside({ ...base, pidOf: () => null }), false);
   /* the script's own launch, or the new version (ShipIt still finishing): it opens */
-  assert.equal(stepAside({ ...base, argv: ['OpenFilm', AFTER_INSTALL], pidOf: () => 4242 }), false);
+  assert.equal(stepAside({ ...base, argv: ['CapyCut', AFTER_INSTALL], pidOf: () => 4242 }), false);
   assert.equal(stepAside({ ...base, version: '0.2.1', pidOf: () => 4242 }), false);
   assert.equal(started.length, 0);
   writePendingUpdate(dir, '0.2.1');
   assert.equal(stepAside({ ...base, pidOf: () => 4242 }), true);
   assert.equal(started.length, 1);
   assert.equal(started[0].file, '/bin/sh');
-  assert.deepEqual(started[0].args.slice(3), ['4242', '/Applications/OpenFilm.app']);
+  assert.deepEqual(started[0].args.slice(3), ['4242', '/Applications/CapyCut.app']);
   assert.equal(started[0].options.detached, true);
-  assert.equal(appBundle('/Applications/OpenFilm Preview.app/Contents/MacOS/OpenFilm Preview'), '/Applications/OpenFilm Preview.app');
+  assert.equal(appBundle('/Applications/CapyCut Preview.app/Contents/MacOS/CapyCut Preview'), '/Applications/CapyCut Preview.app');
 });
 
 test('the script opens the app once ShipIt is gone, saying the install is over', { skip: process.platform === 'win32' }, async () => {
@@ -64,11 +64,11 @@ test('the script opens the app once ShipIt is gone, saying the install is over',
   chmodSync(join(dir, 'open'), 0o755);
   const installer = spawn('sleep', ['1']);
   const env = { ...process.env, PATH: `${dir}:${process.env.PATH}` };
-  const script = spawn('/bin/sh', ['-c', HAND_OFF_SCRIPT, 'openfilm-update', String(installer.pid), '/Applications/OpenFilm.app'], { env });
+  const script = spawn('/bin/sh', ['-c', HAND_OFF_SCRIPT, 'openfilm-update', String(installer.pid), '/Applications/CapyCut.app'], { env });
   await new Promise((resolve) => setTimeout(resolve, 300));
   assert.equal(existsSync(said), false, 'not while ShipIt runs');
   await new Promise((resolve) => script.on('exit', resolve));
-  assert.equal(readFileSync(said, 'utf8').trim(), `/Applications/OpenFilm.app --args ${AFTER_INSTALL}`);
+  assert.equal(readFileSync(said, 'utf8').trim(), `/Applications/CapyCut.app --args ${AFTER_INSTALL}`);
 });
 
 function controllerFixture() {
@@ -120,13 +120,13 @@ test('the install window speaks the language Studio was last in, else the system
   assert.equal(installLanguage(null, ['zh-Hans-CN', 'en-US']), 'zh-CN');
   assert.equal(installLanguage('fr', ['zh-TW', 'es-MX']), 'es');
   assert.equal(installLanguage(null, ['de-DE']), 'en');
-  assert.deepEqual(installWords('zh-CN', { name: 'OpenFilm', version: '0.2.1' }), {
-    lang: 'zh-CN', title: '正在安装 OpenFilm 0.2.1…', detail: '安装完成后 OpenFilm 会自动打开。',
+  assert.deepEqual(installWords('zh-CN', { name: 'CapyCut', version: '0.2.1' }), {
+    lang: 'zh-CN', title: '正在安装 CapyCut 0.2.1…', detail: '安装完成后 CapyCut 会自动打开。',
   });
   for (const language of ['en', 'zh-CN', 'ja', 'ko', 'es']) {
-    const words = installWords(language, { name: 'OpenFilm', version: '9.9.9' });
-    assert.match(words.title, /OpenFilm/);
+    const words = installWords(language, { name: 'CapyCut', version: '9.9.9' });
+    assert.match(words.title, /CapyCut/);
     assert.match(words.title, /9\.9\.9/);
-    assert.match(words.detail, /OpenFilm/);
+    assert.match(words.detail, /CapyCut/);
   }
 });

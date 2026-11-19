@@ -1,5 +1,5 @@
 // @ts-check
-/** The person's private voices, OpenFilm's own service: make, preview, rename and remove a local entry.
+/** The person's private voices, CapyCut's own service: make, preview, rename and remove a local entry.
  * A voice is its recording, kept here (`sample.wav`) and sent with each line spoken in it; the service clones it at
  * the engine chosen (Inworld by default, ElevenLabs) and keeps that clone while it has room. Removing a voice asks the
  * service to delete its clones too (asked again later when it cannot be reached). Keys and the recording never reach
@@ -28,23 +28,23 @@ const TYPES = /** @type {Record<string, string>} */ ({ mp3: 'audio/mpeg', wav: '
 export const SAMPLE_INPUT = 'voice-sample.wav';
 const clean = (/** @type {unknown} */ value, max = 80) => typeof value === 'string' ? value.replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, max) : '';
 
-/** OpenFilm's service, signed in or not. */
+/** CapyCut's service, signed in or not. */
 const service = () => {
   const provider = listProviders().find((p) => p.id === 'openfilm');
-  if (!provider) throw new HttpError(503, 'OpenFilm\'s service is not available in this build.');
+  if (!provider) throw new HttpError(503, 'CapyCut\'s service is not available in this build.');
   return provider;
 };
 
-/** The signed-in OpenFilm connection; any OpenFilm account speaks a voice, as the voice is its recording. */
+/** The signed-in CapyCut connection; any CapyCut account speaks a voice, as the voice is its recording. */
 async function connection() {
   const provider = service();
   const key = providerKey(provider, await readSettings())?.key;
-  if (!key) throw new HttpError(409, 'Sign in to OpenFilm in Settings → Services first: your voices are made and spoken by OpenFilm\'s service.');
+  if (!key) throw new HttpError(409, 'Sign in to CapyCut in Settings → Services first: your voices are made and spoken by CapyCut\'s service.');
   return { provider, key };
 }
 
 /**
- * The engines OpenFilm's service clones voices with, as it offers them now: its voice-over models that take a
+ * The engines CapyCut's service clones voices with, as it offers them now: its voice-over models that take a
  * recording (`clones`), by maker, Inworld first.
  */
 async function engines() {
@@ -70,7 +70,7 @@ function shown(asset, signedIn) {
     ...(asset.engine ? { engine: asset.engine } : {}) };
 }
 
-/** Whether OpenFilm is signed in here. */
+/** Whether CapyCut is signed in here. */
 const signedIn = async () => !!providerKey(service(), await readSettings())?.key;
 
 async function catalog() {
@@ -78,7 +78,7 @@ async function catalog() {
   if (connected) await forgetPending().catch(() => {});
   const offered = await engines();
   return { voices: voiceAssets().map((v) => shown(v, connected)),
-    services: [{ id: 'openfilm', name: 'OpenFilm', connected, models: [], clone: offered.length > 0, sync: false, import: false,
+    services: [{ id: 'openfilm', name: 'CapyCut', connected, models: [], clone: offered.length > 0, sync: false, import: false,
       minSeconds: 5, maxSeconds: 180, engines: offered, consoleUrl: service().keysUrl }] };
 }
 
@@ -144,7 +144,7 @@ async function sample(/** @type {any} */ body) {
 
 /** A voice is ready while its recording is here. @param {VoiceAsset} asset */
 async function refresh(asset) {
-  if (asset.provider !== 'openfilm') throw new HttpError(409, 'Voices are made with OpenFilm\'s service now. Make this one again from its recording.');
+  if (asset.provider !== 'openfilm') throw new HttpError(409, 'Voices are made with CapyCut\'s service now. Make this one again from its recording.');
   asset.status = existsSync(join(voiceFolder(asset.uid), 'sample.wav')) ? 'ready' : 'failed';
   await keepVoice(asset);
   return asset;
@@ -155,8 +155,8 @@ export async function privateVoiceForSpeech(/** @type {string} */ alias, /** @ty
   const uid = alias.slice(3);
   const asset = voiceAssets().find((v) => v.uid === uid);
   if (!asset) throw new Error('This private voice no longer exists. Choose another voice in the library.');
-  if (asset.provider !== 'openfilm') throw new Error('Voices are made with OpenFilm\'s service now. Make this one again from its recording in My voices.');
-  if (!providerKey(service(), settings ?? await readSettings())?.key) throw new Error('Sign in to OpenFilm in Settings → Services to use this voice.');
+  if (asset.provider !== 'openfilm') throw new Error('Voices are made with CapyCut\'s service now. Make this one again from its recording in My voices.');
+  if (!providerKey(service(), settings ?? await readSettings())?.key) throw new Error('Sign in to CapyCut in Settings → Services to use this voice.');
   if (asset.status !== 'ready') throw new Error('This private voice is not ready. Make it again in My voices.');
   return asset;
 }
@@ -166,13 +166,13 @@ export async function voicesRoute(req, res, parts) {
   if (!parts.length && req.method === 'GET') return json(res, 200, await catalog());
   if (!parts.length && req.method === 'POST') {
     const body = await readJson(req, 29 << 20);
-    if (clean(body.provider) && clean(body.provider) !== 'openfilm') throw new HttpError(400, 'Voices are cloned with OpenFilm\'s service only.');
+    if (clean(body.provider) && clean(body.provider) !== 'openfilm') throw new HttpError(400, 'Voices are cloned with CapyCut\'s service only.');
     await connection();
     const name = clean(body.name);
     if (!name || body.consent !== true) throw new HttpError(400, 'Name the voice and confirm you have permission to create and use it.');
     const language = clean(body.language, 20) || 'zh';
     const engine = (await engines()).find((e) => e.id === (clean(body.engine) || 'inworld'));
-    if (!engine) throw new HttpError(400, 'OpenFilm does not clone voices with this engine now. Choose another.');
+    if (!engine) throw new HttpError(400, 'CapyCut does not clone voices with this engine now. Choose another.');
     const audio = await sample(body);
     const asset = await newVoice({ provider: 'openfilm', voiceId: '', connection: 'openfilm', name, language, status: 'creating', models: engine.models,
       kind: 'clone', consentAt: Date.now(), engine: engine.id });

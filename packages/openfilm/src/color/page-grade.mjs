@@ -8,7 +8,7 @@
  *
  * Drawn as an SVG filter (filterMarkup), the same in a preview and an export, both drawn by the browser: what a grade
  * does is put in steps, each a curve on each channel (feComponentTransfer, a table of 256) or a mix of the channels
- * (feColorMatrix), and the steps of OpenFilm's own operations are exact (a grading layer's sliders, wheels and curves,
+ * (feColorMatrix), and the steps of CapyCut's own operations are exact (a grading layer's sliders, wheels and curves,
  * a balance, a filter: curves per channel, and a saturation between them). One that mixes the channels otherwise (hue
  * curves, a 3D LUT, a film output) cannot be drawn so: it is left out, and said (`skipped`).
  *

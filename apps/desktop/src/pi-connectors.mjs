@@ -30,7 +30,7 @@ export async function connectorTools(servers, o = {}) {
   const labels = new Map();
   const tools = [];
   await Promise.all((servers ?? []).filter((s) => (s.type ?? 'http') === 'http' && typeof s.url === 'string').map(async (s) => {
-    const client = new McpClient({ name: 'OpenFilm', version: '1' });
+    const client = new McpClient({ name: 'CapyCut', version: '1' });
     const headers = Object.fromEntries((s.headers ?? []).map((h) => [h.name, h.value]));
     try {
       await Promise.race([

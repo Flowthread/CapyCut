@@ -1,4 +1,4 @@
-/** Private voices: recordings kept on this computer, spoken by OpenFilm's service (studio/server/voices.mjs). */
+/** Private voices: recordings kept on this computer, spoken by CapyCut's service (studio/server/voices.mjs). */
 import React from 'react';
 import type { LibraryVoice, VoiceAccess } from './library-voices';
 import { useProviders } from './providers.ts';
@@ -14,10 +14,10 @@ export interface PrivateVoice extends LibraryVoice {
   problem: string | null;
   kind: 'clone' | 'import';
   updated: number;
-  /** a voice of OpenFilm's service: the maker it is cloned at there (inworld, elevenlabs) */
+  /** a voice of CapyCut's service: the maker it is cloned at there (inworld, elevenlabs) */
   engine?: string;
 }
-/** A maker OpenFilm's service clones voices at, with the models that speak them. */
+/** A maker CapyCut's service clones voices at, with the models that speak them. */
 export interface VoiceEngine { id: string; name: string; models: string[] }
 export interface VoiceConnection {
   id: string;
@@ -30,7 +30,7 @@ export interface VoiceConnection {
   minSeconds: number;
   maxSeconds: number;
   models: { id: string; name: string }[];
-  /** OpenFilm's service: the makers it clones at, its default first */
+  /** CapyCut's service: the makers it clones at, its default first */
   engines?: VoiceEngine[];
   pricingUrl?: string;
   consoleUrl: string;

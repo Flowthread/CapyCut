@@ -1,7 +1,7 @@
 /**
  * The library's voices (studio/server/library.mjs, library/voices.json): the ready-made voices of the voice-over
- * services OpenFilm offers, each with its service's own sample, and whether the person can speak in one now: through
- * OpenFilm, the default, when the person signed in and OpenFilm offers that service's models, else with the service's
+ * services CapyCut offers, each with its service's own sample, and whether the person can speak in one now: through
+ * CapyCut, the default, when the person signed in and CapyCut offers that service's models, else with the service's
  * own key (Settings › Services, lib/providers). A voice chosen is a reference in the chat (lib/host StudioRef `voice`): the
  * agent makes the voice-over in it.
  */
@@ -43,7 +43,7 @@ export const voicePair = (a: LibraryVoice, b: LibraryVoice): LibraryVoice => ({
 export interface VoiceService { id: string; name: string; models: { id: string; name: string }[] }
 export interface LibraryVoices { version: number; providers: VoiceService[]; voices: LibraryVoice[] }
 
-/** How the person reaches a service now: `via` the provider `openfilm get` runs (its own, or OpenFilm), with these models. */
+/** How the person reaches a service now: `via` the provider `openfilm get` runs (its own, or CapyCut), with these models. */
 export interface VoiceAccess { via: string; models: string[] }
 
 let voices: LibraryVoices | null = null;
@@ -82,7 +82,7 @@ export type SpeakVoice = (voice: LibraryVoice, access: VoiceAccess, text: string
 export const languageOf = (v: LibraryVoice): string | null => v.language?.split(/[-_]/)[0]?.toLowerCase() || null;
 
 /**
- * How each of `services` is reached with what Settings › Services has: through OpenFilm first, signed in and offering
+ * How each of `services` is reached with what Settings › Services has: through CapyCut first, signed in and offering
  * its models (`<service>/<model>`), else its own key; absent: not at all.
  */
 export function voiceAccess(services: readonly VoiceService[], state: Pick<ProvidersState, 'providers'> | null): Record<string, VoiceAccess> {

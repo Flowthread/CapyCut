@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * Publishing a workbench or a skill to the community, from Studio, with no GitHub sign-in in OpenFilm: the person puts
+ * Publishing a workbench or a skill to the community, from Studio, with no GitHub sign-in in CapyCut: the person puts
  * it in a public repository of theirs (at `skills/<name>/`), gives its address, and this reads it there as data (never
  * run), compares each file with theirs here, and makes the listing the community takes: a file
  * `registry/<kind>/<owner>/<name>.json` proposed on GitHub's page for a new file (prefilled; GitHub makes the pull

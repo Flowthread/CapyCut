@@ -60,7 +60,7 @@ test('a version made with `openfilm get` is noted with the service, model and wo
     mkdirSync(join(root, '.film'), { recursive: true });
     writeFileSync(join(root, 'assets/image/c.png'), 'c');
     writeFileSync(join(root, '.film/media-made.json'), JSON.stringify({ version: 1, made: {
-      'f1-0123456789abcdef0123456789abcdef': { path: 'assets/image/c.png', verb: 'image', at: 1, via: 'openfilm', by: 'OpenFilm', model: 'gpt-image-new', args: { prompt: 'as a cartoon' }, refs: [], ask: 'a' },
+      'f1-0123456789abcdef0123456789abcdef': { path: 'assets/image/c.png', verb: 'image', at: 1, via: 'openfilm', by: 'CapyCut', model: 'gpt-image-new', args: { prompt: 'as a cartoon' }, refs: [], ask: 'a' },
     } }));
     await writeCanvas(root, { nodes: [{ id: 'm', x: 0, y: 0, make: 'image', prompt: '', via: 'openfilm', model: 'gpt-image-old', versions: ['assets/image/c.png'] }], edges: [] });
     const [made] = await readMade(root);

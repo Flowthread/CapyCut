@@ -1,12 +1,12 @@
-# OpenFilm's library
+# CapyCut's library
 
-Everything in OpenFilm's library can be used in any film, commercial or not, changed and shared, with no need to
+Everything in CapyCut's library can be used in any film, commercial or not, changed and shared, with no need to
 credit anyone.
 
-- The transitions, effects, text, stickers that move, filters and templates are made by the OpenFilm contributors:
-  the pages written by hand, the pictures drawn by OpenFilm's renderer (`scripts/library-previews.mjs`) over stills
-  made for OpenFilm.
-- The sounds and music (`audio/`) are OpenFilm's.
+- The transitions, effects, text, stickers that move, filters and templates are made by the CapyCut contributors:
+  the pages written by hand, the pictures drawn by CapyCut's renderer (`scripts/library-previews.mjs`) over stills
+  made for CapyCut.
+- The sounds and music (`audio/`) are CapyCut's.
 
 These are dedicated to the public domain under [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/).
 

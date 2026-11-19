@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * The server code of OpenFilm's own plugins. A plugin in `plugins/<id>/` may bring a `server.mjs`; Studio answers its
+ * The server code of CapyCut's own plugins. A plugin in `plugins/<id>/` may bring a `server.mjs`; Studio answers its
  * routes under `/api/plugins/<id>/…`, so a new plugin brings what it needs of Studio's server in its own folder and
  * never changes server.mjs.
  *
@@ -35,9 +35,9 @@
  * plugin is on: turned off, its routes are not there (404) at once, and turned on they answer again, without Studio
  * starting again.
  *
- * Only OpenFilm's own plugins (src/plugins.mjs pluginsDir) bring server code. It is loaded into Studio's own process,
+ * Only CapyCut's own plugins (src/plugins.mjs pluginsDir) bring server code. It is loaded into Studio's own process,
  * where it can do all Studio can (its key, every project, the person's files) and can be neither held back nor
- * stopped: that is right for code that ships with OpenFilm and is read as OpenFilm is. A plugin someone made brings a
+ * stopped: that is right for code that ships with CapyCut and is read as CapyCut is. A plugin someone made brings a
  * program instead (plugin-programs.mjs), which runs in a process of its own, only once the person has let it, and is
  * stopped when the plugin is turned off.
  */

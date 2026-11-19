@@ -20,7 +20,7 @@ const PREVIEW_TEXT: Record<string, string> = {
   fr: 'Bonjour, voici ma voix. Je suis ravi de partager notre prochaine histoire avec vous.',
   de: 'Hallo, das ist meine Stimme. Ich freue mich auf unsere nächste gemeinsame Geschichte.',
 };
-/** A voice from a recording, made with OpenFilm's service: its engine (Inworld, recommended, or ElevenLabs) chosen here. */
+/** A voice from a recording, made with CapyCut's service: its engine (Inworld, recommended, or ElevenLabs) chosen here. */
 export function CloneVoiceDialog({ services, projectId, onClose, onSaved }: {
   services: VoiceConnection[]; projectId?: string | null;
   onClose: () => void; onSaved: (voice: PrivateVoice, speak: boolean) => void;

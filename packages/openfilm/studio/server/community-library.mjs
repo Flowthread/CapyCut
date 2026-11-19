@@ -15,7 +15,7 @@ const REFRESH = 60_000;
 const TIMEOUT = 8000;
 const HEX = /^[a-f0-9]{64}$/;
 const ITEM = /^(sound|music|transition|effect|media|text|sticker|filter|template)\/[a-z0-9]+(?:-[a-z0-9]+)*$/;
-/** Any item id, of a kind this OpenFilm knows or of one added to the Community later (skipped, not refused) */
+/** Any item id, of a kind this CapyCut knows or of one added to the Community later (skipped, not refused) */
 const ANY_ITEM = /^[a-z][a-z0-9-]{0,31}\/[a-z0-9]+(?:-[a-z0-9]+)*$/;
 /** A text style's variables and a filter's grade, as the catalog carries them (the community's scripts/check.mjs) */
 const TEXT_VAR = /^--[a-z][a-z0-9-]{0,39}$/;
@@ -96,12 +96,12 @@ function decode(json) {
     }
     for (const item of items) packOf.set(item, pack);
     result.packs.push(pack);
-    /* a pack of only kinds a later OpenFilm knows has nothing here, and is left out with its things (below) */
+    /* a pack of only kinds a later CapyCut knows has nothing here, and is left out with its things (below) */
   }
   for (const entry of json.items) {
     const { id, version, revision, name, about, tags, by, durationMs, files, media, vars, grade, w, h, idle, slots } = entry ?? {};
     const kind = typeof id === 'string' && id.length < 100 ? ITEM.exec(id)?.[1] : undefined;
-    /* a kind added to the Community after this OpenFilm: skipped, so the rest of the catalog still shows */
+    /* a kind added to the Community after this CapyCut: skipped, so the rest of the catalog still shows */
     if (!kind && typeof id === 'string' && ANY_ITEM.test(id) && !seen.has(id)) { seen.add(id); continue; }
     /* a media file: footage, a picture or a recording, one file (a poster beside footage); a picture lasts nothing */
     const isMedia = kind === 'media';
@@ -157,7 +157,7 @@ function decode(json) {
     const common = { id: itemId, cat: kind, group: pack.id, name, about, tags, by, durationMs };
     result.items.push(isMedia
       ? { ...common, kind: 'file', media, ...(media === 'video' ? { poster: `${base}/poster.jpg` } : {}) }
-      /* OpenFilm's text component draws a text style; a filter's picture is shown with its grade; a sticker is a page */
+      /* CapyCut's text component draws a text style; a filter's picture is shown with its grade; a sticker is a page */
       : kind === 'text' ? { ...common, kind: 'textstyle', vars, w: 1600, h: 260, fit: 0.2 }
       : kind === 'filter' ? { ...common, kind: 'look', grade, sample: `${base}/sample.jpg` }
       : kind === 'template' ? { ...common, kind: 'group', slots, poster: `${base}/poster.jpg` }

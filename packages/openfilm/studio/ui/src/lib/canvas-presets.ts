@@ -3,7 +3,7 @@
  * make most: a story told in frames, a character's sheets, a place, a product, a design, a picture retouched. Each is a
  * set of words put before the node's own, the shape and quality it is best made at, and whether it is made from a
  * picture wired in. Picked in a picture node's panel (each shown by a picture of what it makes,
- * components/canvas/presets/), it shows as a tag before its words and names the node. Their words are OpenFilm's own,
+ * components/canvas/presets/), it shows as a tag before its words and names the node. Their words are CapyCut's own,
  * in English: every picture model reads it.
  */
 /** `character`: the pictures a new character is made of (canvas libraries), not offered in the presets' list */

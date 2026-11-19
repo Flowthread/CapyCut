@@ -7,7 +7,7 @@
  * relative because OCIO computes in single precision (past about 2 a float cannot hold 1e-5). Wider, each with its
  * reason in the fixture: ops whose OCIO CPU renderer always uses its ~15-bit fast pow/log2/exp2 (ExposureContrast
  * linear/video, GradingPrimary, the linear styles of GradingTone and GradingRGBCurve, which this evaluator computes
- * exactly) 1e-4 relative; the linear GradingHueCurve 4e-5; OpenFilm's camera transforms 2e-5 (linear values in the
+ * exactly) 1e-4 relative; the linear GradingHueCurve 4e-5; CapyCut's camera transforms 2e-5 (linear values in the
  * hundreds in single precision); files with the ACES 2.0 Output Transform (aces2.mjs) 1e-4 absolute. Inputs where OCIO
  * overflows single precision (infinity or NaN) are not compared.
  */

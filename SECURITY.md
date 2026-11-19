@@ -15,23 +15,23 @@ account is the boundary: nothing here stops a program running as you that reads 
 
 ## Community items
 
-Workbenches, skills and connectors from the community run on your computer. OpenFilm keeps them in bounds where it can:
+Workbenches, skills and connectors from the community run on your computer. CapyCut keeps them in bounds where it can:
 
 - A project's own skills reach no agent until you allow them in that project, after reading them whole; if their
   files change, you are asked again.
 - A workbench's page reaches no network address except the hosts its `openfilm.json` declares, and it is told what it
   may reach before you turn it on.
-- A skill made by anyone but OpenFilm that brings scripts asks before it is installed or tried: its scripts run with
+- A skill made by anyone but CapyCut that brings scripts asks before it is installed or tried: its scripts run with
   your agent's access.
-- Anything OpenFilm withdraws (malware, impersonation, rights, broken, policy) stops on every computer the next time
+- Anything CapyCut withdraws (malware, impersonation, rights, broken, policy) stops on every computer the next time
   the community index is read, wherever a copy of it is, and says why.
-- Another community index you add (Community sources) is not reviewed by OpenFilm: what it lists is marked
-  Unreviewed, asks before it is installed, never takes the place of an OpenFilm Community item, and cannot withdraw
+- Another community index you add (Community sources) is not reviewed by CapyCut: what it lists is marked
+  Unreviewed, asks before it is installed, never takes the place of an CapyCut Community item, and cannot withdraw
   anything.
-- Installing an item from the OpenFilm Community sends its id (`owner/name`) to openfilm.dev to count how many use
+- Installing an item from the CapyCut Community sends its id (`owner/name`) to openfilm.dev to count how many use
   it, and nothing about you; `OPENFILM_NO_STATS=1` turns it off.
 
-To report a community item, use **Report** on its page in OpenFilm or on openfilm.dev (the community's
+To report a community item, use **Report** on its page in CapyCut or on openfilm.dev (the community's
 [report form](https://github.com/openfilm/community/issues/new?template=report.yml)), or write to
 **support@openfilm.dev** with its name (`owner/name`) and what you saw. A confirmed malicious item is withdrawn within
 24 hours of confirmation, and an advisory says how to check whether you were affected and what to do.

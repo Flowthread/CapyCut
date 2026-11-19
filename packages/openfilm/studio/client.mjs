@@ -90,7 +90,7 @@ export function olderThanThis(/** @type {string | undefined} */ version, mine = 
  * @param {{ network?: boolean, waitMs?: number, force?: boolean }} [options]
  * @returns {Promise<{ latest: string | null, checkedAt: number | null }>}
  */
-export async function npmOpenfilm({ network = true, waitMs = 1500, force = false } = {}) {
+export async function npmCapyCut({ network = true, waitMs = 1500, force = false } = {}) {
   if (process.env.OPENFILM_NO_UPDATE_CHECK) return { latest: null, checkedAt: null };
   const file = join(studioHome(), 'update.json');
   /** @type {{ checkedAt?: number, latest?: string }} */
@@ -110,9 +110,9 @@ export async function npmOpenfilm({ network = true, waitMs = 1500, force = false
   return { latest: known.latest ?? null, checkedAt: known.checkedAt ?? null };
 }
 
-/** A newer openfilm on npm than this one, or null (see npmOpenfilm). @param {{ network?: boolean, waitMs?: number }} [options] */
-export async function newerOpenfilm(options) {
-  const { latest } = await npmOpenfilm(options);
+/** A newer openfilm on npm than this one, or null (see npmCapyCut). @param {{ network?: boolean, waitMs?: number }} [options] */
+export async function newerCapyCut(options) {
+  const { latest } = await npmCapyCut(options);
   return latest && olderThanThis(VERSION, latest) ? latest : null;
 }
 
@@ -159,10 +159,10 @@ export async function ensureStudio(say = () => {}, { fresh = false } = {}) {
   let pages = 0;
   if (found) {
     const older = olderThanThis(found.version);
-    say(older ? `Updating OpenFilm Studio to ${VERSION}…` : 'Restarting OpenFilm Studio…');
+    say(older ? `Updating CapyCut Studio to ${VERSION}…` : 'Restarting CapyCut Studio…');
     const replaced = await replace(found);
     if ('stays' in replaced) {
-      say(`OpenFilm Studio keeps running: ${replaced.stays}`);
+      say(`CapyCut Studio keeps running: ${replaced.stays}`);
       return found;
     }
     pages = replaced.pages;
@@ -174,7 +174,7 @@ export async function ensureStudio(say = () => {}, { fresh = false } = {}) {
   let exited = /** @type {number | null} */ (null);
   child.once('exit', (code) => { exited = code ?? 1; });
   child.unref();
-  if (!found) say('Starting OpenFilm Studio…');
+  if (!found) say('Starting CapyCut Studio…');
   const deadline = Date.now() + 20_000;
   while (Date.now() < deadline) {
     const up = await running();
@@ -197,11 +197,11 @@ export async function ensureStudio(say = () => {}, { fresh = false } = {}) {
  * source checkout with git pull: each is said instead. `ok` false when it could not be done (offline, Studio busy).
  * @param {(line: string) => void} [say] @returns {Promise<{ ok: boolean, lines: string[] }>}
  */
-export async function updateOpenfilm(say = () => {}) {
+export async function updateCapyCut(say = () => {}) {
   if (FROM_SOURCE) return { ok: true, lines: [`openfilm ${VERSION} runs from a source checkout: git pull updates it.`] };
   const found = (await running()) ?? (await restarting());
-  if (found?.app) return { ok: true, lines: ['Studio is the OpenFilm app\'s: it updates with the app (OpenFilm → Check for Updates…).'] };
-  const { latest } = await npmOpenfilm({ force: true, waitMs: 8000 });
+  if (found?.app) return { ok: true, lines: ['Studio is the CapyCut app\'s: it updates with the app (CapyCut → Check for Updates…).'] };
+  const { latest } = await npmCapyCut({ force: true, waitMs: 8000 });
   if (!latest) return { ok: false, lines: ['Could not reach npm to learn the newest openfilm: try again when online.'] };
   if (olderThanThis(VERSION, latest)) {
     /* the newest does it, fetched by npx; it ran already and is still not the newest: npx gave another */
@@ -217,7 +217,7 @@ export async function updateOpenfilm(say = () => {}) {
   }
   if (!found) return { ok: true, lines: [`openfilm ${VERSION} is the newest. Studio starts on it the next time it opens.`] };
   if (!olderThanThis(found.version)) return { ok: true, lines: [`openfilm ${VERSION} is the newest, and Studio runs it.`] };
-  say(`Updating OpenFilm Studio from ${found.version} to ${VERSION}…`);
+  say(`Updating CapyCut Studio from ${found.version} to ${VERSION}…`);
   const replaced = await replace(found);
   if ('stays' in replaced) return { ok: false, lines: [`Studio keeps running ${found.version} for now: ${replaced.stays}. Update again once that is done.`] };
   await ensureStudio(say);
@@ -359,7 +359,7 @@ export async function canvasCommand(args, say) {
 
 /**
  * `openfilm get [verb] [--option value …] [--yes]`: media for the project around the current folder, made by Studio
- * (started when needed), or found in OpenFilm's own library here (src/library-search.mjs LIBRARY_VERBS, offline and
+ * (started when needed), or found in CapyCut's own library here (src/library-search.mjs LIBRARY_VERBS, offline and
  * free). Without a verb (or with --help): what can be got here now, the library first. `--via <provider>` and
  * `--model <id>` override the person's choices in Studio's Settings (Models) for one run; the listing leaves them
  * out, as it leaves out who makes what. `code` is the exit status: 0 done, 1 it did not run, 2 not a project or a wrong
@@ -388,7 +388,7 @@ export async function getMedia(argv, say) {
   const { help, via, model, yes, ...args } = flags;
   if (via !== undefined && typeof via !== 'string') return { code: 2, lines: ['openfilm get: --via names a provider, e.g. --via elevenlabs'] };
   if (model !== undefined && typeof model !== 'string') return { code: 2, lines: ['openfilm get: --model names a model, e.g. --model eleven_v4'] };
-  /* OpenFilm's own library: searched here, offline and free, with no Studio (src/library-search.mjs) */
+  /* CapyCut's own library: searched here, offline and free, with no Studio (src/library-search.mjs) */
   const library = await import('../src/library-search.mjs');
   if (verb && verb in library.LIBRARY_VERBS && help === undefined) {
     /* a Studio running keeps the library and its model loaded: it answers a search in milliseconds; asked only when
@@ -443,7 +443,7 @@ export async function getMedia(argv, say) {
   const first = one ? [] : [
     'Free, offline, the person\'s own media: look here first.',
     ...lines(own, width), '',
-    'Free, offline, from OpenFilm\'s own library (CC0): search it next, and make only what neither has.',
+    'Free, offline, from CapyCut\'s own library (CC0): search it next, and make only what neither has.',
     ...lines(free.slice(own.length), width), '',
   ];
   /* nothing connected: what to do instead, and which services there are */

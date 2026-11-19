@@ -112,7 +112,7 @@ test('transcription: the speech uploaded as what it is, words kept and spacing d
   assert.equal(result.files.length, 0);
 });
 
-test('speech MP3 as OpenFilm sends it gets a second of silence after it; any other file goes as it is', async () => {
+test('speech MP3 as CapyCut sends it gets a second of silence after it; any other file goes as it is', async () => {
   const header = [0xff, 0xf3, 0x48, 0xc0];
   const speech = new Uint8Array([0x49, 0x44, 0x33, 4, 0, 0, 0, 0, 0, 2, 0, 0, ...header, ...new Array(140).fill(0)]);
   const padded = withSilence(speech);

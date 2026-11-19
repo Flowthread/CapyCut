@@ -1,5 +1,5 @@
 /**
- * OpenFilm's library as the assets drawer shows it (studio/server/library.mjs): its index, read once, and what each
+ * CapyCut's library as the assets drawer shows it (studio/server/library.mjs): its index, read once, and what each
  * thing of it is on the timeline. Pages and sounds go in as things of Saved go (a drag or "+": lib/saved, the server's
  * `saved/take` with an `openfilm/` path); a look is written into the picked clips' style; a fade is one of the
  * timeline's transitions (lib/transitions), put on a cut.
@@ -11,7 +11,7 @@ import type { TransitionKind } from './transitions';
 import { declared, withDeclarations } from './clip-look.ts';
 import { gradeFilter, gradeOf, withGrade, type Grade } from './grade.ts';
 
-/** What a path names OpenFilm's library by, as `saved/` names Saved. */
+/** What a path names CapyCut's library by, as `saved/` names Saved. */
 export const BUILT_IN = 'openfilm';
 /** How a Community sticker moves while it is shown: the same keyframes on its page and its tile (globals.css). */
 export type StickerIdle = 'bounce' | 'wiggle' | 'pulse' | 'float' | 'spin' | 'pop';
@@ -50,7 +50,7 @@ export interface LibraryItem {
   still?: boolean;
   /** Words it is found by, besides its name. */
   tags?: string[];
-  /** Who sent it to the library (their GitHub name): a community thing; none: OpenFilm's own. */
+  /** Who sent it to the library (their GitHub name): a community thing; none: CapyCut's own. */
   by?: string;
   /** A piece of music's cover, by its place in the library (none: one drawn, coverLook). */
   cover?: string;
@@ -76,12 +76,12 @@ export interface LibraryIndex {
   /** each category's groups; a community pack is a group too (`by`, its maker) */
   groups: Partial<Record<LibraryCategory, { id: string; name: LibraryNames; by?: string }[]>>;
   items: LibraryItem[];
-  /** OpenFilm's packs (its groups, always in the library) and the community's (in it once added) */
+  /** CapyCut's packs (its groups, always in the library) and the community's (in it once added) */
   packs?: LibraryPack[];
 }
 
 /**
- * A pack: things put together (a music pack of forty pieces). OpenFilm's are its groups (`openfilm/<category>/<group>`);
+ * A pack: things put together (a music pack of forty pieces). CapyCut's are its groups (`openfilm/<category>/<group>`);
  * the community's are by their makers (`<maker>/<name>`, or one thing listed alone: `lone`), their things in their
  * own order (`items`), each a group of every category it has things in (`group`, the same in each).
  */
@@ -115,7 +115,7 @@ export interface LibraryPack {
   lone?: true;
 }
 
-/** The things of a pack, in its order (OpenFilm's: as its group lists them). */
+/** The things of a pack, in its order (CapyCut's: as its group lists them). */
 export function packItems(index: LibraryIndex | null, pack: LibraryPack): LibraryItem[] {
   const all = index?.items ?? [];
   if (pack.official) return all.filter((it) => !it.by && it.cat === pack.cats[0] && it.group === pack.group);
@@ -127,7 +127,7 @@ export function packItems(index: LibraryIndex | null, pack: LibraryPack): Librar
 export const packOf = (index: LibraryIndex | null, item: LibraryItem): LibraryPack | undefined =>
   index?.packs?.find((p) => (p.official ? !item.by && p.cats[0] === item.cat && p.group === item.group : p.group === item.group));
 
-/** Whether a thing is in the person's library: OpenFilm's always; the community's once it or its pack is added. */
+/** Whether a thing is in the person's library: CapyCut's always; the community's once it or its pack is added. */
 export const inLibrary = (item: Pick<LibraryItem, 'id' | 'group' | 'by'>, added: readonly string[]): boolean =>
   !item.by || added.includes(item.group) || added.includes(item.id);
 
@@ -347,7 +347,7 @@ let favorites: readonly string[] | null = null;
 const starred = new Set<() => void>();
 const tellStarred = () => { for (const fn of starred) fn(); };
 
-/** The things the person starred (their ids), kept for every OpenFilm on this computer; empty until read. */
+/** The things the person starred (their ids), kept for every CapyCut on this computer; empty until read. */
 export function useLibraryFavorites(): readonly string[] {
   const seen = React.useSyncExternalStore(
     (fn) => { starred.add(fn); return () => { starred.delete(fn); }; },
@@ -482,7 +482,7 @@ let added: readonly string[] | null = null;
 const addedSeen = new Set<() => void>();
 const tellAdded = () => { for (const fn of addedSeen) fn(); };
 
-/** The community's packs and things the person added to the library (ids), kept for every OpenFilm on this computer. */
+/** The community's packs and things the person added to the library (ids), kept for every CapyCut on this computer. */
 export function useLibraryAdded(): readonly string[] {
   const seen = React.useSyncExternalStore(
     (fn) => { addedSeen.add(fn); return () => { addedSeen.delete(fn); }; },
@@ -516,10 +516,10 @@ export function takeFavorites(ids: readonly string[]): void {
   tellStarred();
 }
 
-/** Who made a thing of the Community, as said: OpenFilm's own account by its name (with its tick where shown). */
-export const makerName = (by: string): string => (by.toLowerCase() === 'openfilm' ? 'OpenFilm' : by);
-/** Whether a thing of the Community was published by OpenFilm itself. */
-export const byOpenFilm = (by: string | undefined): boolean => by?.toLowerCase() === 'openfilm';
+/** Who made a thing of the Community, as said: CapyCut's own account by its name (with its tick where shown). */
+export const makerName = (by: string): string => (by.toLowerCase() === 'openfilm' ? 'CapyCut' : by);
+/** Whether a thing of the Community was published by CapyCut itself. */
+export const byCapyCut = (by: string | undefined): boolean => by?.toLowerCase() === 'openfilm';
 
 export function toggleFavorite(id: string): void {
   const had = favorites ?? [];

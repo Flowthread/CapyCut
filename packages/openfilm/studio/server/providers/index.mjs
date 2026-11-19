@@ -3,7 +3,7 @@
  * Which provider serves each verb of `openfilm get`, and the API of Studio's Settings → Services.
  *
  * A person's own key for ElevenLabs, Inworld, Cartesia, OpenAI, Google (the Gemini API), fal.ai, OpenRouter, Groq, Microsoft Azure (Azure AI Speech), Pexels,
- * Pixabay, Brave Search, Tavily or OpenFilm pays that service directly for what it can do. Each makes a kind of media with the model the person chose for
+ * Pixabay, Brave Search, Tavily or CapyCut pays that service directly for what it can do. Each makes a kind of media with the model the person chose for
  * it (the provider's first unless they did). Keenable also works with no key: connected with one click, a key lifts its limits.
  * Who serves a verb: `--via <provider>` on the command, else the person's choice for that kind of media in Settings (`use`),
  * while it can; else nothing does. Every provider is treated alike: a kind with no choice goes to the first provider,
@@ -77,13 +77,13 @@ async function named(id, verb, settings, strict) {
   const fail = (/** @type {string} */ why) => { if (strict) throw new Error(why); return null; };
   if (!provider) return fail(`There is no provider "${id}": use ${OWN.map((p) => p.id).join(', ')}.`);
   if (provider.ready && !provider.verbs.includes(verb)) {
-    return fail(`No local model for ${verb} is installed and on: the person installs one in Studio (the OpenFilm logo at the top left opens Settings → Services → Local services).`);
+    return fail(`No local model for ${verb} is installed and on: the person installs one in Studio (the CapyCut logo at the top left opens Settings → Services → Local services).`);
   }
   if (!provider.verbs.includes(verb)) return fail(`${provider.name} does not do ${verb}.`);
   if (!providerKey(provider, settings)) {
     return fail(provider.keyless
-      ? `${provider.name} is not connected: connect it in Studio (the OpenFilm logo at the top left opens Settings → Services), no key needed, or set ${provider.env}.`
-      : `There is no ${provider.name} key: add one in Studio (the OpenFilm logo at the top left opens Settings → Services) or set ${provider.env}.`);
+      ? `${provider.name} is not connected: connect it in Studio (the CapyCut logo at the top left opens Settings → Services), no key needed, or set ${provider.env}.`
+      : `There is no ${provider.name} key: add one in Studio (the CapyCut logo at the top left opens Settings → Services) or set ${provider.env}.`);
   }
   return provider;
 }
@@ -160,7 +160,7 @@ export function shownChoices(settings) {
   };
 }
 
-const INVALID_ACCOUNT = 'This OpenFilm connection is no longer valid. Connect again.';
+const INVALID_ACCOUNT = 'This CapyCut connection is no longer valid. Connect again.';
 
 /** An account card can render from the local credential and cached details while Services is still loading. */
 async function localAccount() {
@@ -216,7 +216,7 @@ async function state() {
     signingIn,
     ...shownChoices(settings),
     custom: settings.custom.map(shownService),
-    /* the library searched by meaning at OpenFilm's service, or by its words alone */
+    /* the library searched by meaning at CapyCut's service, or by its words alone */
     librarySearch: settings.libraryOff ? null : 'openfilm',
   };
 }
@@ -224,7 +224,7 @@ async function state() {
 /**
  * Studio's `/api/providers/*` (the editor page, with the launch key like the rest of the API). Each answers the state:
  *   GET    /api/providers           → { providers: [{ id, name, verbs, models: { verb: [{ id, name }] }, keysUrl, pricingUrl, env,
- *                                       keyless?, noKey?, source: 'file' | 'env' | null, last4, account, profile? (OpenFilm: { name, avatar }) }],
+ *                                       keyless?, noKey?, source: 'file' | 'env' | null, last4, account, profile? (CapyCut: { name, avatar }) }],
  *                                       use: { verb: provider id | null },
  *                                       model: { verb: model id | null },
  *                                       librarySearch: 'openfilm' | null }
@@ -235,7 +235,7 @@ async function state() {
  *                                                         not used (until it is connected again)
  *   PUT    /api/providers/use       { verb, provider, model? }  who serves that kind of media (an id, or null: none),
  *                                       and with which of its models (its first when none is given)
- *   PUT    /api/providers/library-search { on }  the library searched by meaning at OpenFilm's service (on, the
+ *   PUT    /api/providers/library-search { on }  the library searched by meaning at CapyCut's service (on, the
  *                                       default) or by its words alone
  *   POST   /api/providers/:id/billing → {}, the provider's own page for its balance opened in the person's browser
  *   POST   /api/providers/:id/sign-in         a provider with `signIn`: its website opened in the person's browser to
@@ -336,7 +336,7 @@ export async function providersRoute(req, res, parts, { openBrowser }) {
   }
   if (parts.length === 1 && parts[0] === 'library-search' && req.method === 'PUT') {
     const { on } = /** @type {{ on?: unknown }} */ (await readJson(req));
-    if (typeof on !== 'boolean') throw new HttpError(400, 'on: true (OpenFilm searches it by meaning) or false (by its words)');
+    if (typeof on !== 'boolean') throw new HttpError(400, 'on: true (CapyCut searches it by meaning) or false (by its words)');
     await changeSettings((s) => { s.libraryOff = !on; });
     return json(res, 200, await state());
   }

@@ -1,10 +1,10 @@
-"""Reference outputs for OpenFilm's color transform evaluator (packages/openfilm/src/color), from OpenColorIO itself.
+"""Reference outputs for CapyCut's color transform evaluator (packages/openfilm/src/color), from OpenColorIO itself.
 
 Writes packages/openfilm/src/color/fixtures/ops/*.ctf (and .clf, .cube): small files that cover every op and style
 src/color/ctf.mjs reads, with non-default parameters; and two JSON files of OCIO's outputs for one fixed set of input
 triples (values outside 0-1 and negatives included):
   fixtures/ops.json         the files above
-  fixtures/transforms.json  OpenFilm's own transforms, src/color/transforms/*.ctf
+  fixtures/transforms.json  CapyCut's own transforms, src/color/transforms/*.ctf
 
 OCIO evaluates each file through a FileTransform with OPTIMIZATION_NONE, so every op runs as itself with exact math
 where OCIO has it (no fast pow/log/exp, no ops folded together). A few OCIO CPU renderers use fast approximations
@@ -57,7 +57,7 @@ def run_file(path, rgb):
 
 def ctf(body, version='2.5'):
     return (f'<?xml version="1.0" encoding="UTF-8"?>\n<ProcessList version="{version}" id="fixture">\n'
-            f'    <Description>OpenFilm color fixture</Description>\n{body}\n</ProcessList>\n')
+            f'    <Description>CapyCut color fixture</Description>\n{body}\n</ProcessList>\n')
 
 
 def clf(body):
@@ -334,7 +334,7 @@ def main():
     with open(os.path.join(FIXTURES, 'ops.json'), 'w') as f:
         json.dump(out, f, separators=(',', ':'))
 
-    # OpenFilm's transforms take code values (an input transform) or ACEScct (the output transform): inputs up to 1.
+    # CapyCut's transforms take code values (an input transform) or ACEScct (the output transform): inputs up to 1.
     # Camera curves decode to linear values in the hundreds, which OCIO holds in single precision, and the ACEScct toe
     # (slope 10.5) magnifies what a gamut matrix leaves of them: 2e-5 relative. The ACES 2.0 Output Transform is
     # aces2.mjs's port; files that use it are held to 1e-4.

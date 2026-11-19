@@ -182,8 +182,8 @@ test('a gateway\'s error page is said by its title, or plainly when it has none'
   const was = globalThis.fetch;
   try {
     page('<!DOCTYPE html><html><head><title>openfilm.dev | 502: Bad gateway</title></head><body>…</body></html>', 502);
-    await assert.rejects(call('OpenFilm', 'https://x', {}, ctx), /^Error: OpenFilm answered 502: openfilm\.dev \| 502: Bad gateway$/);
+    await assert.rejects(call('CapyCut', 'https://x', {}, ctx), /^Error: CapyCut answered 502: openfilm\.dev \| 502: Bad gateway$/);
     page('<html><body>nothing</body></html>', 503);
-    await assert.rejects(call('OpenFilm', 'https://x', {}, ctx), /OpenFilm is not answering right now \(503\)/);
+    await assert.rejects(call('CapyCut', 'https://x', {}, ctx), /CapyCut is not answering right now \(503\)/);
   } finally { globalThis.fetch = was; }
 });

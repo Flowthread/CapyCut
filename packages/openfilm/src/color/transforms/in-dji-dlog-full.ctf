@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ProcessList version="2" id="openfilm:in-dji-dlog-full">
-    <Description>OpenFilm input: DJI D-Log, D-Gamut footage (a full-range file) into ACEScct</Description>
+    <Description>CapyCut input: DJI D-Log, D-Gamut footage (a full-range file) into ACEScct</Description>
     <LUT1D inBitDepth="32f" outBitDepth="32f">
         <Array dim="4096 1">
 -0.015419087

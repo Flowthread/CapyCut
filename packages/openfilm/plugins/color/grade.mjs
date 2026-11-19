@@ -37,7 +37,7 @@ import { libraryIndex } from '../../studio/server/library.mjs';
 import { editProjectFilm, readProjectFilm } from '../../studio/server/film.mjs';
 import { measure } from './measure.mjs';
 
-/** OpenFilm's own color management transforms (src/color/transforms), copied into a project when a clip first uses one. */
+/** CapyCut's own color management transforms (src/color/transforms), copied into a project when a clip first uses one. */
 const TRANSFORMS = fileURLToPath(new URL('../../src/color/transforms/', import.meta.url));
 
 /** Footage an input transform is for, by the name a person or an agent gives it: its file, and a word on it. */
@@ -234,7 +234,7 @@ function pngRgb(png, width) {
   });
 }
 
-/** ACEScct of ordinary video's code values: OpenFilm's own input for it. */
+/** ACEScct of ordinary video's code values: CapyCut's own input for it. */
 const sdrToWorking = () => compile(parseColorTransform(readFileSync(join(TRANSFORMS, 'in-rec709.ctf'), 'utf8'), 'in-rec709.ctf'));
 
 /** Pixels taken through `grade` (unclamped: the working space has no ceiling). @param {Float32Array} rgb @param {(r: number, g: number, b: number, out: number[]) => void} grade */
@@ -267,7 +267,7 @@ async function finished(root, clip, layerText, frames = null) {
   return { m: measure(chainOf(clip.style).length ? graded(rgb, gradeOf(root, clip, layerText)) : rgb), pics };
 }
 
-/** A transform of OpenFilm's own in the project's looks/, copied there when it is not (another's is left as it is). @param {string} root @param {string} name */
+/** A transform of CapyCut's own in the project's looks/, copied there when it is not (another's is left as it is). @param {string} root @param {string} name */
 function ensureTransform(root, name) {
   const at = join(root, LOOKS, name);
   if (!existsSync(at) && existsSync(join(TRANSFORMS, name))) {

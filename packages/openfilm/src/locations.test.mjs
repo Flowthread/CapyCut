@@ -26,7 +26,7 @@ const prefs = (value) => writeFileSync(join(home, 'prefs.json'), JSON.stringify(
 test('new projects go to the folder chosen, before any default', () => {
   process.env.OPENFILM_LIBRARY = join(home, 'lib');
   assert.equal(libraryRoot(), join(home, 'lib'), 'the default: what the build set');
-  const projects = join(tmpdir(), 'D', 'OpenFilm', 'Projects');
+  const projects = join(tmpdir(), 'D', 'CapyCut', 'Projects');
   prefs({ proxies: { on: true }, projectsFolder: projects });
   assert.equal(libraryRoot(), projects);
   assert.equal(libraryDefault(), join(home, 'lib'), 'the default stays what it was');
@@ -37,13 +37,13 @@ test('new projects go to the folder chosen, before any default', () => {
 
 test('exports go to the default: no folder kept in prefs.json moves them (the export dialog picks one)', () => {
   process.env.OPENFILM_EXPORTS = join(home, 'out');
-  prefs({ exportsFolder: join(tmpdir(), 'D', 'OpenFilm', 'Exports') });
+  prefs({ exportsFolder: join(tmpdir(), 'D', 'CapyCut', 'Exports') });
   assert.equal(exportsRoot(), join(home, 'out'));
 });
 
 test('without a choice or a build\'s own: a Studio kept apart exports into its home; the person\'s own to the Desktop', () => {
   assert.equal(exportsRoot(), join(home, 'exports'));
-  assert.match(libraryRoot(), /OpenFilm[\\/]Projects$/);
+  assert.match(libraryRoot(), /CapyCut[\\/]Projects$/);
 });
 
 test('each folder for Settings: where it is, its default, whether chosen, and free space on its disk', () => {
@@ -69,7 +69,7 @@ test('a folder offered is made and kept by its full path; a disk, Studio\'s own 
 
 test('projects storage cannot be in the installed app, even through a junction and before the folder exists', () => {
   const root = mkdtempSync(join(tmpdir(), 'of-install-location-'));
-  const installed = join(root, 'OpenFilm');
+  const installed = join(root, 'CapyCut');
   const alias = join(root, 'Shortcut');
   mkdirSync(installed);
   symlinkSync(installed, alias, process.platform === 'win32' ? 'junction' : 'dir');
@@ -77,7 +77,7 @@ test('projects storage cannot be in the installed app, even through a junction a
   assert.throws(() => usableFolder(installed), /installation directory/);
   assert.throws(() => usableFolder(join(alias, 'new', 'Projects')), /installation directory/);
   assert.equal(existsSync(join(installed, 'new')), false);
-  const safe = join(root, 'OpenFilm Projects');
+  const safe = join(root, 'CapyCut Projects');
   assert.equal(usableFolder(safe), safe);
 });
 

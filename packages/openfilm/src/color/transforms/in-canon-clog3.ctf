@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ProcessList version="2" id="openfilm:in-canon-clog3">
-    <Description>OpenFilm input: Canon Log 3, Cinema Gamut footage into ACEScct</Description>
+    <Description>CapyCut input: Canon Log 3, Cinema Gamut footage into ACEScct</Description>
     <LUT1D inBitDepth="32f" outBitDepth="32f" interpolation="linear">
         <Array dim="4096 1">
 -0.073813342

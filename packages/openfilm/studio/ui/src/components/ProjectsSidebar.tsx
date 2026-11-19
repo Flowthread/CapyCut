@@ -10,7 +10,7 @@ import { accountState } from '@/lib/account';
 import { useHostUpdate } from '@/lib/host';
 import { openPlugins } from '@/lib/plugins-window';
 import { sourcesApi, type News } from '@/lib/project-sources';
-import { useOpenFilmAccount } from '@/lib/providers';
+import { useCapyCutAccount } from '@/lib/providers';
 import { showWhatsNew } from '@/lib/whats-new';
 import { Avatar } from './settings/AccountGroup';
 import styles from './ProjectsSidebar.module.css';
@@ -57,10 +57,10 @@ export function ProjectsSidebar({ place, onPlace, onStart, starting }: {
   );
 }
 
-/** The OpenFilm account: signed in, its picture and name; else the local account and the way to sign in. */
+/** The CapyCut account: signed in, its picture and name; else the local account and the way to sign in. */
 function AccountCard() {
   const t = useT();
-  const hook = useOpenFilmAccount();
+  const hook = useCapyCutAccount();
   const { own, signingIn } = hook;
   if (!own) return (
     <div className={styles.account} data-projects-account={hook.accountLoadFailed ? 'error' : 'loading'}>
@@ -73,7 +73,7 @@ function AccountCard() {
   );
   const state = accountState(own, signingIn);
   const signedIn = state === 'signed-in' || state === 'env';
-  const name = own.profile?.name || own.account || 'OpenFilm';
+  const name = own.profile?.name || own.account || 'CapyCut';
   if (signedIn) {
     return (
       <a className={styles.account} href={own.keysUrl} target="_blank" rel="noreferrer" data-projects-account="signed-in">

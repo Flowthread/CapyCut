@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * OpenFilm's library: the transitions, effects, text, stickers, looks and sounds that come with OpenFilm (library/ in
+ * CapyCut's library: the transitions, effects, text, stickers, looks and sounds that come with CapyCut (library/ in
  * this package), read-only, shown in the assets drawer beside the project's media and Saved.
  *
  *   library/index.json   what is in it: each thing's id (its place in library/), its category and group, its name in
@@ -10,17 +10,17 @@
  *                          look   a CSS `filter`, written into a clip's style
  *                          fade   one of Studio's transitions (ui lib/transitions), made of fades
  *                        and, for a thing someone sent to the library, `by`: their GitHub name (the drawer shows it
- *                        as the community's; without it, a thing is OpenFilm's own)
+ *                        as the community's; without it, a thing is CapyCut's own)
  *   library/<id>/…       the things themselves
  *   library/stickers.json  emoji stickers, each a bundle under stickers/emoji/ (published with the library likewise)
  *   library/audio.json   more sounds and music, as index.json says its own (`audio/<sfx|music>/<name>.mp3`, each with its
  *                        waveform beside it in waves/), the files published with the library rather than kept in git
  *                        (fetchLibrary: fetched on first use, like the voices' samples and the emoji stickers)
- *   library/voices.json  the voices to speak a voice-over in: the ready-made voices of the voice-over services OpenFilm
+ *   library/voices.json  the voices to speak a voice-over in: the ready-made voices of the voice-over services CapyCut
  *                        offers, each with its service's own sample (voices/<service>/<voice>.m4a); made by
  *                        scripts/library-voices.mjs from those services' own lists
  *
- * The things the person starred are kept in the shared prefs.json (`libraryFavorites`, their ids), so every OpenFilm on
+ * The things the person starred are kept in the shared prefs.json (`libraryFavorites`, their ids), so every CapyCut on
  * this computer shows the same ones.
  *
  * A thing is taken into a project as a thing of Saved is (saved.mjs takeSaved), by its path `openfilm/<id>`: copied,
@@ -52,7 +52,7 @@ export const builtInRoot = () => process.env.OPENFILM_BUILT_IN_LIBRARY || fileUR
  * The library's parts too big to come with the package (git-ignored, left out of npm): its sounds and music (`audio/`),
  * its voices' samples (`voices/`), its emoji stickers (`stickers/emoji/`), the models Local services runs (`models/`,
  * src/local-models.mjs), each template's example with its music (`examples/`). Each is fetched on first use from the
- * library's host and kept in the shared home, once for every OpenFilm on this computer; a bundle (a sticker) comes
+ * library's host and kept in the shared home, once for every CapyCut on this computer; a bundle (a sticker) comes
  * with the list of its files, `files.json` beside it there, written when the library is published.
  */
 const PUBLISHED = ['audio/', 'voices/', 'stickers/emoji/', 'models/', 'examples/'];
@@ -267,7 +267,7 @@ export function libraryIndex() {
 }
 
 /**
- * The library's packs: OpenFilm's own are its groups (`openfilm/<category>/<group>`, always there); the community's
+ * The library's packs: CapyCut's own are its groups (`openfilm/<category>/<group>`, always there); the community's
  * come from its catalog (`<maker>/<name>`, each a group of every category it has things in), there once the person
  * adds them (libraryAdded).
  * @param {Record<string, unknown[]>} groups @param {unknown[]} items
@@ -288,7 +288,7 @@ function packsOf(groups, items) {
 /** Where the community's packs and things the person added are kept in the shared prefs.json: their ids. */
 const ADDED = 'libraryAdded';
 
-/** The community's packs and things the person added (OpenFilm's own are always there). */
+/** The community's packs and things the person added (CapyCut's own are always there). */
 export function libraryAdded() {
   return addedIds(sharedPref(ADDED));
 }

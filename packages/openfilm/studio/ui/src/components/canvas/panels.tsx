@@ -15,7 +15,7 @@ import { useLanguage, useT } from '@/i18n';
 import { GIF_FRAMES, GIF_FRAME_MS, IMAGE_RATIOS, MAKE_COUNTS, MAKE_MEDIA, VIDEO_RATIOS, frameRatio, lengthOf, lengthRange, modeOf, modesFor, ratioOf, type VideoMode } from '@/lib/canvas';
 import { PRESETS, PRESET_GROUPS, presetOf, type CanvasPreset, type PresetGroup } from '@/lib/canvas-presets';
 
-/** each preset's picture of what it makes (made for OpenFilm), by its id */
+/** each preset's picture of what it makes (made for CapyCut), by its id */
 const PRESET_PICTURES: Record<string, string> = Object.fromEntries(Object.entries(import.meta.glob<string>('./presets/*.webp', { eager: true, import: 'default' }))
   .map(([path, url]) => [path.slice('./presets/'.length, -'.webp'.length), url]));
 import type { WorkspaceResource } from '@/lib/workspace-resources';

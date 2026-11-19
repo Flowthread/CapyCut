@@ -46,7 +46,7 @@ export function chunksOf(f0, f1, fps, least = 1) {
   return chunks;
 }
 
-/** A render's settings as kept with its chunks, with the OpenFilm that drew them (another may draw differently). @param {Record<string, unknown>} settings */
+/** A render's settings as kept with its chunks, with the CapyCut that drew them (another may draw differently). @param {Record<string, unknown>} settings */
 export const settingsOf = (settings) => JSON.stringify({ openfilm: VERSION, ...settings });
 
 /** The folder a render of `out` keeps its chunks in, beside the project's other renders. @param {string} renderDir @param {string} out */

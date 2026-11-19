@@ -12,12 +12,12 @@ ${[
   ...(IN_APP ? [] : ['  openfilm open    [folder | url]      start or open a project; Studio shows it to the person']),
   '  openfilm look    [what] [t | a-b]    check the film and draw it: a contact sheet with its sound and loudness',
   '  openfilm render  [a-b]               the MP4, saved beside film.html',
-  '  openfilm get     [what] [--options]  media: the person\'s own, OpenFilm\'s free library (music, sound effects, stickers), else a connected service',
+  '  openfilm get     [what] [--options]  media: the person\'s own, CapyCut\'s free library (music, sound effects, stickers), else a connected service',
   '  openfilm skills                      the skills installed for this film; `openfilm skill <name>` prints one',
   '  openfilm publish [folder]            check a workbench or a skill as the community\'s review will, before you publish it',
   '  openfilm <name> [command] …          a command a plugin or a skill brings; its skill or its --help says what it does',
-  ...(IN_APP ? [] : ['  openfilm update                      the newest OpenFilm; Studio starts again on it']),
-  '  openfilm doctor                      what this computer has for OpenFilm, to paste into an issue',
+  ...(IN_APP ? [] : ['  openfilm update                      the newest CapyCut; Studio starts again on it']),
+  '  openfilm doctor                      what this computer has for CapyCut, to paste into an issue',
 ].join('\n')}
 
   Run with no arguments for how to work here and the skills that say how; \`openfilm <command> --help\` for one command's options;
@@ -38,14 +38,14 @@ const COMMAND_HELP = {
   without  the project around the current folder, else the one opened last, else Studio's projects (where the
            person can start one). The current folder is never made a project: name it (.) for that.
 
-  Starts OpenFilm Studio if it is not running and prints its address. A Studio page already open, in any browser,
+  Starts CapyCut Studio if it is not running and prints its address. A Studio page already open, in any browser,
   switches to the project, and nothing more opens; otherwise open the address in your built-in browser, and if no
   page connects within 15 s, Studio opens the person's browser (OPENFILM_NO_BROWSER=1: never).`,
   skills: `openfilm skills
 
   The skills the project around the current folder can be made with: ways of making a kind of film, each a folder with
   a SKILL.md (its name, what it is for, how to work) and the files it brings. Looked for in the project's skills/,
-  then yours (Skills/ beside the projects, ~/Movies/OpenFilm/Skills on macOS), then the official ones; the first
+  then yours (Skills/ beside the projects, ~/Movies/CapyCut/Skills on macOS), then the official ones; the first
   holding a name wins.`,
   skill: `openfilm skill <name>
 openfilm skill add <GitHub address | folder>
@@ -56,15 +56,15 @@ openfilm skill remove <name>
            on github.com or gitlab.com, fetched without its git history. One of the same name goes to the trash.
   remove   move one of yours to the trash, where you can take it back
 
-  Yours are kept in Skills/ beside the projects (~/Movies/OpenFilm/Skills on macOS; OPENFILM_SKILLS names another).`,
+  Yours are kept in Skills/ beside the projects (~/Movies/CapyCut/Skills on macOS; OPENFILM_SKILLS names another).`,
   update: `openfilm update
 
-  The newest OpenFilm from npm, and Studio started again on it once nothing is being exported or made; pages open on
+  The newest CapyCut from npm, and Studio started again on it once nothing is being exported or made; pages open on
   it come back on the new version. The desktop app's Studio updates with the app, a source checkout with git pull:
   each is said instead.`,
   doctor: `openfilm doctor
 
-  Checks what OpenFilm needs here and prints a report to paste into an issue: OpenFilm's and Node's versions, the
+  Checks what CapyCut needs here and prints a report to paste into an issue: CapyCut's and Node's versions, the
   system, which agent ran the command, Studio, ffmpeg, the browser films are drawn in and its graphics, the data and
   projects folders, how much the projects' .film folders hold, npm, and the last errors in Studio's log. Paths under
   your home folder read ~; no keys, accounts or projects are in it. Exit status 1 when something needs fixing; the
@@ -105,7 +105,7 @@ openfilm skill remove <name>
                   caught so it never clips`,
 };
 
-/* `openfilm` alone: the system prompt (src/system-prompt.mjs) and OpenFilm's own skills, each in a line. `get` takes any options its verb has,
+/* `openfilm` alone: the system prompt (src/system-prompt.mjs) and CapyCut's own skills, each in a line. `get` takes any options its verb has,
    so it goes to Studio (studio/client.mjs) before the fixed options below are parsed. */
 const RAW = process.argv.slice(2);
 /* the command as the agent can type it here: the one that ran it when it says so (OPENFILM_RUN: the development
@@ -117,7 +117,7 @@ const RUN = process.env.OPENFILM_RUN || (process.env.npm_command === 'exec' ? 'n
  * a session starts (the system prompt, open), else only as learnt before, so look, render and get never wait for it.
  */
 const updateNotice = async (network) => {
-  const latest = await (await import('../studio/client.mjs')).newerOpenfilm({ network }).catch(() => null);
+  const latest = await (await import('../studio/client.mjs')).newerCapyCut({ network }).catch(() => null);
   if (latest) console.error(`openfilm ${latest} is out (this is an older one): \`${RUN} update\` updates it, and Studio with it.`);
 };
 if (RAW.length === 0) {
@@ -145,7 +145,7 @@ const keptNotice = async (/** @type {string} */ from = '.') => {
   console.error(note.line);
   await note.said();
 };
-/* a command a plugin brings (src/plugin-commands.mjs): every word after its name is its own, as typed. OpenFilm's own
+/* a command a plugin brings (src/plugin-commands.mjs): every word after its name is its own, as typed. CapyCut's own
    commands are never a plugin's */
 const OWN = ['open', 'look', 'render', 'get', 'skills', 'skill', 'update', 'doctor'];
 const ofPlugin = RAW[0] && !RAW[0].startsWith('-') && !OWN.includes(RAW[0])
@@ -208,7 +208,7 @@ if (ofPlugin != null) {
         return m.render(args, opts);
       }));
     },
-    update: () => import('../studio/client.mjs').then((m) => m.updateOpenfilm((line) => console.error(line))),
+    update: () => import('../studio/client.mjs').then((m) => m.updateCapyCut((line) => console.error(line))),
     skills: () => import('../src/skills-cli.mjs').then((m) => m.skillsCommand(RUN)),
     skill: () => import('../src/skills-cli.mjs').then((m) => m.skillCommand(args, RUN)),
     publish: () => import('../src/publish-cli.mjs').then((m) => m.publishCommand(args, RUN)),

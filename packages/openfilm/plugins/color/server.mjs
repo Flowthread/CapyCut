@@ -8,7 +8,7 @@
  *   GET  projects/:project/frame ?src=<file>&s=<second>&box=<px>   a picture of a video file at its own depth: 16-bit
  *                                         RGB as it is, its longer side `box` long (headers x-width, x-height)
  *   GET  projects/:project/footage ?src=<file>   what the file says it is: { kind: 'hlg' | 'pq' | null, full }
- *   GET  transforms/:name                 one of OpenFilm's color transforms (src/color/transforms), as text
+ *   GET  transforms/:name                 one of CapyCut's color transforms (src/color/transforms), as text
  *   GET  projects/:project/input ?src=<file>&kind=<kind>   the input file for footage of that kind (the variant for
  *                                         a full-range file when it has one): { path, text }
  *   POST projects/:project/clips/:clip/balance          { path, text, chain, before, after }: its balance worked out
@@ -73,7 +73,7 @@ export default (studio) => {
     },
 
     'GET /transforms/:name': async ({ params }) => {
-      if (!/^(in|out)-[\w.-]+\.ctf$/.test(params.name)) throw new HttpError(400, 'one of OpenFilm\'s transforms, please');
+      if (!/^(in|out)-[\w.-]+\.ctf$/.test(params.name)) throw new HttpError(400, 'one of CapyCut\'s transforms, please');
       const at = join(TRANSFORMS, params.name);
       if (!existsSync(at)) throw new HttpError(404, `${params.name}: no such transform`);
       return { text: readFileSync(at, 'utf8') };

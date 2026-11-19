@@ -153,7 +153,7 @@ export default {
 };
 
 /**
- * Speech as OpenFilm sends it (MP3, MPEG-2 layer III at 16 kHz mono) with a second of silence after it: Scribe v3 at
+ * Speech as CapyCut sends it (MP3, MPEG-2 layer III at 16 kHz mono) with a second of silence after it: Scribe v3 at
  * times drops the last words of a recording that stops right after them, never with a second of silence after
  * (measured 2026-11-13). 28 frames of 576 samples at 32 kbps, each its header and nothing to play. Any other MP3 as it is.
  * @param {Uint8Array} mp3

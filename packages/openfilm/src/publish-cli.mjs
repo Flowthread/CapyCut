@@ -63,7 +63,7 @@ export async function publishCommand(args, run) {
     for (const f of [...high, ...findings.filter((f) => f.severity !== 'high')]) lines.push(`  ${f.severity.padEnd(6)} ${f.rule}  ${f.file}${f.line ? `:${f.line}` : ''}  ${f.quote}`);
   }
   lines.push('', check.ready
-    ? `Ready. Next: push it to a public GitHub repository, tag ${check.version}, then list it in the community: ${COMMUNITY_REPO} (README, "Publish"). OpenFilm's Community window (Publish) does the listing for you. An AI review reads every version in full; a person decides for a new publisher, more permissions or anything high.`
+    ? `Ready. Next: push it to a public GitHub repository, tag ${check.version}, then list it in the community: ${COMMUNITY_REPO} (README, "Publish"). CapyCut's Community window (Publish) does the listing for you. An AI review reads every version in full; a person decides for a new publisher, more permissions or anything high.`
     : 'Not ready: fix what is above, then run this again. The review would ask for the same.');
   return { ok: check.ready, lines };
 }

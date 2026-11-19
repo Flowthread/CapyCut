@@ -30,7 +30,7 @@ import { recycle } from './recycle-bin.mjs';
 
 /** The index Discover reads. */
 /* the community's repository, renamed from openfilm/skills (its old address still answers, through GitHub's redirect,
-   for the OpenFilm that read it there) */
+   for the CapyCut that read it there) */
 export const INDEX_URL = 'https://raw.githubusercontent.com/openfilm/community/main/index.json';
 /** How long what the index said is fresh enough not to read it again when Discover opens. */
 export const FRESH_MS = 10 * 60 * 1000;
@@ -40,7 +40,7 @@ export const REFRESH_TIMEOUT_MS = 15_000;
 
 /** @typedef {{ path: string, size: number, sha256: string }} CatalogFile */
 /** @typedef {{ name: string, repo: string, path: string, version: string, commit: string, files?: CatalogFile[], from?: string }} IndexEntry
- *  `from`: the address of the other community index it came from (none: OpenFilm's own, openfilm/community) */
+ *  `from`: the address of the other community index it came from (none: CapyCut's own, openfilm/community) */
 /** @typedef {{ read: string, entries: IndexEntry[], listed?: IndexEntry[], incomplete?: string[] }} Catalog usable entries, the current index, and failed downloads */
 
 export const catalogDir = discoverDir;
@@ -132,10 +132,10 @@ export function indexEntries(index) {
 }
 
 /**
- * Other community indexes the person added (as Blender's third-party repositories are): read after OpenFilm's own,
- * each an https address or a file on this computer, at most ten. What they list is shown as not OpenFilm's, not
- * reviewed by it, and always asks before it is installed; it never takes the place of one of OpenFilm's (its uid), and
- * only OpenFilm's own index withdraws anything (`revoked`).
+ * Other community indexes the person added (as Blender's third-party repositories are): read after CapyCut's own,
+ * each an https address or a file on this computer, at most ten. What they list is shown as not CapyCut's, not
+ * reviewed by it, and always asks before it is installed; it never takes the place of one of CapyCut's (its uid), and
+ * only CapyCut's own index withdraws anything (`revoked`).
  */
 const SOURCE_ADDRESS = /^(https:\/\/\S{4,500}|\/\S{1,500}|[A-Za-z]:[\\/]\S{1,500})$/;
 export function communitySources(/** @type {string} */ home = sharedHome()) {
@@ -146,10 +146,10 @@ export function communitySources(/** @type {string} */ home = sharedHome()) {
 export function setCommunitySources(list, home = sharedHome()) {
   const bad = list.find((a) => typeof a !== 'string' || !SOURCE_ADDRESS.test(a));
   if (bad !== undefined) throw new Error(`Not an index address: ${String(bad)} (an https address, or a file on this computer).`);
-  if (list.includes(INDEX_URL)) throw new Error('OpenFilm\'s own community is always read.');
+  if (list.includes(INDEX_URL)) throw new Error('CapyCut\'s own community is always read.');
   setSharedPref('communitySources', [...new Set(list)].slice(0, 10), home);
 }
-/** Where each listed skill came from, by uid: the other index's address (none: OpenFilm's own). @param {Catalog | null} [catalog] */
+/** Where each listed skill came from, by uid: the other index's address (none: CapyCut's own). @param {Catalog | null} [catalog] */
 export function entrySources(catalog = readCatalog()) {
   return new Map((catalog?.listed ?? catalog?.entries ?? []).flatMap((e) => (e.from ? [[uidOf(e), e.from]] : [])));
 }
@@ -203,7 +203,7 @@ async function refresh({ signal, hosts, get }) {
   const index = await readIndex(from);
   const listed = indexEntries(index);
   if (index.skills.length && !listed.length) throw new Error('The skills index has no valid entries.');
-  /* the other indexes the person added, after OpenFilm's own: never in place of one of its uids, nor of an earlier one's;
+  /* the other indexes the person added, after CapyCut's own: never in place of one of its uids, nor of an earlier one's;
      one that cannot be read now is left out, the rest go on */
   const taken = new Set(listed.map(uidOf));
   for (const other of communitySources()) {
@@ -253,7 +253,7 @@ async function refresh({ signal, hosts, get }) {
   }
   const catalog = { read: new Date().toISOString(), entries, listed, incomplete };
   await mkdir(catalogDir(), { recursive: true });
-  /* what OpenFilm withdrew, kept as the index said it, so it holds offline (src/skills.mjs revocationOf) */
+  /* what CapyCut withdrew, kept as the index said it, so it holds offline (src/skills.mjs revocationOf) */
   const withdrawn = `${join(catalogDir(), REVOKED_FILE)}.${randomUUID()}.tmp`;
   await writeFile(withdrawn, `${JSON.stringify(revocations(index.revoked), null, 2)}\n`);
   await rename(withdrawn, join(catalogDir(), REVOKED_FILE));

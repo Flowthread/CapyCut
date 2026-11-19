@@ -90,7 +90,7 @@ test(
       await page.route((url) => url.pathname === '/api/providers/openfilm/account', (route) => route.fulfill({ json: { account: identity, signingIn } }));
       await page.route((url) => url.pathname === '/api/providers', async (route) => {
         await services.promise;
-        await route.fulfill({ json: { providers: [{ id: 'openfilm', name: 'OpenFilm', ...identity, profile: { name: 'Studio editor', avatar: null } }], signingIn } });
+        await route.fulfill({ json: { providers: [{ id: 'openfilm', name: 'CapyCut', ...identity, profile: { name: 'Studio editor', avatar: null } }], signingIn } });
       });
       await page.goto(`${studio.origin}/?key=${studio.key}`);
       const dialog = page.getByRole('dialog', { name: /^(Resource center|资源中心)$/ });

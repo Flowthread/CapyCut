@@ -6,7 +6,7 @@
  * its scripts); then its preview (or cover), what it does, its profile, how to use it, what it may do on this computer
  * (its scripts; a plugin's leave to change the project and to run, the person's to give), what it is made of (folded,
  * for developers), and at the quiet end reporting it or uninstalling it (an official one) or moving it to the trash
- * (the person's own, a project's); OpenFilm's system skills are only turned off. Back returns to the list. Also here: a
+ * (the person's own, a project's); CapyCut's system skills are only turned off. Back returns to the list. Also here: a
  * skill's words in the language shown, its cover, and the parts a plugin's page (library/PluginsPane) is made of as well.
  */
 import React from 'react';
@@ -25,7 +25,7 @@ import { DocLines, DocOff, DocSection, DocSteps, sortDetails } from './library/D
 import { SettingsSwitch } from './settings/ui';
 import { DetailShell, Facts, PageButton } from './library/Store';
 
-/** OpenFilm's own by their order, then the community's as Discover's index lists them (an author's own order is not theirs to set). */
+/** CapyCut's own by their order, then the community's as Discover's index lists them (an author's own order is not theirs to set). */
 /** `/owner/repo` of a GitHub address, said after its host; nothing for another site. */
 function githubRepoOf(source: string): string {
   try {
@@ -154,9 +154,9 @@ export function SkillPage({ skill, setSkills, projectId, onBack, onTry, onOn, on
   /* how many use it (anonymous counts, the community's): a fact of its strip when known */
   const [installs, setInstalls] = React.useState<number | null>(null);
   React.useEffect(() => { let live = true; void sourcesApi.communityStats().then((r) => { if (live) setInstalls(r[skill.uid]?.installs ?? null); }); return () => { live = false; }; }, [skill.uid]);
-  const maker = communityOf(skill) ? makerOf(skill) : skill.source === 'official' ? 'OpenFilm' : t(group);
+  const maker = communityOf(skill) ? makerOf(skill) : skill.source === 'official' ? 'CapyCut' : t(group);
   const tryOff = skill.off || skill.waits || Boolean(skill.revoked);
-  /* its source: OpenFilm's repository, or the address one of the person's came from */
+  /* its source: CapyCut's repository, or the address one of the person's came from */
   const sourceButton = source ? (
     <a href={source} target="_blank" rel="noreferrer" title={source} aria-label={t('gallery.viewSource')}
       className="grid h-8 w-8 place-items-center rounded-full text-[var(--text-muted)] transition hover:bg-[var(--bg-hover)] hover:text-[var(--text)]"><Github size={15} strokeWidth={1.75} /></a>
@@ -193,7 +193,7 @@ export function SkillPage({ skill, setSkills, projectId, onBack, onTry, onOn, on
             className="truncate text-[var(--text-muted)] underline-offset-2 hover:text-[var(--text)] hover:underline">{makerOf(skill)}</a>
           <TrustMark skill={skill} />
         </span>
-      ) : skill.source === 'official' ? <span className="inline-flex items-center gap-1 text-[var(--text-muted)]">OpenFilm<BadgeCheck size={13} strokeWidth={2} aria-hidden /></span>
+      ) : skill.source === 'official' ? <span className="inline-flex items-center gap-1 text-[var(--text-muted)]">CapyCut<BadgeCheck size={13} strokeWidth={2} aria-hidden /></span>
         : <span className="text-[var(--text-muted)]">{t(group)}</span>}
       <span aria-hidden>·</span>
       <span>{t(`assetDrawer.skillCat_${categoryOfSkill(skill)}`)}</span>
@@ -205,7 +205,7 @@ export function SkillPage({ skill, setSkills, projectId, onBack, onTry, onOn, on
       {skill.off ? <p className="mt-4 text-[13.5px] text-[var(--text-muted)]">{skill.plugin ? t('gallery.skillOffPlugin').replace('{plugin}', inLanguage(plugins.find((p) => p.id === skill.plugin)?.title, lang) ?? skill.plugin) : t('gallery.skillOff')}</p> : null}
       {skill.retired ? <p className="mt-2 text-[13.5px] text-[var(--text-muted)]">{t('gallery.retired')}</p> : null}
       {error ? <p role="alert" className="mt-3 text-[13.5px] text-[var(--warn)]">{error}</p> : null}
-      {/* withdrawn by OpenFilm: said first, with why and where to read more */}
+      {/* withdrawn by CapyCut: said first, with why and where to read more */}
       {skill.revoked ? (
         <section role="alert" className="mt-5 rounded-[12px] border border-[color-mix(in_srgb,var(--err)_45%,transparent)] bg-[color-mix(in_srgb,var(--err)_8%,transparent)] p-4">
           <h3 className="text-[15px] font-semibold text-[var(--text)]">{t('gallery.revokedTitle')}</h3>
@@ -262,7 +262,7 @@ export function SkillPage({ skill, setSkills, projectId, onBack, onTry, onOn, on
             <DocSection title={t('assetDrawer.docAbout')}>
               <Origin skill={skill} />
               <DocLines lines={sorted.about} />
-              {/* the computers it runs on, when this one is not among them; what it needs beyond OpenFilm */}
+              {/* the computers it runs on, when this one is not among them; what it needs beyond CapyCut */}
               {skill.elsewhere && skill.platforms ? (
                 <p role="note" className="mt-2.5 text-[14px] leading-[20px] text-[var(--warn)]">
                   {t('gallery.onlyOn').replace('{where}', skill.platforms.map((p) => t(`gallery.platform_${p}`)).join(' / '))}</p>
@@ -375,7 +375,7 @@ function Origin({ skill }: { skill: SkillEntry }) {
   return (
     <>
       <div title={o.from === 'made' ? undefined : o.address} className="mt-2 flex min-w-0 items-center gap-1.5 text-[13px] text-[var(--text-faint)]">{icon}<span className="truncate">{text}</span></div>
-      {/* added from an address, not from Discover: OpenFilm has not looked at it */}
+      {/* added from an address, not from Discover: CapyCut has not looked at it */}
       {o.from === 'link' ? <p className="mt-1 text-[13px] leading-[17px] text-[var(--text-muted)]">{t('gallery.unlisted')}</p> : null}
     </>
   );
@@ -472,14 +472,14 @@ function ProjectSkillReview({ skill, projectId, onAllowed }: { skill: SkillEntry
 }
 
 /**
- * Before one made by someone other than OpenFilm, that brings scripts, is installed: said plainly that its scripts run
+ * Before one made by someone other than CapyCut, that brings scripts, is installed: said plainly that its scripts run
  * on this computer with the agent's access, by whom it is made, and asked. `ask(skill, go)` runs `go` at once when there
  * is nothing to ask; `dialog` is put in the page.
  */
 export function useScriptsConsent() {
   const t = useT();
   const [asking, setAsking] = React.useState<{ skill: SkillEntry; go: () => void } | null>(null);
-  /* anything another community index lists (not reviewed by OpenFilm) asks always; else one with scripts, not OpenFilm's */
+  /* anything another community index lists (not reviewed by CapyCut) asks always; else one with scripts, not CapyCut's */
   const ask = (skill: SkillEntry, go: () => void) => {
     if (skill.from || (skill.scripts > 0 && ownerOf(skill) !== 'openfilm')) setAsking({ skill, go }); else go();
   };
@@ -499,7 +499,7 @@ export function useScriptsConsent() {
 export const hostOf = (address: string) => { try { return new URL(address).host; } catch { return address.split('/').pop() ?? address; } };
 
 /**
- * How far a community item is vouched for, as a small mark: OpenFilm's own; listed by OpenFilm's community (reviewed: its
+ * How far a community item is vouched for, as a small mark: CapyCut's own; listed by CapyCut's community (reviewed: its
  * checks and AI review read every version); or listed by another index the person added (not reviewed). None for the
  * person's own or a project's.
  */

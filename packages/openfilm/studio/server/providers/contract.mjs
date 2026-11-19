@@ -63,14 +63,14 @@
 /**
  * `read`: a project file's bytes (for `asr`, the speech alone: a small mono copy, in `speechFormat` when requested).
  * `link`: a temporary web (https) address of a project file, for a service that fetches what it is given from an
- * address only; there only when the run can make one (OpenFilm's service: kept until the run ends, then deleted).
+ * address only; there only when the run can make one (CapyCut's service: kept until the run ends, then deleted).
  * `model`: the id of the model, one of the provider's `models` for the verb, the person chose (a provider uses its first
  * when there is none). `handOff`: whoever ran it fetches a made file itself from a web address that needs no key (a
- * signed address of the service's own storage), so the file need not pass through the run (OpenFilm's service: the
+ * signed address of the service's own storage), so the file need not pass through the run (CapyCut's service: the
  * person's computer fetches it straight from there). `checkpoint`: told the job a provider took (its own answer), right
  * after it is taken, so whoever ran it can keep it; `resume`: that job, given back when the same run starts again (a
  * restart): the provider waits for it instead of submitting it again and charging twice. `scope`: whose run it is, where
- * one key runs for many people (OpenFilm's service): a voice cloned from a run's recording is kept apart by it.
+ * one key runs for many people (CapyCut's service): a voice cloned from a run's recording is kept apart by it.
  * @typedef {{
  *   key: string,
  *   model?: string,
@@ -160,7 +160,7 @@
  * `clones`: it clones voices (Studio's own voices, and `tts --voice-sample`, a voice from a recording).
  * `added`: one the person added in their shared home (added.mjs), not built in; set when it is read.
  * `pricingUrl`: the provider's own pricing page, linked as "Pricing" in Settings → Providers. Only the link: what is free
- * and what is paid changes on the provider's side. None for OpenFilm's own service (no price is shown in the app) and for
+ * and what is paid changes on the provider's side. None for CapyCut's own service (no price is shown in the app) and for
  * Local services (free).
  * `billingUrl`: the provider's own page where the person tops up its balance. A run that fails because the account has
  * no balance left throws an Error with `code: 'balance'` (common.mjs `noBalance`), the same for every provider: the

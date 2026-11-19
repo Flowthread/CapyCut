@@ -1,7 +1,7 @@
 # Making a plugin
 
-A plugin teaches OpenFilm one more kind of work. It is a folder: what an agent is taught (a skill), and what shows outside the
-conversation (a workbench in Studio, commands). OpenFilm's own plugins are the folders beside this file (`screening`, `edit`, `canvas`,
+A plugin teaches CapyCut one more kind of work. It is a folder: what an agent is taught (a skill), and what shows outside the
+conversation (a workbench in Studio, commands). CapyCut's own plugins are the folders beside this file (`screening`, `edit`, `canvas`,
 `color`), and they are made the same way as anyone's.
 
 Only in the conversation, it is a skill; also outside it, a plugin.
@@ -17,8 +17,8 @@ my-plugin/
   index.html      a page shown as its workbench (optional)
 ```
 
-Put it in your Skills folder (`~/Movies/OpenFilm/Skills` on macOS, `~/Videos/OpenFilm/Skills` elsewhere; `OPENFILM_SKILLS`
-names another), or in a project's `skills/` folder to keep it with that project. Studio's Community window (the OpenFilm
+Put it in your Skills folder (`~/Movies/CapyCut/Skills` on macOS, `~/Videos/CapyCut/Skills` elsewhere; `OPENFILM_SKILLS`
+names another), or in a project's `skills/` folder to keep it with that project. Studio's Community window (the CapyCut
 menu, or the compass beside the chat's "+") lists it under Added with its switch: as a workbench when it has a page,
 else as a skill. People see "workbench" and "skill"; "plugin" is the word for those who make them.
 
@@ -41,7 +41,7 @@ How it is used (its workbench or tab, the conversation, its commands) is read fr
 ### What it builds on: `requires`
 
 As a package names the packages it depends on, a skill or a plugin names the skills it builds on, in its openfilm.json:
-`"requires": ["film"]`. OpenFilm's own are `film` (how a film is written: film.html, its pages, looking at it) and
+`"requires": ["film"]`. CapyCut's own are `film` (how a film is written: film.html, its pages, looking at it) and
 `media` (the library and the services that make media). An agent is given the skills of the plugins on and of the
 skills on, and the skills these require, and so on, each once, a skill after those it builds on; it is told what each
 builds on, and reads those first. One that requires nothing is given without them: a plugin that only lays out notes
@@ -53,13 +53,13 @@ So a skill of yours says only what it adds:
 - what the system prompt or a skill it requires already says (how film.html is written, looking before saying it
   works, changing only what was asked, how to link) it does not say again: it requires that skill;
 - a plugin that adds no way of writing (a new way to see or point at the film) brings no skill at all, only `requires`;
-- a skill's sections are its own: one titled as a section of a skill it requires is a test's failure in OpenFilm's own.
+- a skill's sections are its own: one titled as a section of a skill it requires is a test's failure in CapyCut's own.
 
 A workbench is one of three things, the first one found:
 
 | `package.json` | What it is | What it reaches |
 |---|---|---|
-| `browser`: a JavaScript module | A custom element, loaded into Studio's own page and put where the workbench is | `openfilm/studio` (below), as OpenFilm's own workbenches do |
+| `browser`: a JavaScript module | A custom element, loaded into Studio's own page and put where the workbench is | `openfilm/studio` (below), as CapyCut's own workbenches do |
 | `scripts.start`: a command line | A program started in the plugin's folder, serving its workbench on `PORT` (host `127.0.0.1`); `OPENFILM_PROJECT` is the project's folder | Whatever it serves |
 | (none) and `index.html` | A web page, shown in a frame on an origin of its own, told where the project's files are by `?project=` | The project's files, read there, and written (PUT) once the person lets it |
 
@@ -71,7 +71,7 @@ A plugin's workbench can be a tab of the library drawer instead, beside Media, T
 says `"tab": { "icon": "layers", "title": { "en": "Notes", "zh-CN": "笔记" } }` (each optional: the plugin's own `icon` and
 `title` when left out; `"tab": true` is the same as `{}`). The tab comes after the library's own, while the plugin is on, and
 is arranged with them in Settings › Advanced. It shows what the workbench would: the element (told the same `project-id`,
-`plugin`, `project` and `folder`), the program's page, or `index.html`. A plugin of OpenFilm's own (`plugins/<id>/`) declares
+`plugin`, `project` and `folder`), the program's page, or `index.html`. A plugin of CapyCut's own (`plugins/<id>/`) declares
 both if it wants both: its `workbench` and its `tab` show the same element, the one its `browser` module names
 (`export { default } from 'openfilm/workbench/<name>'`, built from `studio/ui/src/plugins/<name>/index.tsx`); a tab named
 by a plugin's id that is also one of the library's own takes that one's place.
@@ -79,7 +79,7 @@ by a plugin's id that is also one of the library's own takes that one's place.
 A tab's element is made once for the project and kept for as long as the page is open: while another tab is shown, or the
 drawer is closed, it is moved out of sight, and moved back when the tab is shown again. A move calls `disconnectedCallback`
 and then `connectedCallback`; keep what the element holds across one (let it go only if `isConnected` is still false a
-moment after `disconnectedCallback`, as OpenFilm's own elements do).
+moment after `disconnectedCallback`, as CapyCut's own elements do).
 
 `bin` gives commands: `"bin": { "look": "look.mjs" }` is `openfilm my-plugin look`, for an agent and for other plugins alike.
 A `bin` that is one file is one command, `openfilm my-plugin`.
@@ -100,9 +100,9 @@ Each server is a remote one (`"type": "http"`, an `https://` address, optional s
 `-` and `_`. Put no keys in the file.
 
 The desktop app signs the person in to a remote server once, in their browser (the MCP authorization flow: OAuth with
-PKCE, OpenFilm registering itself with the service's authorization server, a loopback redirect), keeps what it gets
+PKCE, CapyCut registering itself with the service's authorization server, a loopback redirect), keeps what it gets
 sealed with the system's keychain, and refreshes it. Every agent reaches the server through a door on 127.0.0.1 that
-puts the person's token on each request (ACP `mcpServers` of `session/new`), so OpenFilm's own agent, Claude Code and
+puts the person's token on each request (ACP `mcpServers` of `session/new`), so CapyCut's own agent, Claude Code and
 Codex all use it and none holds the credentials; a tool that may change something asks the person first. A plugin with
 only a `.mcp.json` and its `openfilm.json` is listed as a connector in the Community, with `examples` (a few things a
 person could say, in each language) offered on its page.
@@ -128,7 +128,7 @@ openfilm my-plugin look [what] [t | a-b] [--json]
 
 `openfilm edit look` is `openfilm look` as it is, with its options (`--count`, `--full`, `--loudness`) and no `--json` yet.
 
-A plugin of OpenFilm's own does the convention's part with `runLook` (`src/plugin-look.mjs`), and only looks:
+A plugin of CapyCut's own does the convention's part with `runLook` (`src/plugin-look.mjs`), and only looks:
 
 ```js
 import { join } from 'node:path';
@@ -273,7 +273,7 @@ being written; `chat.select(selection)` says what is selected and where the play
   `{ type: 'show-box', time, box }`, `{ type: 'show-track', track }`…); returns the way to stop. A clip, a moment, a
   stretch, a node or a file the app asks to show is a link, given to the workbench that shows it.
 
-**Blocks.** A workbench whose element runs in Studio's page (OpenFilm's own, or one someone made, once the person lets it
+**Blocks.** A workbench whose element runs in Studio's page (CapyCut's own, or one someone made, once the person lets it
 run) can be laid out among the page's panels, as the edit is, instead of taking the whole of the page's middle: its `openfilm.json` says which blocks it draws, and Studio arranges
 them with the page's own (the app's chat, the library) and with blocks another workbench draws. The person shows, hides,
 sizes and moves them from the layout's menu, as the edit's; each workbench has an arrangement of its own.
@@ -311,7 +311,7 @@ const stop = blocks.draw('grade', 'scopes');
 scopes.append(drawScopes());
 ```
 
-**A plugin's own server code.** A plugin of OpenFilm's own (`plugins/<id>/`) may bring a `server.mjs` whose routes Studio
+**A plugin's own server code.** A plugin of CapyCut's own (`plugins/<id>/`) may bring a `server.mjs` whose routes Studio
 answers under `/api/plugins/<id>/…` while the plugin is on (`studio/server/plugin-servers.mjs` says how to write one).
 `pluginApi(id)` calls them from the element: `get(path)`, `post(path, body)`, `put(path, body)`, `patch(path, body)` and
 `delete(path)` resolve with the route's JSON answer and reject with its error; `events(projectId, listener)` hears what the
@@ -335,6 +335,6 @@ imports them by those names draws with the same React as Studio. It may bundle i
 
 ### What is not public
 
-Everything else in Studio's page is OpenFilm's own and may change with any version: its modules, its elements, its classes and
-its styles. OpenFilm's edit reaches a little more of the shell than this (how its blocks are sized where they are docked,
+Everything else in Studio's page is CapyCut's own and may change with any version: its modules, its elements, its classes and
+its styles. CapyCut's edit reaches a little more of the shell than this (how its blocks are sized where they are docked,
 the library's actions on its timeline), through a module that is built into it and not named by the import map.

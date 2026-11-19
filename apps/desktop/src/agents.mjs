@@ -169,7 +169,7 @@ export function keyFileRules(homes, platform = process.platform) {
 }
 
 /**
- * What an agent of someone else's is told, on top of its own instructions: to run `openfilm`, which prints OpenFilm's
+ * What an agent of someone else's is told, on top of its own instructions: to run `openfilm`, which prints CapyCut's
  * system prompt (openfilm/src/system-prompt.mjs) and the skills of the plugins on. Nothing of how any work is done, nor
  * how Studio is pointed at: the system prompt and those skills say it. `command`: the app's `openfilm` by its whole
  * path (openfilmCommand), for an agent whose shell may find another `openfilm` first (PATH_KEPT says which do not);
@@ -177,10 +177,10 @@ export function keyFileRules(homes, platform = process.platform) {
  */
 export function agentInstructions(command = null) {
   const which = command
-    ? `That path is this app's own \`openfilm\`: run every OpenFilm command by it, also where a skill says \`openfilm\`,
+    ? `That path is this app's own \`openfilm\`: run every CapyCut command by it, also where a skill says \`openfilm\`,
 as your shell may find another one first.`
     : 'The `openfilm` on your PATH is this app\'s own.';
-  return `You are working inside OpenFilm, a desktop app for making videos, with Studio open beside this chat on the
+  return `You are working inside CapyCut, a desktop app for making videos, with Studio open beside this chat on the
 project in your working directory. Before you do anything, run \`${command ?? 'openfilm'}\` with no arguments and follow
 what it prints: how to work here, and the skills that say how each kind of work is done. ${which}`;
 }
@@ -196,10 +196,10 @@ export const INSTRUCTIONS = agentInstructions();
 export const PATH_KEPT = Object.freeze(['openfilm', 'byok', 'claude', 'codex']);
 
 /**
- * The app's own agent's whole system prompt, in place of Pi's (a coding assistant's, with Pi's own docs): OpenFilm's
+ * The app's own agent's whole system prompt, in place of Pi's (a coding assistant's, with Pi's own docs): CapyCut's
  * system prompt as an agent in the app has it (openfilm/src/system-prompt.mjs: where it is, how it talks with the
  * person and points back at Studio; not INSTRUCTIONS, which tell another agent to go and read it). How each kind of
- * work is done is OpenFilm's skills' (openfilm/skills ownSkills), which Pi lists after it and the agent reads when a
+ * work is done is CapyCut's skills' (openfilm/skills ownSkills), which Pi lists after it and the agent reads when a
  * task needs one; `buildsOn` says which build on which (openfilm/skills buildsOnLine) and which plugins are off
  * (pluginsOffLine), as `openfilm` says it to other agents.
  */
@@ -419,7 +419,7 @@ export async function diagnoseAgent(id, { appVersion = '' } = {}) {
   const chosen = chosenPaths[id] ?? null;
   const hint = found ? null : chosen ? 'chosen-missing' : wsl ? 'wsl' : report.files.length ? 'unusable' : 'none';
   const lines = [
-    `OpenFilm ${appVersion}`.trim(),
+    `CapyCut ${appVersion}`.trim(),
     `Agent: ${spec.label} (${names.join(', ')})`,
     `System: ${process.platform} ${release()} ${arch()}`,
     `PATH from: ${lastPathSource() ?? 'unknown'}`,
@@ -950,7 +950,7 @@ export const CLIENT_CAPABILITIES = {
   _meta: { parameterizedModelPicker: true, jetbrains: { air: { version: 1, capabilities: ['recommendedValue'] } } },
 };
 
-const CLIENT_INFO = { name: 'openfilm-desktop', title: 'OpenFilm', version: '0.1.0' };
+const CLIENT_INFO = { name: 'openfilm-desktop', title: 'CapyCut', version: '0.1.0' };
 
 /** How long an agent may wait on its model with nothing coming before the turn is stopped. */
 const MODEL_STALL_MS = 5 * 60_000;
@@ -981,7 +981,7 @@ export const ANTIGRAVITY_TESTED = '1.5.1';
 
 /**
  * The oldest Claude Code the chat was tried with. An older one lists only the models it knows: 2.1.288 has no Haiku
- * 5.5, which 2.1.308 has (#230), and the person takes that for OpenFilm's or the service's doing. Never above npm's
+ * 5.5, which 2.1.308 has (#230), and the person takes that for CapyCut's or the service's doing. Never above npm's
  * `stable`, which the Claude app, the Homebrew cask and `claude update` follow: else most are told to update with
  * nothing to update to.
  */
@@ -1010,11 +1010,11 @@ export function codexTooOld(agent, path, e, versionOf = codexVersion) {
   const version = versionOf(path);
   if (!version || !laterVersion(CODEX_TESTED, version)) return e;
   const why = e instanceof Error ? e.message : String(e);
-  return Object.assign(new Error(`Codex ${version} is older than OpenFilm needs (${CODEX_TESTED} or later): update Codex, then try again. ${why}`.trim()), { code: 'outdated' });
+  return Object.assign(new Error(`Codex ${version} is older than CapyCut needs (${CODEX_TESTED} or later): update Codex, then try again. ${why}`.trim()), { code: 'outdated' });
 }
 
 /**
- * An Antigravity older than the ACP release tried with OpenFilm.
+ * An Antigravity older than the ACP release tried with CapyCut.
  * @param {string} agent @param {string | undefined} path @param {any} e @param {(file: string) => string | null} [versionOf]
  */
 export function antigravityTooOld(agent, path, e, versionOf = antigravityVersion) {
@@ -1022,7 +1022,7 @@ export function antigravityTooOld(agent, path, e, versionOf = antigravityVersion
   const version = versionOf(path);
   if (!version || !laterVersion(ANTIGRAVITY_TESTED, version)) return e;
   const why = e instanceof Error ? e.message : String(e);
-  return Object.assign(new Error(`Google Antigravity ${version} is older than OpenFilm needs (${ANTIGRAVITY_TESTED} or later): update agy, then try again. ${why}`.trim()), { code: 'outdated' });
+  return Object.assign(new Error(`Google Antigravity ${version} is older than CapyCut needs (${ANTIGRAVITY_TESTED} or later): update agy, then try again. ${why}`.trim()), { code: 'outdated' });
 }
 
 /** ACP's internal error: what an agent's own failures come as. */
@@ -1237,7 +1237,7 @@ export class AgentSession {
    *           onSend?: (sent: { prompt: any[], _meta?: any }) => void, stallMs?: number, answerOnly?: boolean, forget?: boolean }} opts
    * `onSend` hears each message as it goes to the agent, whole (the app's words before the first one's, for an agent
    * told them there); `opened`, once started, says what it was started and opened with.
-   * `skills`: the session has its maker's skills and MCP servers, OpenFilm's skills, and of the person's own only those
+   * `skills`: the session has its maker's skills and MCP servers, CapyCut's skills, and of the person's own only those
    * let in (`allowed`, `mcpAllowed`), each agent told by its own switch (agent-skills.mjs); `opened.skills` says how.
    * `stallMs`: how long the agent may wait on its model with nothing coming (MODEL_STALL_MS) before the turn is stopped.
  * `answerOnly`: it may only answer (Studio's own questions): every permission it asks is refused, even what the app
@@ -1253,7 +1253,7 @@ export class AgentSession {
     if (HARNESS_AGENTS.includes(opts.agent) && !opts.harness) throw Object.assign(new Error('Connect this agent in Settings → Agents first.'), { code: 'not-ready' });
     this.opts = opts;
     /* the app's own agent runs Pi (pi-agent.mjs), the person's their own program through its adapter */
-    this.spec = HARNESS_AGENTS.includes(opts.agent) ? { label: opts.agent === 'openfilm' ? 'OpenFilm' : 'Own key', env: () => ({}) } : AGENTS[opts.agent];
+    this.spec = HARNESS_AGENTS.includes(opts.agent) ? { label: opts.agent === 'openfilm' ? 'CapyCut' : 'Own key', env: () => ({}) } : AGENTS[opts.agent];
     this.sessionId = null;
     this.info = null;
     this.stderr = '';
@@ -1323,7 +1323,7 @@ export class AgentSession {
        (OPENFILM_GET_WEB lists it). Its models' keys (`harness.env`) are not in its environment, which every command it
        runs inherits and other programs of this user can read (`ps`): they go over a pipe of their own (KEYS_FD) */
     const own = !harness ? {} : { OPENFILM_GET_WEB: '1' };
-    /* its skills and MCP servers: its maker's, OpenFilm's skills, and the person's own only those let in (agent-skills.mjs) */
+    /* its skills and MCP servers: its maker's, CapyCut's skills, and the person's own only those let in (agent-skills.mjs) */
     const skills = this.opts.skills
       ? await sessionSkills(this.opts.agent, { cwd: this.opts.cwd, env: shell, ...this.opts.skills }).catch(() => null) : null;
     if (harness) own.OPENFILM_PI = JSON.stringify({ agentDir: harness.home, models: harness.models, model: harness.model, systemPrompt: ownAgentPrompt(skills?.buildsOn ?? ''), skills: skills?.piSkills ?? null });

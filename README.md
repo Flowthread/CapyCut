@@ -1,6 +1,6 @@
 <p align="center">
-  <img src="docs/logo-light.svg#gh-light-mode-only" alt="OpenFilm" height="48">
-  <img src="docs/logo-dark.svg#gh-dark-mode-only" alt="OpenFilm" height="48">
+  <img src="docs/logo-light.svg#gh-light-mode-only" alt="CapyCut" height="48">
+  <img src="docs/logo-dark.svg#gh-dark-mode-only" alt="CapyCut" height="48">
 </p>
 <p align="center">The open source AI video agent.</p>
 <p align="center">
@@ -40,13 +40,13 @@
   <a href="https://www.youtube.com/@riverisbuilding"><img alt="Watch on YouTube" src="docs/buttons/youtube.svg" /></a>
 </p>
 
-[![OpenFilm: an agent makes a film while you watch, then you change it by hand](docs/openfilm.webp)](https://openfilm.dev)
+[![CapyCut: an agent makes a film while you watch, then you change it by hand](docs/openfilm.webp)](https://openfilm.dev)
 
 ---
 
 ### About
 
-OpenFilm turns any coding agent into a video agent, with editors to change anything it makes.
+CapyCut turns any coding agent into a video agent, with editors to change anything it makes.
 
 You and the agent work on the same film, together and live. Whatever the agent changes, you see as it happens; whatever
 you change, the agent sees too. The agent does most of the work; you point at anything and ask for a change, or make it
@@ -76,7 +76,7 @@ npx skills add openfilm/openfilm
 
 ### Editors
 
-Each editor is a different way to work on the same film, and in every one you and the agent work together. OpenFilm
+Each editor is a different way to work on the same film, and in every one you and the agent work together. CapyCut
 comes with four, and more official editors are in development for different kinds of people: simple enough for anyone
 to pick up, and professional workbenches for those who want them. Editors follow the Community's open standard, so
 anyone can build one and share it.
@@ -91,19 +91,19 @@ anyone can build one and share it.
   you preview is what you export.
 
 All four share one library: your own footage in folders, linked rather than copied and found again when you move it,
-alongside OpenFilm's free music, sound effects, voices and stickers.
+alongside CapyCut's free music, sound effects, voices and stickers.
 
 ### Community
 
-The Community is an open standard for everything you can add to OpenFilm, and anyone can build for it.
+The Community is an open standard for everything you can add to CapyCut, and anyone can build for it.
 
-- **Plugins** extend OpenFilm itself with new editors and connectors to outside services. OpenFilm's own editors are
+- **Plugins** extend CapyCut itself with new editors and connectors to outside services. CapyCut's own editors are
   plugins, built the same way as anyone's.
 - **Skills** teach the agent a way of making a kind of film.
 - **Assets** are music, sound effects, transitions, effects, text styles, stickers and templates.
 - **Examples** are complete projects to learn from and remix.
 
-Each is a plain folder. Add one from the Community window in OpenFilm, or build your own:
+Each is a plain folder. Add one from the Community window in CapyCut, or build your own:
 [make a plugin](packages/openfilm/plugins/README.md), [write a skill](https://github.com/openfilm/community/blob/main/SPEC.md),
 [share assets](https://github.com/openfilm/community/blob/main/assets/CONTRIBUTING.md), or share a finished film as an
 example, then list it in [openfilm/community](https://github.com/openfilm/community).
@@ -137,12 +137,12 @@ window.film = {
 ```
 
 **Your changes stay yours.** When you change something inside a shot by hand, such as its text, color, position or
-size, OpenFilm saves it in the clip's `overrides` rather than in the page's code. The agent can rewrite the page and
+size, CapyCut saves it in the clip's `overrides` rather than in the page's code. The agent can rewrite the page and
 your changes still apply. The full format is in [SPEC.md](packages/openfilm/SPEC.md).
 
 ### Contributing
 
-To run OpenFilm from source or send a pull request, read [CONTRIBUTING.md](CONTRIBUTING.md). Report bugs in
+To run CapyCut from source or send a pull request, read [CONTRIBUTING.md](CONTRIBUTING.md). Report bugs in
 [Issues](https://github.com/openfilm/openfilm/issues) with the report from Settings → Developer → Copy report, and
 security issues as [SECURITY.md](SECURITY.md) describes.
 

@@ -6,7 +6,7 @@ The application includes MODNet portrait alpha matting (12,984,781 bytes), Media
 URLs, licenses, and download limits are declared in ../../src/vision-models.mjs.
 
 Optional BiRefNet Lite subject extraction is 98,484,532 bytes (about 99 MB), downloaded only when selected.
-The verified file is cached at <OpenFilm home>/cache/vision/1/subject.onnx. It may also be placed there manually
+The verified file is cached at <CapyCut home>/cache/vision/1/subject.onnx. It may also be placed there manually
 from the exact source in the manifest; a different or corrupt file is rejected. Failed downloads never replace a
 valid cached model. Models work offline once available. Video frames never go to the model hosting sites.
 
@@ -43,7 +43,7 @@ across cuts or backward seeks. This does not implement learned video temporal ma
 Researched alternatives included RVM (GPL-3.0) and MatAnyone/MatAnyone2 (NTU S-Lab terms), plus GPUPixel and
 OpenMakeupSDK. The integrated inference/model dependencies are Apache-2.0 or MIT. No commercial SDK, paid
 API, Python daemon or separately installed local service is needed. Rendering, landmarks, masks, geometric
-warps and pigment blending are integrated directly into OpenFilm's preview/export worker.
+warps and pigment blending are integrated directly into CapyCut's preview/export worker.
 
 Upstream sources:
 https://github.com/ZHKKKe/MODNet

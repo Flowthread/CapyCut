@@ -8,7 +8,7 @@ import { filmHtml } from '../../src/film-doc.mjs';
 import { listProjects, openProject } from './projects.mjs';
 import { startStudio } from './server.mjs';
 
-test('deletes go to OpenFilm’s recycle bin, come back where they were, and go for good only when asked', async () => {
+test('deletes go to CapyCut’s recycle bin, come back where they were, and go for good only when asked', async () => {
   const scratch = await mkdtemp(join(tmpdir(), 'of-recycle-'));
   const names = ['HOME', 'SHARED_HOME', 'LIBRARY', 'SAVED', 'TRASH_DIR'];
   const before = new Map(names.map((name) => [`OPENFILM_${name}`, process.env[`OPENFILM_${name}`]]));

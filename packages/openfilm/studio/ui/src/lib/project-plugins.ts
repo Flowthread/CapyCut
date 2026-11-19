@@ -1,5 +1,5 @@
 /**
- * The plugins a project has: OpenFilm's own (lib/plugins), then the ones someone made, among the person's own, this
+ * The plugins a project has: CapyCut's own (lib/plugins), then the ones someone made, among the person's own, this
  * project's, and those installed. A skill shows nowhere but in the conversation; a plugin is one that also shows
  * outside it: it brings a surface the person works in, a web page at its folder's root (openfilm/src/skills.mjs
  * SKILL_PAGE), an element put in the editor's own page (its `browser` module) or a program that serves a page (its
@@ -34,7 +34,7 @@ export const isPlugin = (skill: SkillEntry): boolean => Boolean(skill.surface ||
 /** The skills of a list that are plugins, installed. */
 export const skillPlugins = (skills: readonly SkillEntry[]): Plugin[] => skills.filter((k) => isPlugin(k) && k.installed !== false).map(pluginOfSkill);
 
-/** OpenFilm's own and those someone made, in the order the person put them in (Community › Mine). */
+/** CapyCut's own and those someone made, in the order the person put them in (Community › Mine). */
 export function usePluginsOf(projectId: string | null): readonly Plugin[] {
   const plugins = usePlugins();
   const order = useWorkbenchOrder();

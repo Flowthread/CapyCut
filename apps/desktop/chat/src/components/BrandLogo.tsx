@@ -19,7 +19,7 @@ export function BrandLogo({ size = 18, className }: { size?: number; className?:
       fill="currentColor"
       className={`block shrink-0 ${className ?? ''}`.trim()}
       role="img"
-      aria-label="OpenFilm"
+      aria-label="CapyCut"
     >
       <mask id={gap} maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100">
         <rect width="100" height="100" fill="#fff" />

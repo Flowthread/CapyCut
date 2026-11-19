@@ -29,7 +29,7 @@ async function fixture(run) {
     upstream = createServer(async (req, res) => {
       const chunks = []; for await (const chunk of req) chunks.push(chunk);
       const call = { path: req.url, headers: req.headers, method: req.method, body: Buffer.concat(chunks) };
-      /* what OpenFilm's service offers is asked whenever the voices are listed: not a call the tests count */
+      /* what CapyCut's service offers is asked whenever the voices are listed: not a call the tests count */
       if (req.url !== '/v1/media/models') calls.push(call);
       const respond = (body, status = 200) => res.writeHead(status, { 'content-type': 'application/json' }).end(JSON.stringify(body));
       if (req.url === '/v1/media/models') respond({ models: { tts: [
@@ -95,7 +95,7 @@ async function fixture(run) {
   }
 }
 
-test('OpenFilm\'s service: the voice is its recording, kept here and sent with each line; Inworld first, ElevenLabs as an engine of its own', () => fixture(async ({ call, calls, audio }) => {
+test('CapyCut\'s service: the voice is its recording, kept here and sent with each line; Inworld first, ElevenLabs as an engine of its own', () => fixture(async ({ call, calls, audio }) => {
   await call('voices', 'POST', { provider: 'openfilm', name: 'Not signed in', consent: true, audio }, 409);
   await call('providers/openfilm/key', 'PUT', { key: 'ofk_test_service_key' });
   const { services } = await call('voices');
@@ -137,10 +137,10 @@ test('OpenFilm\'s service: the voice is its recording, kept here and sent with e
   await call('voices', 'POST', { provider: 'openfilm', engine: 'cartesia', name: 'Nope', consent: true, audio }, 400);
   await call('voices/import', 'POST', { provider: 'openfilm', voiceId: 'x' }, 404);
   await call('providers/openfilm/key', 'PUT', { key: 'ofk_another_computer_key' });
-  assert.equal((await call('voices')).voices.find((v) => v.uid === voice.uid).available, true, 'any OpenFilm sign-in speaks it');
+  assert.equal((await call('voices')).voices.find((v) => v.uid === voice.uid).available, true, 'any CapyCut sign-in speaks it');
 }));
 
-test('voices are OpenFilm\'s own: never cloned with a person\'s own key, never made by the agent, and signed out they ask to sign in', () => fixture(async ({ call, calls, audio, studio }) => {
+test('voices are CapyCut\'s own: never cloned with a person\'s own key, never made by the agent, and signed out they ask to sign in', () => fixture(async ({ call, calls, audio, studio }) => {
   await call('voices', 'POST', { provider: 'openfilm', name: 'Signed out', consent: true, audio }, 409);
   await call('providers/openfilm/key', 'PUT', { key: 'ofk_test_service_key' });
   await call('voices', 'POST', { provider: 'inworld', name: 'Own key', consent: true, audio }, 400);

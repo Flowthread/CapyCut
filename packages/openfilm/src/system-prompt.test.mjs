@@ -8,7 +8,7 @@ test('the system prompt is a few lines: where the agent is, that skills say how,
   for (const where of ['terminal', 'app']) {
     const prompt = systemPrompt(where);
     assert.ok(prompt.split(/\s+/).length < (where === 'app' ? 250 : 140), `${where}: ${prompt.split(/\s+/).length} words`);
-    /* an agent in a terminal is someone's own: how it talks with them is not OpenFilm's to say */
+    /* an agent in a terminal is someone's own: how it talks with them is not CapyCut's to say */
     assert.equal(prompt.split('Reply in the language').length - 1, where === 'app' ? 1 : 0);
     assert.match(prompt, /`openfilm skill <name>` prints one\./);
     assert.ok(!prompt.includes('<!--'), 'the marks of the file are not part of it');

@@ -1,5 +1,5 @@
 /**
- * OpenFilm's recycle bin in the resource center (studio/server/recycle-bin.mjs): what was deleted in OpenFilm, the last
+ * CapyCut's recycle bin in the resource center (studio/server/recycle-bin.mjs): what was deleted in CapyCut, the last
  * first, with where it was and when; put back, deleted for good, or all of it emptied. Laid out as a file manager's bin
  * is: a list with its columns, picked with a click (⌘/Ctrl adds one, ⇧ a run), a right-click menu, the commands on the
  * bar.

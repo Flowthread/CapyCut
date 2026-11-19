@@ -20,8 +20,8 @@ From the root:
 
 | Command | What it does |
 | --- | --- |
-| `pnpm dev` | Studio from source (packages/openfilm's `dev`), apart from an installed OpenFilm |
-| `pnpm dev:desktop` | the desktop app from source, as "OpenFilm Dev" |
+| `pnpm dev` | Studio from source (packages/openfilm's `dev`), apart from an installed CapyCut |
+| `pnpm dev:desktop` | the desktop app from source, as "CapyCut Dev" |
 | `pnpm test` | every package's tests |
 | `pnpm typecheck` | every package's types |
 | `pnpm build` | Studio's editor and the desktop app's window |
@@ -38,8 +38,8 @@ From the root:
 packages/openfilm/   npm `openfilm`: the format, the CLI and Studio
   SPEC.md              the film format
   SYSTEM_PROMPT.md     what `openfilm` prints for agents: where they are and how to work with the person
-  manual/              OpenFilm's own skill that goes with no plugin, listed after it: the media
-  plugins/             OpenFilm's own plugins, each a folder: its workbench, its skills (skills/<name>/), its commands
+  manual/              CapyCut's own skill that goes with no plugin, listed after it: the media
+  plugins/             CapyCut's own plugins, each a folder: its workbench, its skills (skills/<name>/), its commands
   bin/                 the `openfilm` command
   src/                 reading film.html, the host that draws frames in a headless browser, look and render
   studio/server/       Studio's server: projects, edits, history, exports, media providers
@@ -61,7 +61,7 @@ docs/                pictures for the README
 ## packages/openfilm: the format, the CLI and Studio
 
 `pnpm dev` runs Studio on port 4848, with its state and exports in `packages/openfilm/.dev/` (git-ignored), beside an
-OpenFilm you have installed; its projects are in the library every OpenFilm shares. It opens a sample film in your browser, rebuilds the editor
+CapyCut you have installed; its projects are in the library every CapyCut shares. It opens a sample film in your browser, rebuilds the editor
 when `studio/ui` changes (reload the page), and restarts Studio when `studio/server` or `src` change. Ctrl+C stops it.
 
 `pnpm --filter openfilm test` runs its tests and `pnpm --filter openfilm typecheck` checks the server's and the
@@ -78,13 +78,13 @@ While `pnpm dev` runs, `packages/openfilm/.dev/bin/openfilm` (`openfilm.cmd` on 
 on that Studio. Ask Codex, Claude Code or any coding agent for a film and tell it to run that command instead of the
 skill's `npx -y openfilm@latest` (the release); the manual names the same command, so it keeps using it. Your films
 appear in the Studio `pnpm dev` opened. Its state is in `packages/openfilm/.dev/` and its port is its own, so an
-installed OpenFilm, its Studio on port 4747 and `~/.openfilm` are left alone; projects are the one thing they share:
-every OpenFilm uses the same library, the one Studio's Settings chose (kept in `~/.openfilm/prefs.json`, which
-`OPENFILM_SHARED_HOME` points it at), by default `~/Movies/OpenFilm/Projects` on macOS. A test that must stay apart
+installed CapyCut, its Studio on port 4747 and `~/.openfilm` are left alone; projects are the one thing they share:
+every CapyCut uses the same library, the one Studio's Settings chose (kept in `~/.openfilm/prefs.json`, which
+`OPENFILM_SHARED_HOME` points it at), by default `~/Movies/CapyCut/Projects` on macOS. A test that must stay apart
 sets `OPENFILM_LIBRARY` and leaves `OPENFILM_SHARED_HOME` unset.
 
 To make your checkout the `openfilm` your agents use everywhere, `npm link` in `packages/openfilm` (`npm unlink -g
-openfilm` undoes it). That one shares `~/.openfilm` and port 4747 with an installed OpenFilm; of two Studios, the
+openfilm` undoes it). That one shares `~/.openfilm` and port 4747 with an installed CapyCut; of two Studios, the
 newer version replaces the older.
 
 ## packages/shared: what the clients share
@@ -98,13 +98,13 @@ workspace reads its TypeScript in `src/` as it is, and the desktop app bundles i
 ## apps/desktop: the desktop app
 
 ```sh
-pnpm dev:desktop                              # builds the window's page, then runs the app as "OpenFilm Dev"
+pnpm dev:desktop                              # builds the window's page, then runs the app as "CapyCut Dev"
 pnpm --filter @openfilm/desktop test
 pnpm --filter @openfilm/desktop typecheck
 ```
 
-Run from source, the app is its own "OpenFilm Dev": its own name, data folder, Studio home and port, so it never
-shares a window or a Studio with an installed OpenFilm. Its projects are in the same library as every OpenFilm's.
+Run from source, the app is its own "CapyCut Dev": its own name, data folder, Studio home and port, so it never
+shares a window or a Studio with an installed CapyCut. Its projects are in the same library as every CapyCut's.
 Its renamed copy of Electron lives in `apps/desktop/.dev/` (git-ignored), signed only for this machine: you need no
 certificate to run or change it. Its window's page imports Studio's editor
 from `packages/openfilm` as source, so a change to Studio shows in the app at its next start.
@@ -144,10 +144,10 @@ that you are taking it, and open one before starting a large change, so nobody d
 
 - **The system prompt** ([SYSTEM_PROMPT.md](packages/openfilm/SYSTEM_PROMPT.md)), what `openfilm` prints for agents,
   is a few lines: where the agent is, how to be with the person, and that skills say how each kind of work is done.
-  It holds nothing of any one kind of work, not what a film is nor any command: OpenFilm's own skills
+  It holds nothing of any one kind of work, not what a film is nor any command: CapyCut's own skills
   ([manual/](packages/openfilm/manual), and each plugin's in [plugins/](packages/openfilm/plugins)) hold that, each
   with the commands it uses: how a film is made and seen (the one rule: the picture depends only on t), its media, its
-  canvas. A new part of OpenFilm an agent works with gets a skill of its own there, never more words in the system
+  canvas. A new part of CapyCut an agent works with gets a skill of its own there, never more words in the system
   prompt. No style advice or methods. If an agent gets
   something wrong, a word is added only when a skill was ambiguous; if a tool behaved oddly, the tool is fixed.
 - **The format** ([SPEC.md](packages/openfilm/SPEC.md)): a new attribute of `film.html` is read in one place,
@@ -158,7 +158,7 @@ that you are taking it, and open one before starting a large change, so nobody d
 
 ### Which services are built in
 
-A built-in provider reads as a service OpenFilm vouches for: people hand it their keys, their prompts and their
+A built-in provider reads as a service CapyCut vouches for: people hand it their keys, their prompts and their
 footage. So we hold one standard for every one:
 
 - **An internationally known company, or a leading name in its field**, offering **its own** service (its own models,
@@ -171,9 +171,9 @@ footage. So we hold one standard for every one:
 
   We look at it with you, and say yes or no with the reason before you spend time on a pull request.
 - **A service that resells or routes other companies' models** is not built in, however good its API: those models
-  reach OpenFilm through their makers, or through a provider that is already built in.
+  reach CapyCut through their makers, or through a provider that is already built in.
 
-Every service, built in or not, works with OpenFilm today through **Settings › Services › Custom services**: any
+Every service, built in or not, works with CapyCut today through **Settings › Services › Custom services**: any
 HTTP service with its address, a key if it has one, and a few words about it; the agent calls it from there, and the
 key stays on the computer.
 

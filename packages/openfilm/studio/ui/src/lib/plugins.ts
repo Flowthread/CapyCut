@@ -1,5 +1,5 @@
 /**
- * OpenFilm's plugins as Studio shows them (src/plugins.mjs; the library's Plugins tab): which are on, kept by Studio in
+ * CapyCut's plugins as Studio shows them (src/plugins.mjs; the library's Plugins tab): which are on, kept by Studio in
  * the shared prefs so the desktop app, Studio in a browser and the agents' CLI agree. Read once and again when the window comes back (another
  * window may have changed them); a change here is told to every part of the page at once.
  *
@@ -19,7 +19,7 @@ export interface PluginTab { title?: Record<string, string>; icon?: string }
  * A plugin: its words by language (`title`, `summary`), its mark's name, the workbench, the blocks it is laid out in
  * (lib/blocks), the library's tab, the skills and the commands it brings, whether it is on, and whether it is still
  * being made good (`beta`) or not made yet (`soon`: no switch). One someone made is a skill with a surface
- * (lib/project-plugins): `appIcon` its app icon's address (components/AppIcon; OpenFilm's own too), `skill` its uid, by which it is turned, `page` its surface's address, and `files` where the
+ * (lib/project-plugins): `appIcon` its app icon's address (components/AppIcon; CapyCut's own too), `skill` its uid, by which it is turned, `page` its surface's address, and `files` where the
  * project's files are for that page.
  */
 /** What a person could say to use a plugin, and what the agent then does (src/plugins.mjs exampleOf). */
@@ -40,9 +40,9 @@ export interface Plugin {
   workbench?: Workbench; blocks?: string | readonly (BlockDecl | string)[]; tab?: PluginTab; skills: string[]; commands?: string[]; on: boolean; beta?: boolean; soon?: boolean; skill?: string; page?: string; files?: string; program?: boolean; runs?: boolean; inApp?: boolean; element?: string;
   /** a connector's MCP servers (src/plugins.mjs readMcpServers): given to the agent while it is on */
   mcpServers?: Record<string, { type: 'http'; url: string } | { type: 'stdio'; command: string }>;
-  /** got (one OpenFilm comes with always is); not got, it is only in the Community's store */
+  /** got (one CapyCut comes with always is); not got, it is only in the Community's store */
   installed?: boolean;
-  /** comes with OpenFilm: turned off, never removed */
+  /** comes with CapyCut: turned off, never removed */
   builtIn?: boolean;
 }
 
@@ -142,10 +142,10 @@ export async function setPluginOn(id: string, on: boolean): Promise<void> {
   take(body.plugins, body.order);
 }
 
-/** Whether a plugin is got: one OpenFilm comes with always is (an answer from an older Studio: on or not). */
+/** Whether a plugin is got: one CapyCut comes with always is (an answer from an older Studio: on or not). */
 export const isInstalled = (p: Plugin): boolean => p.installed ?? (p.on || Boolean(p.builtIn));
 
-/** Remove a plugin the person got (one OpenFilm comes with is only turned off). Rejects with what Studio said. */
+/** Remove a plugin the person got (one CapyCut comes with is only turned off). Rejects with what Studio said. */
 export async function removePlugin(id: string): Promise<void> {
   const was = readPlugins();
   take(was.map((p) => (p.id === id ? { ...p, on: false, installed: false } : p)));
@@ -164,7 +164,7 @@ export function readWorkbenchOrder(): readonly string[] {
   return order;
 }
 
-/** Put the workbenches in an order (shown at once; Studio keeps it for every OpenFilm on this computer). */
+/** Put the workbenches in an order (shown at once; Studio keeps it for every CapyCut on this computer). */
 export async function setWorkbenchOrder(ids: readonly string[]): Promise<void> {
   const was = readWorkbenchOrder();
   take(readPlugins(), ids);

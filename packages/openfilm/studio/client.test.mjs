@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { agentName, canvasBy, ensureStudio, olderThanThis, openInStudio, updateOpenfilm } from './client.mjs';
+import { agentName, canvasBy, ensureStudio, olderThanThis, openInStudio, updateCapyCut } from './client.mjs';
 
 /* Studio's port, and the film's next to it, both free. They are below the range every system hands out on its own
    (Linux from 32768, macOS and Windows from 49152), so no connection or other server takes them while one Studio
@@ -30,7 +30,7 @@ test('the CLI starts one Studio in the background, reuses it, and it cleans up w
   const said = [];
   const first = await ensureStudio((line) => said.push(line));
   try {
-    assert.deepEqual(said, ['Starting OpenFilm Studio…']);
+    assert.deepEqual(said, ['Starting CapyCut Studio…']);
     const again = await ensureStudio((line) => said.push(line));
     assert.equal(again.pid, first.pid, 'the running one is reused');
     assert.equal(said.length, 1);
@@ -70,7 +70,7 @@ test('an older Studio is replaced, and one whose run.json was lost is still foun
   const studio = await ensureStudio((line) => said.push(line));
   try {
     assert.deepEqual(quits, ['old'], 'the older one was asked to stop');
-    assert.match(said[0], /^Updating OpenFilm Studio to /);
+    assert.match(said[0], /^Updating CapyCut Studio to /);
     assert.equal(studio.origin, `http://127.0.0.1:${port}`, 'the new one takes its port: pages open on it reconnect');
     assert.equal(studio.key, readFileSync(join(home, 'key'), 'utf8'), 'with the machine\'s key');
     rmSync(join(home, 'run.json'));
@@ -122,7 +122,7 @@ test('`openfilm open` never makes the current folder a project unasked, nor a co
 });
 
 test('a newer openfilm on npm is told from what was learnt (no network when not asked), never an older one', async () => {
-  const { newerOpenfilm } = await import('./client.mjs');
+  const { newerCapyCut } = await import('./client.mjs');
   const home = mkdtempSync(join(tmpdir(), 'of-update-'));
   const was = process.env.OPENFILM_HOME, wasOff = process.env.OPENFILM_NO_UPDATE_CHECK;
   process.env.OPENFILM_HOME = home;
@@ -130,9 +130,9 @@ test('a newer openfilm on npm is told from what was learnt (no network when not 
   delete process.env.OPENFILM_NO_UPDATE_CHECK;
   try {
     writeFileSync(join(home, 'update.json'), JSON.stringify({ checkedAt: Date.now(), latest: '99.0.0' }));
-    assert.equal(await newerOpenfilm({ network: false }), '99.0.0');
+    assert.equal(await newerCapyCut({ network: false }), '99.0.0');
     writeFileSync(join(home, 'update.json'), JSON.stringify({ checkedAt: Date.now(), latest: '0.0.1' }));
-    assert.equal(await newerOpenfilm({ network: false }), null);
+    assert.equal(await newerCapyCut({ network: false }), null);
   } finally {
     if (was === undefined) delete process.env.OPENFILM_HOME; else process.env.OPENFILM_HOME = was;
     if (wasOff !== undefined) process.env.OPENFILM_NO_UPDATE_CHECK = wasOff;
@@ -140,7 +140,7 @@ test('a newer openfilm on npm is told from what was learnt (no network when not 
 });
 
 test('`openfilm update` in a source checkout says git pull updates it, and touches nothing', async () => {
-  const said = await updateOpenfilm();
+  const said = await updateCapyCut();
   assert.equal(said.ok, true);
   assert.match(said.lines[0], /source checkout: git pull updates it/);
 });

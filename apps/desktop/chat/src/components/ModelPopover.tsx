@@ -267,7 +267,7 @@ export function ModelPopover({ placement = 'bottom', align = 'start', agent: con
   const sideMenu = open && choosing && typeof document !== 'undefined' ? createPortal(
     <div ref={sideRef} onMouseEnter={() => showSide(choosing.id)} onMouseLeave={hideSideSoon}
       style={{ ...POPOVER_CHROME, padding: 4, overflowY: 'auto', ...(sideStyle ?? { position: 'fixed', left: -9999, top: 0 }) }}>
-      {/* The model's maker for OpenFilm, then its name; the choices follow Settings' order and visibility. */}
+      {/* The model's maker for CapyCut, then its name; the choices follow Settings' order and visibility. */}
       {rowChoices(agent, choosing, chosenValue(choosing)).map((choice) => {
         const selected = chosenValue(choosing) === choice.value;
         return (

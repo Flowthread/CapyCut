@@ -53,7 +53,7 @@ contextBridge.exposeInMainWorld('openfilmNative', {
     switchAccount: (id) => ipcRenderer.invoke('desktop:agents:switch-account', { id }),
     usage: (id, fresh) => ipcRenderer.invoke('desktop:agents:usage', { id, fresh: fresh === true }),
     setShown: (id, shown) => ipcRenderer.invoke('desktop:agents:shown', { id, shown: shown === true }),
-    saveOpenFilmModels: (config) => ipcRenderer.invoke('desktop:agents:openfilm-models', { config }),
+    saveCapyCutModels: (config) => ipcRenderer.invoke('desktop:agents:openfilm-models', { config }),
     saveAgentModels: (id, config) => ipcRenderer.invoke('desktop:agents:model-menu', { id, config }),
     refreshModels: (id, options) => ipcRenderer.invoke('desktop:agents:model-refresh', { id, ...options }),
     locate: (id, words) => ipcRenderer.invoke('desktop:agents:locate', { id, words }),
@@ -68,9 +68,9 @@ contextBridge.exposeInMainWorld('openfilmNative', {
     copyReport: (options) => ipcRenderer.invoke('desktop:diagnostics:copy', options),
     saveOwnModel: (config) => ipcRenderer.invoke('desktop:agents:own-model', { config }),
     removeOwnModel: (id) => ipcRenderer.invoke('desktop:agents:own-model-remove', { id }),
-    /* the MCP servers the person added to it themselves, each let into OpenFilm or not (skills-ipc.mjs) */
+    /* the MCP servers the person added to it themselves, each let into CapyCut or not (skills-ipc.mjs) */
     mcp: (id) => ipcRenderer.invoke('desktop:agents:mcp', { id }),
-    /* the skills the person installed in it themselves, each let into OpenFilm or not */
+    /* the skills the person installed in it themselves, each let into CapyCut or not */
     skills: (id) => ipcRenderer.invoke('desktop:agents:skills', { id }),
     allowSkill: (id, name, allowed) => ipcRenderer.invoke('desktop:skills:allow', { agent: id, name, allowed: allowed === true }),
     allowMcp: (id, name, allowed) => ipcRenderer.invoke('desktop:agents:mcp-allow', { id, name, allowed: allowed === true }),
@@ -124,7 +124,7 @@ contextBridge.exposeInMainWorld('openfilmNative', {
     list: (project, agent) => ipcRenderer.invoke('desktop:skills:list', { project, agent }),
     texts: (project, agent, names) => ipcRenderer.invoke('desktop:skills:texts', { project, agent, names }),
     allow: (agent, name, allowed) => ipcRenderer.invoke('desktop:skills:allow', { agent, name, allowed }),
-    /* one of OpenFilm's skills turned on or off: the agents' sessions take it up */
+    /* one of CapyCut's skills turned on or off: the agents' sessions take it up */
     changed: () => ipcRenderer.invoke('desktop:skills:changed'),
     preview: (url) => ipcRenderer.invoke('desktop:skills:preview', { url }),
     /* a folder dropped (its path), or null: one picked in the system's dialog, with the page's words { title, button } */

@@ -1,5 +1,5 @@
 /**
- * OpenFilm for desktop: one window of tabs, a project in each, a chat on the left and Studio on the right, one page
+ * CapyCut for desktop: one window of tabs, a project in each, a chat on the left and Studio on the right, one page
  * per tab (tabs.mjs). A project is picked in Studio's projects window (the tabs' `+`), and its tab opens; with no tab
  * open, the window's page is the projects (HOME).
  *
@@ -31,12 +31,12 @@ import { readPreferences, registerChatIpc } from './chat-ipc.mjs';
 import { registerSkillsIpc } from './skills-ipc.mjs';
 import { createConnectors, registerConnectorsIpc } from './connectors.mjs';
 import { createRoster } from './agent-roster.mjs';
-import { createOpenFilmAgent } from './openfilm-agent.mjs';
+import { createCapyCutAgent } from './openfilm-agent.mjs';
 import { createAgentCatalogs } from './agent-catalogs.mjs';
 import { createAgentUpdates } from './agent-updates.mjs';
 import { AGENTS, checkAgentProgram, closeEverySession, diagnoseAgent, forgetAgentStatus, listAgents, localAgent, openAgentInstaller, openAgentUpdate, openAgentSignIn, setChosenPaths, signOutAgent } from './agents.mjs';
 import { agentUsage, forgetAgentUsage } from './agent-usage.mjs';
-import { installOpenfilmCommand } from './openfilm-command.mjs';
+import { installCapyCutCommand } from './openfilm-command.mjs';
 import { startUpdates } from './updates.mjs';
 import { stepAside } from './update-launch.mjs';
 import { ensureFfmpeg, ffmpegDir, ffmpegDownloadable, ffmpegIn, ffmpegOnPath } from './ffmpeg-runtime.mjs';
@@ -470,7 +470,7 @@ function offlineStudioReport() {
     recent = ['The local problem log could not be read.'];
   }
   return [
-    `OpenFilm ${app.getVersion()} (${FLAVOR}) · ${process.platform} ${process.arch} · Electron ${process.versions.electron}`,
+    `CapyCut ${app.getVersion()} (${FLAVOR}) · ${process.platform} ${process.arch} · Electron ${process.versions.electron}`,
     `Report copied at ${new Date().toISOString()}`,
     `Studio utility process: ${studio?.child.pid == null ? 'not running' : 'present'}`,
     '',
@@ -502,11 +502,11 @@ async function openProjectFolder() {
 
 /** What the app asks before an agent changes something in a connected service (connectors.mjs `confirm`). */
 const CONNECTOR_ASK = {
-  en: { message: 'Let the agent use “{tool}” in {name}?', detail: 'It may change what you have in {name}.', once: 'Allow once', always: 'Allow while OpenFilm is open', no: 'Don’t allow' },
+  en: { message: 'Let the agent use “{tool}” in {name}?', detail: 'It may change what you have in {name}.', once: 'Allow once', always: 'Allow while CapyCut is open', no: 'Don’t allow' },
   'zh-CN': { message: '允许智能体在 {name} 里使用「{tool}」吗？', detail: '这会改动你在 {name} 里的内容。', once: '允许一次', always: '本次打开期间都允许', no: '不允许' },
-  ja: { message: 'エージェントに {name} の「{tool}」を使わせますか？', detail: '{name} の中身が変わることがあります。', once: '今回だけ許可', always: 'OpenFilm を開いている間は許可', no: '許可しない' },
-  ko: { message: '에이전트가 {name}에서 「{tool}」을(를) 쓰도록 허용할까요?', detail: '{name}에 있는 내용이 바뀔 수 있습니다.', once: '이번만 허용', always: 'OpenFilm이 열려 있는 동안 허용', no: '허용 안 함' },
-  es: { message: '¿Dejar que el agente use «{tool}» en {name}?', detail: 'Puede cambiar lo que tienes en {name}.', once: 'Permitir una vez', always: 'Permitir mientras OpenFilm esté abierto', no: 'No permitir' },
+  ja: { message: 'エージェントに {name} の「{tool}」を使わせますか？', detail: '{name} の中身が変わることがあります。', once: '今回だけ許可', always: 'CapyCut を開いている間は許可', no: '許可しない' },
+  ko: { message: '에이전트가 {name}에서 「{tool}」을(를) 쓰도록 허용할까요?', detail: '{name}에 있는 내용이 바뀔 수 있습니다.', once: '이번만 허용', always: 'CapyCut이 열려 있는 동안 허용', no: '허용 안 함' },
+  es: { message: '¿Dejar que el agente use «{tool}» en {name}?', detail: 'Puede cambiar lo que tienes en {name}.', once: 'Permitir una vez', always: 'Permitir mientras CapyCut esté abierto', no: 'No permitir' },
 };
 
 /* the own key, sealed with the system's keychain where there is one (macOS Keychain, Windows DPAPI) */
@@ -699,7 +699,7 @@ async function start() {
       ...(process.env.OPENFILM_EXAMPLES_INDEX ? { OPENFILM_EXAMPLES_INDEX: process.env.OPENFILM_EXAMPLES_INDEX } : {}),
       /* another Community library catalog (a local build or the preview channel, to try one), passed through when run from source */
       ...(process.env.OPENFILM_COMMUNITY_LIBRARY_URL ? { OPENFILM_COMMUNITY_LIBRARY_URL: process.env.OPENFILM_COMMUNITY_LIBRARY_URL } : {}),
-      /* another OpenFilm service (a local one, to develop it), passed through when run from source */
+      /* another CapyCut service (a local one, to develop it), passed through when run from source */
       ...(process.env.OPENFILM_API_URL ? { OPENFILM_API_URL: process.env.OPENFILM_API_URL } : {}),
     },
   });
@@ -835,8 +835,8 @@ async function start() {
   setInterval(() => { for (const id of tabs?.idle(IDLE_PAGE_MS) ?? []) dropView(id); }, 60_000).unref?.();
 
   /* the agents: Studio's home and library go with them, so the `openfilm` they run finds this window's Studio */
-  /* the person's own skills: Skills/ beside this app's projects (~/Movies/OpenFilm/Skills), as its `openfilm` finds them */
-  /* which official skills are installed and which skills are off: the prefs.json every OpenFilm here shares (openfilm/skills usableSkills) */
+  /* the person's own skills: Skills/ beside this app's projects (~/Movies/CapyCut/Skills), as its `openfilm` finds them */
+  /* which official skills are installed and which skills are off: the prefs.json every CapyCut here shares (openfilm/skills usableSkills) */
   const prefsHome = env.OPENFILM_SHARED_HOME || env.OPENFILM_HOME;
   const mySkills = process.env.OPENFILM_SKILLS || (env.OPENFILM_LIBRARY ? join(dirname(env.OPENFILM_LIBRARY), 'Skills') : (await import('openfilm/skills')).mySkillsDir());
   /* every connector there is (openfilm/plugins: a plugin with a .mcp.json), by its first remote server */
@@ -875,7 +875,7 @@ async function start() {
     isAgentUpdating: (id) => agentUpdates?.state(id).status === 'updating',
     /* the `openfilm` command first (with the app's ffmpeg and browser in it); the app's ffmpeg last, for a computer
        that has none of its own: the person's own ffmpeg and browsers are what the agent's commands use */
-    binDir: installOpenfilmCommand(DATA, { ffmpeg: ffmpegHere, env: {
+    binDir: installCapyCutCommand(DATA, { ffmpeg: ffmpegHere, env: {
       ...browsers,
       ...(env.OPENFILM_INSTALL_DIR ? { OPENFILM_INSTALL_DIR: env.OPENFILM_INSTALL_DIR } : {}),
     } }),
@@ -890,7 +890,7 @@ async function start() {
     harness: async (id) => roster?.harness(id) ?? null,
     /* Developer mode: an agent whose own record lacks what its model got logs it here (agent-logs.mjs) */
     logDir: () => (readPreferences(DATA).developer ? join(DATA, 'agent-logs') : null),
-    /* each session's skills: its maker's, OpenFilm's, and of the person's own those let in (agent-skills.mjs) */
+    /* each session's skills: its maker's, CapyCut's, and of the person's own those let in (agent-skills.mjs) */
     skills: { dataDir: DATA, mine: mySkills, prefsHome, connectorsFor: (servers) => connectors.forSession(servers) },
   });
   /* the connectors: signed in here once, reached by every agent at their doors (connectors.mjs) */
@@ -909,7 +909,7 @@ async function start() {
     log,
   });
   /* Settings → Agents (in Studio's page) and the chat's agent menu: one roster, both told of every change */
-  const openfilmAgent = createOpenFilmAgent({
+  const openfilmAgent = createCapyCutAgent({
     dataDir: DATA,
     readAccount: (options) => studio.readAccount(options),
     signIn: () => studioApi('/api/providers/openfilm/sign-in', 'POST'),
@@ -976,7 +976,7 @@ async function start() {
   agentHandle('desktop:agents:cancel-sign-in', async ({ id }) => (await roster.cancelSignIn(String(id))) ?? { ok: true });
   agentHandle('desktop:agents:disconnect', async ({ id }) => (await roster.disconnect(String(id))) ?? { ok: true });
   agentHandle('desktop:agents:switch-account', ({ id }) => roster.switchAccount(String(id)));
-  /* what is left of Claude Code's and Codex's plan, on OpenFilm's sign-in (agent-usage.mjs); null when it can't say */
+  /* what is left of Claude Code's and Codex's plan, on CapyCut's sign-in (agent-usage.mjs); null when it can't say */
   agentHandle('desktop:agents:usage', ({ id, fresh }) => agentUsage(String(id), { fresh: fresh === true }));
   agentHandle('desktop:agents:locate', ({ id, words }) => roster.locate(String(id), words));
   agentHandle('desktop:agents:automatic', ({ id }) => roster.useAutomatic(String(id)));
@@ -1110,7 +1110,7 @@ app.on('activate', () => focusWindow());
 app.on('window-all-closed', () => app.quit());
 app.on('child-process-gone', (_event, details) => {
   if (quitting || details.type !== 'Utility' || details.reason === 'clean-exit') return;
-  if (details.name !== 'OpenFilm Studio' && details.serviceName !== 'OpenFilm Studio') return;
+  if (details.name !== 'CapyCut Studio' && details.serviceName !== 'CapyCut Studio') return;
   const { reason, exitCode, systemErrorCode } = details;
   studioProblem('Electron utility process', `Studio process lost (${reason}, ${exitCode}${systemErrorCode == null ? '' : `, system error ${systemErrorCode}`})`, String(exitCode));
 });

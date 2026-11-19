@@ -1,5 +1,5 @@
 /**
- * `openfilm://` links: a page on openfilm.dev (its community's "Open in OpenFilm") opens the app on what it names.
+ * `openfilm://` links: a page on openfilm.dev (its community's "Open in CapyCut") opens the app on what it names.
  * Only what is known is taken, strictly: `openfilm://community/<owner>/<name>` (a workbench, a skill, a connector of the
  * community, as its uid); anything else is let go, since any web page can send any link.
  *

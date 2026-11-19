@@ -40,11 +40,11 @@ export type FetchJob = {
   code?: string;
   project?: { id: string };
 };
-/** Whose a skill is: its uid's owner (`openfilm` for OpenFilm's own, else the account its repository is under). */
+/** Whose a skill is: its uid's owner (`openfilm` for CapyCut's own, else the account its repository is under). */
 export const ownerOf = (skill: { uid: string }) => skill.uid.split('/')[0] ?? '';
 /** Who made it, as they write their name: its repository's account (GitHub keeps its case there), else its uid's owner. */
 export const makerOf = (skill: { uid: string; repository?: string }) => /^https:\/\/github\.com\/([\w.-]+)\//i.exec(skill.repository ?? '')?.[1] ?? ownerOf(skill);
-/** One of Discover's, installed or not, made by someone other than OpenFilm: the community's, under its owner's name. */
+/** One of Discover's, installed or not, made by someone other than CapyCut: the community's, under its owner's name. */
 export const communityOf = (skill: { uid: string; source: string; core?: true }) => skill.source === 'official' && !skill.core && ownerOf(skill) !== 'openfilm';
 
 /** One of the person's own read as the community's review will (src/publish-cli.mjs publishCheck). */
@@ -67,7 +67,7 @@ export type SkillEntry = {
   name: string; description: string; source: 'project' | 'mine' | 'official'; scripts: number;
   /** the name agents are given it by: its own, or `owner-name` beside another of that name (none: turned off) */
   as?: string;
-  /** OpenFilm's own (how a film is made, its media, its canvas): in every agent's hands, and only turned off */
+  /** CapyCut's own (how a film is made, its media, its canvas): in every agent's hands, and only turned off */
   core?: true;
   /** how people see it (its openfilm.json): a title and a one-line summary, by language */
   shown?: { title: Record<string, string>; summary: Record<string, string>; details?: Record<string, string> };
@@ -96,7 +96,7 @@ export type SkillEntry = {
   blocks?: string | readonly (BlockDecl | string)[];
   /** where its source can be read (a repository's address) */
   repository?: string;
-  /** what it needs beyond OpenFilm, by language; the computers it runs on (none: every one), and whether this one is not among them */
+  /** what it needs beyond CapyCut, by language; the computers it runs on (none: every one), and whether this one is not among them */
   needs?: Record<string, string>; platforms?: Array<'macos' | 'windows' | 'linux'>; elsewhere?: true;
   /** the person's own: where it came from (a link, a folder), or made where it is */
   origin?: { from: 'link' | 'folder'; address: string } | { from: 'made' };
@@ -108,13 +108,13 @@ export type SkillEntry = {
   off?: true;
   /** the hosts its page may reach (openfilm.json `permissions.network`), and why; none: it reaches none */
   network?: { domains: string[]; why?: Record<string, string> };
-  /** OpenFilm withdrew it (its index's `revoked`): given to no agent, nothing of it runs; why, and where to read more */
+  /** CapyCut withdrew it (its index's `revoked`): given to no agent, nothing of it runs; why, and where to read more */
   revoked?: { reason: 'malware' | 'impersonation' | 'rights' | 'broken' | 'policy'; note?: string; advisory?: string };
-  /** listed by another community index the person added, not OpenFilm's (its address): not reviewed by OpenFilm */
+  /** listed by another community index the person added, not CapyCut's (its address): not reviewed by CapyCut */
   from?: string;
   /** a project's own the person has not allowed in it yet: offered to no agent, nothing of it shown or run (src/skills.mjs projectSkillAllowed) */
   waits?: true;
-  /** one of OpenFilm's own, off because the plugin it goes with is off (lib/plugins): turned on, its plugin is too */
+  /** one of CapyCut's own, off because the plugin it goes with is off (lib/plugins): turned on, its plugin is too */
   plugin?: string;
 };
 /** an example film's part, as its index names it (`S2-Hook`), from and to in seconds */
@@ -122,7 +122,7 @@ export type ExampleSegment = { title: string; from: number; to: number };
 export type Example = {
   id: string; title: string; description: string; poster: string | null; video: string | null; duration: number | null; url: string;
   category: string | null; segments: ExampleSegment[];
-  /** its publisher in the Community (`openfilm`: OpenFilm's own) */
+  /** its publisher in the Community (`openfilm`: CapyCut's own) */
   owner?: string;
 };
 /** The Community's news (studio/server/examples.mjs readNews): its words by language, English always there. */
@@ -254,7 +254,7 @@ export const sourcesApi = {
   startPlugin: async (uid: string, projectId: string): Promise<string> =>
     (await call<{ url: string }>(`skills/${encodeURIComponent(uid)}/start?project=${encodeURIComponent(projectId)}`, 'POST')).url,
   /** one of Discover's installed (downloaded, at the version it shows) or uninstalled; whoever lists skills reads them again */
-  /** the other community indexes the person added, read after OpenFilm's own (Discover is read again after a change) */
+  /** the other community indexes the person added, read after CapyCut's own (Discover is read again after a change) */
   communitySources: () => call<{ sources: string[] }>('community/sources').then((r) => r.sources),
   setCommunitySources: (sources: string[]) => call<{ sources: string[] }>('community/sources', 'PUT', { sources }).then((r) => r.sources),
   /** how many use each community item, by uid (none when unknown) */

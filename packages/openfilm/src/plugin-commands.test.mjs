@@ -85,7 +85,7 @@ test('a plugin that is off runs nothing, and two of one name are told apart', ()
   rmSync(root, { recursive: true, force: true });
 });
 
-test('OpenFilm\'s own plugins bring commands the same way, named by their id, and run only while on', () => {
+test('CapyCut\'s own plugins bring commands the same way, named by their id, and run only while on', () => {
   const { root, where } = places();
   const found = pluginCommand(['edit', 'add', 'assets/a.mp4'], where);
   assert.deepEqual([found.command, found.file, found.rest, found.plugin.source], ['add', join(pluginsDir(), 'edit', 'add.mjs'), ['assets/a.mp4'], 'own']);
@@ -99,7 +99,7 @@ test('OpenFilm\'s own plugins bring commands the same way, named by their id, an
   const off = pluginCommand(['edit', 'add', 'assets/a.mp4'], where);
   assert.equal(off.status, 1);
   assert.match(off.error, /^The edit plugin is off: /);
-  /* a plugin of OpenFilm's with no commands is no command */
+  /* a plugin of CapyCut's with no commands is no command */
   assert.equal(pluginCommand(['motion', 'add'], where), null);
   rmSync(root, { recursive: true, force: true });
 });

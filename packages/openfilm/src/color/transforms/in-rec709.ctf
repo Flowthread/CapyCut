@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ProcessList version="2.4" id="openfilm:in-rec709">
-    <Description>OpenFilm input: SDR Rec.709 footage into ACEScct (the exact inverse of out-rec709)</Description>
+    <Description>CapyCut input: SDR Rec.709 footage into ACEScct (the exact inverse of out-rec709)</Description>
     <Exponent inBitDepth="32f" outBitDepth="32f" style="basicFwd">
         <ExponentParams exponent="2.4" />
     </Exponent>

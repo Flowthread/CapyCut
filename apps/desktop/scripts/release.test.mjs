@@ -19,16 +19,16 @@ const powershell = process.env.OPENFILM_TEST_POWERSHELL || (process.platform ===
 test('installer preflight accepts an app-only tree and refuses to remove projects, personal assets or junctions', { skip: !powershell }, async (t) => {
   const scratch = await mkdtemp(join(tmpdir(), 'of-installer-protection-'));
   t.after(() => rm(scratch, { recursive: true, force: true }));
-  const install = join(scratch, 'OpenFilm 安装');
+  const install = join(scratch, 'CapyCut 安装');
   const home = join(scratch, 'profile');
   const runtime = join(install, 'resources', 'runtime');
   await mkdir(runtime, { recursive: true });
   await mkdir(home);
-  await writeFile(join(install, 'OpenFilm.exe'), 'binary');
+  await writeFile(join(install, 'CapyCut.exe'), 'binary');
   const script = fileURLToPath(new URL('../build/protect-install.ps1', import.meta.url));
   const verify = (path, code) => {
     const result = spawnSync(powershell, ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', script,
-      '-AppFile', 'OpenFilm.exe', '-UninstallFile', 'Uninstall OpenFilm.exe'], {
+      '-AppFile', 'CapyCut.exe', '-UninstallFile', 'Uninstall CapyCut.exe'], {
       env: { ...process.env, OPENFILM_HOME: home, OPENFILM_SHARED_HOME: home, USERPROFILE: scratch, OPENFILM_INSTALL_CHECK_PATH: path },
       encoding: 'utf8', windowsHide: true, timeout: 15000,
     });
@@ -87,7 +87,7 @@ test('a Windows upgrade refuses to run a legacy uninstaller while a project is i
     await mkdir(join(app, 'resources', 'runtime'), { recursive: true });
     await writeFile(join(app, `${name}.exe`), version);
     await writeFile(join(app, 'resources', 'runtime', 'native.exe'), 'bundled');
-    await writeFile(join(bootstrap, 'package.json'), JSON.stringify({ name, version, author: 'OpenFilm', description: 'Installer test' }));
+    await writeFile(join(bootstrap, 'package.json'), JSON.stringify({ name, version, author: 'CapyCut', description: 'Installer test' }));
     const paths = await builder.build({
       projectDir: bootstrap, prepackaged: app, publish: 'never', win: ['nsis'], x64: true,
       config: {

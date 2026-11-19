@@ -2,16 +2,16 @@
 /**
  * Changing a color transform file (.ctf) the way a grader's tool does: one operation at a time, found by its `name`
  * attribute, written back in place, and nothing else in the file touched. A grade layer is a ProcessList whose
- * operations OpenFilm's tools name for what they do (`balance`, `match`, `primary`, `curves`…); a file written by
+ * operations CapyCut's tools name for what they do (`balance`, `match`, `primary`, `curves`…); a file written by
  * another program or by hand keeps every operation and every comment of its own.
  *
- * The operations OpenFilm writes are those a grade is made of, in OpenColorIO's Common Transform Format: ASC_CDL,
+ * The operations CapyCut writes are those a grade is made of, in OpenColorIO's Common Transform Format: ASC_CDL,
  * GradingPrimary, GradingTone, GradingRGBCurve and GradingHueCurve. Each is written with only the values that differ
- * from its default, as OpenColorIO writes it, and reads back (ctf.mjs) as the same operation. A file OpenFilm makes
+ * from its default, as OpenColorIO writes it, and reads back (ctf.mjs) as the same operation. A file CapyCut makes
  * says version 2.5: the first CTF version whose readers take GradingHueCurve.
  */
 
-/** The CTF version of a file OpenFilm makes. */
+/** The CTF version of a file CapyCut makes. */
 export const CTF_VERSION = '2.5';
 
 /** A number as a file keeps it: up to 7 significant digits, no trailing zeros. @param {number} v */

@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * Where OpenFilm keeps the person's work on this computer: the projects library (one folder per project, the folders
+ * Where CapyCut keeps the person's work on this computer: the projects library (one folder per project, the folders
  * Studio's Projects list shows) and the exports folder. The library has a default and may be moved in Studio's
  * Settings → General: Studio's `prefs.json` (`projectsFolder`), read by Studio and by the `openfilm` command alike, so
  * a project fetched from the command line lands where Studio's go. A Studio with a home of its own (OPENFILM_HOME, as
@@ -19,7 +19,7 @@ import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 export const studioHomeDir = () => process.env.OPENFILM_HOME || join(homedir(), '.openfilm');
 
 /**
- * The Studio home whose prefs.json holds what every OpenFilm on this computer shares (where the library is, the skills
+ * The Studio home whose prefs.json holds what every CapyCut on this computer shares (where the library is, the skills
  * turned off): OPENFILM_SHARED_HOME, else Studio's own.
  */
 export const sharedHome = () => process.env.OPENFILM_SHARED_HOME || studioHomeDir();
@@ -35,7 +35,7 @@ export function sharedPref(key, home = sharedHome()) {
 }
 
 /**
- * Keep one value in the shared prefs.json. The file is shared with every OpenFilm on this computer, older or newer:
+ * Keep one value in the shared prefs.json. The file is shared with every CapyCut on this computer, older or newer:
  * what this one does not know of it is written back as it was. @param {string} key @param {unknown} value
  */
 export function setSharedPref(key, value, home = sharedHome()) {
@@ -52,13 +52,13 @@ export function setSharedPrefs(patch, home = sharedHome()) {
   renameSync(`${at}.${process.pid}.tmp`, at);
 }
 
-/** Where new projects go unless the person chose: OPENFILM_LIBRARY, else ~/Movies/OpenFilm/Projects on macOS, ~/Videos/OpenFilm/Projects elsewhere. */
+/** Where new projects go unless the person chose: OPENFILM_LIBRARY, else ~/Movies/CapyCut/Projects on macOS, ~/Videos/CapyCut/Projects elsewhere. */
 export const libraryDefault = () => process.env.OPENFILM_LIBRARY
-  || join(homedir(), process.platform === 'darwin' ? 'Movies' : 'Videos', 'OpenFilm', 'Projects');
+  || join(homedir(), process.platform === 'darwin' ? 'Movies' : 'Videos', 'CapyCut', 'Projects');
 
 /**
  * Where exports go unless a folder is picked when exporting: OPENFILM_EXPORTS, else `exports` in OPENFILM_HOME when
- * that is set (a Studio kept apart, for work on OpenFilm itself, leaves nothing in the person's own folder), else the
+ * that is set (a Studio kept apart, for work on CapyCut itself, leaves nothing in the person's own folder), else the
  * Desktop.
  */
 export const exportsDefault = () => process.env.OPENFILM_EXPORTS
@@ -148,7 +148,7 @@ export function requireOutsideInstallation(/** @type {string} */ path) {
     return !isAbsolute(back) && back.split(sep)[0] !== '..';
   };
   if (inside(installed, path) || inside(diskPath(resolve(installed)), diskPath(resolve(path)))) {
-    throw new Error(`Choose a folder outside the OpenFilm installation directory (${installed}). An update can replace that directory.`);
+    throw new Error(`Choose a folder outside the CapyCut installation directory (${installed}). An update can replace that directory.`);
   }
 }
 
@@ -163,7 +163,7 @@ export function usableFolder(value) {
   if (dirname(path) === path) throw new Error('Choose a folder on that disk, not the disk itself.');
   requireOutsideInstallation(path);
   for (const home of new Set([resolve(studioHomeDir()), resolve(sharedHome())])) {
-    if (path === home || path.startsWith(home + sep)) throw new Error('OpenFilm keeps its own settings there: choose another folder.');
+    if (path === home || path.startsWith(home + sep)) throw new Error('CapyCut keeps its own settings there: choose another folder.');
   }
   try {
     mkdirSync(path, { recursive: true });

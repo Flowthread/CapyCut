@@ -10,7 +10,7 @@ const PLAYHEAD = 'M17 12H37Q40 12 40 15V27Q40 29 38.5 30.5L31 37V88Q31 92 27 92Q
 export function BrandLogo({ size = 18 }: { size?: number }) {
   const gap = `openfilm-gap-${React.useId().replace(/:/g, '')}`;
   return (
-    <svg width={size} height={size} viewBox={VIEWBOX} fill="currentColor" className="block shrink-0" role="img" aria-label="OpenFilm">
+    <svg width={size} height={size} viewBox={VIEWBOX} fill="currentColor" className="block shrink-0" role="img" aria-label="CapyCut">
       <mask id={gap} maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100">
         <rect width="100" height="100" fill="#fff" />
         <path d={PLAYHEAD} stroke="#000" strokeWidth="7" strokeLinejoin="round" />

@@ -248,7 +248,7 @@ export function useLayout(of: { canvasOpen: boolean; noBench: boolean; among: st
  */
 export function LayoutMenu({ frame, className }: { frame: ReturnType<typeof useProjectFrame>; className: string }) {
   const { workspaceLayout, shownSpec, applyWorkspace, resetWorkspace, beginLayoutEdit, chatThere, workspaceViewport, layoutEditing, workspaceStorageFailed, previewSizes, benchPlugins } = frame;
-  /* the words of the workbench whose arrangement it is (one someone made is not among OpenFilm's own plugins) */
+  /* the words of the workbench whose arrangement it is (one someone made is not among CapyCut's own plugins) */
   const title = benchPlugins.find((p) => p.workbench === workspaceLayout.mode)?.title;
   return React.useMemo(() => (
     <ProjectLayoutMenu className={className}

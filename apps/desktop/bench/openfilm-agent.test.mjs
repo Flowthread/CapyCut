@@ -6,7 +6,7 @@ import { chromium } from 'playwright-core';
 import shellConfig from '../shell/vite.config.ts';
 import { OPENFILM_MODELS } from '../src/openfilm-models.mjs';
 
-test('OpenFilm follows Claude under Your agents, shares account actions and never offers CLI setup', { timeout: 60_000 }, async () => {
+test('CapyCut follows Claude under Your agents, shares account actions and never offers CLI setup', { timeout: 60_000 }, async () => {
   const server = await createServer({ ...shellConfig, configFile: false,
     root: fileURLToPath(new URL('..', import.meta.url)), server: { host: '127.0.0.1', port: 0 }, logLevel: 'error',
     plugins: [...shellConfig.plugins, { name: 'openfilm-agent-fixture', configureServer(app) {
@@ -33,7 +33,7 @@ test('OpenFilm follows Claude under Your agents, shares account actions and neve
           models: models.map((m) => ({ ...m, shown: true, available: true, levels: ['low', 'high'], effort: 'high' })) };
         let agents = [
           { id: 'codex', name: 'Codex', shown: true, status: 'ready' },
-          { id: 'openfilm', name: 'OpenFilm', shown: true, status: 'sign-in', signOut: true, openfilm: modelSettings },
+          { id: 'openfilm', name: 'CapyCut', shown: true, status: 'sign-in', signOut: true, openfilm: modelSettings },
           { id: 'claude', name: 'Claude Code', shown: true, status: 'sign-in' },
           { id: 'byok', name: 'Own key', shown: false, status: 'key' },
         ];
@@ -51,7 +51,7 @@ test('OpenFilm follows Claude under Your agents, shares account actions and neve
           disconnect: async (id) => { calls.push(['disconnect', id]); publish({ status: 'sign-in', account: null }); return { ok: true }; },
           switchAccount: async (id) => { calls.push(['switch', id]); publish({ status: 'waiting', account: null }); return { ok: true }; },
           setShown: async (id, shown) => { calls.push(['shown', id, shown]); publish({ shown }); },
-          saveOpenFilmModels: async (config) => {
+          saveCapyCutModels: async (config) => {
             saved.push(config);
             publish({ configurationRevision: saved.length, openfilm: { ...modelSettings, ...config,
               models: config.order.map((id) => ({ ...modelSettings.models.find((m) => m.id === id), shown: !config.hidden.includes(id) })) } });
@@ -65,14 +65,14 @@ test('OpenFilm follows Claude under Your agents, shares account actions and neve
       }, { locale, models: OPENFILM_MODELS });
       await page.goto(`http://127.0.0.1:${server.httpServer.address().port}/openfilm-agent-ui`);
       await page.evaluate(() => { document.documentElement.dataset.theme = 'dark'; });
-      const row = page.locator('div.py-4').filter({ has: page.getByText('OpenFilm', { exact: true }) });
+      const row = page.locator('div.py-4').filter({ has: page.getByText('CapyCut', { exact: true }) });
       await row.waitFor({ timeout: 10_000 }).catch(async (e) => {
         throw new Error(`${e.message}\nPage errors: ${JSON.stringify(errors)}\n${await page.locator('body').innerText()}`);
       });
-      assert.deepEqual(await page.locator('div.py-4').evaluateAll((rows) => rows.slice(0, 3).map((r) => r.querySelector('span[class~="text-[15px]"]')?.textContent)), ['Codex', 'Claude Code', 'OpenFilm']);
+      assert.deepEqual(await page.locator('div.py-4').evaluateAll((rows) => rows.slice(0, 3).map((r) => r.querySelector('span[class~="text-[15px]"]')?.textContent)), ['Codex', 'Claude Code', 'CapyCut']);
       assert.equal(await row.getByRole('button', { name: /Connection help|连接帮助/ }).count(), 0);
       assert.doesNotMatch(await row.innerText(), /与服务商共享账号和余额|Same account and balance as Services/);
-      const info = row.getByRole('button', { name: zh ? 'OpenFilm 信息与模型' : 'OpenFilm info and models', exact: true });
+      const info = row.getByRole('button', { name: zh ? 'CapyCut 信息与模型' : 'CapyCut info and models', exact: true });
       await row.getByText(zh ? '未连接' : 'Not connected', { exact: true }).waitFor();
       assert.equal(await info.isVisible(), true);
       await page.evaluate(() => window.openfilmAgentFixture.publish({ error: 'API answered 401' }));
@@ -86,7 +86,7 @@ test('OpenFilm follows Claude under Your agents, shares account actions and neve
       await page.evaluate(() => window.openfilmAgentFixture.publish({ status: 'ready', account: { method: 'other', email: 'shared@example.com' } }));
       await row.getByText(/shared@example.com/).waitFor();
       await info.click();
-      const dialog = page.getByRole('dialog', { name: 'OpenFilm', exact: true });
+      const dialog = page.getByRole('dialog', { name: 'CapyCut', exact: true });
       const rows = dialog.locator('li[data-model-id]');
       assert.deepEqual(await rows.evaluateAll((items) => items.map((item) => item.dataset.modelId)), OPENFILM_MODELS.map((m) => m.id));
       assert.match(await dialog.innerText(), zh ? /与服务商共享账号和余额/ : /Same account and balance as Services/);

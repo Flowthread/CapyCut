@@ -15,7 +15,7 @@ async function wordsOn(platform: string, file: string, name: string): Promise<st
   }
 }
 
-test('OpenFilm’s recycle bin has one name on every system', async () => {
+test('CapyCut’s recycle bin has one name on every system', async () => {
   for (const platform of ['Win32', 'MacIntel', 'Linux x86_64']) {
     const zh = await wordsOn(platform, 'zh-CN.ts', 'zhCN');
     assert.ok(zh.includes('移到回收站') && !zh.includes('废纸篓'), platform);

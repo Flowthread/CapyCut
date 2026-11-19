@@ -526,7 +526,7 @@ export function ProjectsPopover({
               starting={busy !== null}
             />
             <div className={resourceStyles.resourceContent}>
-          {/* OpenFilm's recycle bin (the projects' toolbar opens it): back to the projects from it */}
+          {/* CapyCut's recycle bin (the projects' toolbar opens it): back to the projects from it */}
           {view === 'recycle' ? <RecycleBinView onBack={() => setView('projects')} onClose={onClose} onRestored={lib.retryLoad} /> : (
             <>
               {/* the place's name and the way out of the window */}
