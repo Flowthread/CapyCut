@@ -34,9 +34,9 @@
 ---
 
 > **The problem in one line.** Editing eats **8–12 hours** per batch of short clips and **60–400 hours**
-> of learning before your first good title — yet **81.7% of professional editors** say the work they
-> most want automated is the mechanical part *around* the craft. CapyCut automates exactly that part,
-> and keeps the craft yours.
+> of learning before your first good title — yet **81.7% of professional editors** surveyed by Avid say
+> the work they most want automated is the mechanical part *around* the craft. CapyCut automates
+> exactly that part, and keeps the craft yours.
 
 <table>
 <tr>

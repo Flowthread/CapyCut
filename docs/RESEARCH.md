@@ -52,9 +52,10 @@ fake citation.
 
 ### 1.2 Evidence line 1 — what professional editors say they waste
 
-**Verified.** Avid's 2026 survey of members of the American Cinema Editors (ACE) is the most
-credible single data point available, because the respondents are elite Hollywood and television
-editors with no incentive to exaggerate:
+**Reported, not verified.** Avid's 2026 survey of members of the American Cinema Editors (ACE) is
+the most credible single data point available, because the respondents are elite Hollywood and
+television editors with no incentive to exaggerate. Avid's pages were unreachable when this was
+written, so these figures are attributed to the survey and should not be embellished. See §9.
 
 - **81.7%** chose one of five repetitive "around the edit" tasks — audio cleanup, transcription and
   dialogue search, finding specific shots, metadata tagging, project organisation — as the single
@@ -201,7 +202,8 @@ project trees, so a 40 GB shoot is not 40 GB in the library plus 40 GB in the pr
 ## 4. Demand is saturated; throughput is not
 
 **Verified** from Wyzowl's *State of Video Marketing 2026* (12th edition; 266 respondents, fieldwork
-late 2025):
+late 2025), read from the survey's
+[own dataset](https://wyzowl.com/video-marketing-statistics/data.csv):
 
 | Finding | Value |
 |---|---|
@@ -393,8 +395,15 @@ Research changed three things that were previously written down. Do not repeat t
 Primary sources read and verified for this document:
 
 - **U.S. Bureau of Labor Statistics**, Occupational Employment and Wage Statistics, May 2025 —
-  Film and Video Editors (SOC 27-4032), via CareerOneStop occupation profile.
-- **Wyzowl**, *State of Video Marketing 2026* (12th edition), 266 respondents, fieldwork late 2025.
+  Film and Video Editors (SOC 27-4032), via the CareerOneStop occupation profile:
+  <https://www.careeronestop.org/Toolkit/Wages/find-salary.aspx?keyword=27-4032.00>
+  (the BLS page itself, <https://www.bls.gov/ooh/media-and-communication/film-and-video-editors.htm>,
+  blocks automated requests).
+- **Wyzowl**, *State of Video Marketing 2026* (12th edition), 266 respondents, fieldwork late 2025:
+  <https://wyzowl.com/video-marketing-statistics/>. Every Wyzowl figure in this document was read
+  from the survey's own dataset, <https://wyzowl.com/video-marketing-statistics/data.csv>, which
+  gives each measure by year. That dataset is what confirms the ROI decline — `video-roi` is 93% in
+  2025 and 82% in 2026 — rather than any summary page.
 
 Secondary and reported sources:
 
