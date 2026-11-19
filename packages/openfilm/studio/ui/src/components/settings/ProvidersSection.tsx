@@ -22,8 +22,8 @@ import { ProviderMark } from './ProviderMark';
 import { DialogClose, DialogIdentity } from './DialogIdentity';
 import { SettingsButton, SettingsField, SettingsLinkButton, settingsError, settingsLink } from './ui';
 
-/** Where a new built-in provider is proposed, and what it needs. */
-const ADDING_PROVIDERS = 'https://github.com/openfilm/openfilm/blob/main/CONTRIBUTING.md#adding-a-media-provider';
+/** Where a new built-in provider is proposed. */
+const ADDING_PROVIDERS = 'https://github.com/openfilm/openfilm/issues';
 
 /** Video search: a clip's frame with its play mark, found with a magnifier (as image search finds a picture). */
 const VideoSearch = createLucideIcon('video-search', [

@@ -3490,7 +3490,6 @@ export const ko: Words = {
     links: {
       github: 'GitHub',
       examples: '예제',
-      site: '웹사이트',
     },
     sections: {
       agents: '에이전트',

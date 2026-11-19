@@ -40,7 +40,6 @@ const navNow = (): Array<{ group: 'settings' | 'help'; sections: SettingsSection
 const LINKS = [
   { label: 'settings.links.github', href: 'https://github.com/openfilm/openfilm' },
   { label: 'settings.links.examples', href: 'https://github.com/openfilm/examples' },
-  { label: 'settings.links.site', href: 'https://openfilm.dev' },
 ];
 
 const SECTION_ICON: Record<SettingsSection, React.ReactNode> = {

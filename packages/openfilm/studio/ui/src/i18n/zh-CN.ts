@@ -3529,7 +3529,6 @@ export const zhCN: Words = {
     links: {
       github: 'GitHub',
       examples: '示例',
-      site: '官网',
     },
     sections: {
       agents: '智能体',

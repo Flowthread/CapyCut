@@ -3493,7 +3493,6 @@ export const ja: Words = {
     links: {
       github: 'GitHub',
       examples: 'サンプル',
-      site: 'ウェブサイト',
     },
     sections: {
       agents: 'エージェント',

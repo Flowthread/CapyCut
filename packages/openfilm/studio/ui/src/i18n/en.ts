@@ -3530,7 +3530,6 @@ export const en = {
     links: {
       github: 'GitHub',
       examples: 'Examples',
-      site: 'Website',
     },
     sections: {
       agents: 'Agents',

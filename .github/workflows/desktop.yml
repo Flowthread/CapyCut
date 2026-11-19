@@ -1,5 +1,5 @@
 name: desktop
-# The official desktop app (CONTRIBUTING.md, Releases): push the tag v<version> (the version every package has), or run
+# The official desktop app (Releases): push the tag v<version> (the version every package has), or run
 # it by hand for an existing tag. Each target is built (the Macs signed and notarized), and a draft GitHub release gets
 # the installers and the update feeds. Publishing that release makes it the latest: the website's download links and
 # the apps' update checks go to the latest release's files (openfilm.dev/download/… redirects there).
@@ -49,7 +49,7 @@ jobs:
             echo "::error::$TAG does not match apps/desktop/package.json ($PACKAGE)"
             exit 1
           fi
-          # without the signing secrets there is no official build here: a maintainer builds it on a Mac (CONTRIBUTING.md)
+          # without the signing secrets there is no official build here: a maintainer builds it on a Mac
           if [ -z "$SIGN_IDENTITY" ]; then
             echo "::notice::The desktop-release secrets are not set: the installers for $TAG are built and uploaded by hand"
             SIGNING=false

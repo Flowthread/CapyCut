@@ -33,6 +33,3 @@ openfilm doctor                   # what this computer has for CapyCut, to paste
 building a player, renderer or editor. Settings, how it works and the source:
 [github.com/openfilm/openfilm](https://github.com/openfilm/openfilm).
 
-## License
-
-[MIT](LICENSE). The CapyCut name and logo are trademarks: see [TRADEMARK.md](TRADEMARK.md).

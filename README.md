@@ -6,41 +6,13 @@
 <p align="center">
   <a href="https://www.npmjs.com/package/openfilm"><img alt="npm" src="https://img.shields.io/npm/v/openfilm?style=flat-square" /></a>
   <a href="https://github.com/openfilm/openfilm/actions/workflows/ci.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/openfilm/openfilm/ci.yml?style=flat-square&branch=main&label=build" /></a>
-  <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/openfilm/openfilm?style=flat-square" /></a>
 </p>
 
 <p align="center">
-  <a href="README.md">English</a> |
-  <a href="README.zh-CN.md">简体中文</a> |
-  <a href="README.zh-TW.md">繁體中文</a> |
-  <a href="README.ko.md">한국어</a> |
-  <a href="README.de.md">Deutsch</a> |
-  <a href="README.es.md">Español</a> |
-  <a href="README.fr.md">Français</a> |
-  <a href="README.it.md">Italiano</a> |
-  <a href="README.da.md">Dansk</a> |
-  <a href="README.ja.md">日本語</a> |
-  <a href="README.pl.md">Polski</a> |
-  <a href="README.ru.md">Русский</a> |
-  <a href="README.bs.md">Bosanski</a> |
-  <a href="README.ar.md">العربية</a> |
-  <a href="README.no.md">Norsk</a> |
-  <a href="README.pt-BR.md">Português (Brasil)</a> |
-  <a href="README.th.md">ไทย</a> |
-  <a href="README.tr.md">Türkçe</a> |
-  <a href="README.uk.md">Українська</a> |
-  <a href="README.bn.md">বাংলা</a> |
-  <a href="README.el.md">Ελληνικά</a> |
-  <a href="README.vi.md">Tiếng Việt</a>
-</p>
-
-<p align="center">
-  <a href="https://openfilm.dev"><img alt="Visit our website" src="docs/buttons/website.svg" /></a>
-  <a href="https://discord.gg/a462Rs88hF"><img alt="Join our Discord" src="docs/buttons/discord.svg" /></a>
   <a href="https://www.youtube.com/@riverisbuilding"><img alt="Watch on YouTube" src="docs/buttons/youtube.svg" /></a>
 </p>
 
-[![CapyCut: an agent makes a film while you watch, then you change it by hand](docs/openfilm.webp)](https://openfilm.dev)
+![CapyCut: an agent makes a film while you watch, then you change it by hand](docs/openfilm.webp)
 
 ---
 
@@ -142,9 +114,8 @@ your changes still apply. The full format is in [SPEC.md](packages/openfilm/SPEC
 
 ### Contributing
 
-To run CapyCut from source or send a pull request, read [CONTRIBUTING.md](CONTRIBUTING.md). Report bugs in
-[Issues](https://github.com/openfilm/openfilm/issues) with the report from Settings → Developer → Copy report, and
-security issues as [SECURITY.md](SECURITY.md) describes.
+Report bugs in [Issues](https://github.com/openfilm/openfilm/issues) with the report from Settings → Developer →
+Copy report. Security issues, write to **nahhitsreal@gmail.com**.
 
 ### Star History
 

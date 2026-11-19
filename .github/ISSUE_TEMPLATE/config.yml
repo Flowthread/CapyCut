@@ -4,5 +4,5 @@ contact_links:
     url: https://github.com/openfilm/openfilm/discussions
     about: Ask and share in Discussions.
   - name: Security vulnerabilities
-    url: https://github.com/openfilm/openfilm/blob/main/SECURITY.md
-    about: Report them privately, as SECURITY.md says, not in an issue.
+    url: mailto:nahhitsreal@gmail.com
+    about: Report them privately by email, not in an issue.

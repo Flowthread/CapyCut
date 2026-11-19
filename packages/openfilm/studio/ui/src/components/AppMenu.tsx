@@ -120,7 +120,7 @@ export function AppMenu({ onSettings }: { onSettings: (section: SettingsSection)
     </a>
   );
   const social = (channel: { id: SocialPlatform; href: string }) => {
-    const name = channel.id === 'github' ? 'GitHub' : channel.id === 'discord' ? 'Discord' : t(`appMenu.social.${channel.id}`);
+    const name = channel.id === 'github' ? 'GitHub' : t(`appMenu.social.${channel.id}`);
     return <Tooltip key={channel.id} label={name} side="bottom">
       <a role="menuitem" tabIndex={-1} className={styles.logo} aria-label={name} href={channel.href} target="_blank" rel="noreferrer" onClick={() => dismiss(true)}>
         <SocialLogo platform={channel.id} />
@@ -179,7 +179,7 @@ export function AppMenu({ onSettings }: { onSettings: (section: SettingsSection)
       onFocusCapture={() => { focused.current = true; popup.setOpen(true); }} onKeyDown={(event) => onKeyDown(event, true)} onBlur={onBlur}>
       <div className={styles.communityGroup} role="group" aria-label={t('appMenu.officialCommunity')}>
         <p className={styles.groupLabel}>{t('appMenu.officialCommunity')}</p>
-        <div className={styles.logos}>{communityChannels(studioHost ? language : 'en').map(social)}{chinese ? weChat(true) : null}</div>
+        <div className={styles.logos}>{communityChannels().map(social)}{chinese ? weChat(true) : null}</div>
       </div>
       <div className={styles.communityGroup} role="group" aria-label={CREATOR_HANDLE}>
         <p className={styles.groupLabel}>{CREATOR_HANDLE}</p>

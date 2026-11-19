@@ -3493,7 +3493,6 @@ export const es: Words = {
     links: {
       github: 'GitHub',
       examples: 'Ejemplos',
-      site: 'Sitio web',
     },
     sections: {
       agents: 'Agentes',
