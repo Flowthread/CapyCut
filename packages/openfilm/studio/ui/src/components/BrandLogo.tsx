@@ -1,25 +1,14 @@
-import React from 'react';
-
 /*
- * The mark: a playhead over two clips, forming an F, in the surrounding text's color. The clips are cut away around
- * the playhead (a real gap, so whatever is behind shows through), which keeps the playhead's shape in one color.
+ * The mark: a C drawn as a film reel — the aperture is its opening, and the sprocket holes are punched through the
+ * stroke (one even-odd path, so they stay clear at any size) — in the surrounding text's colour.
  */
-const VIEWBOX = '8 6 84 92';
-const PLAYHEAD = 'M17 12H37Q40 12 40 15V27Q40 29 38.5 30.5L31 37V88Q31 92 27 92Q23 92 23 88V37L15.5 30.5Q14 29 14 27V15Q14 12 17 12Z';
+const VIEWBOX = '30 -748 688 768';
+const REEL = 'M724.1 -154.9A374 374 0 1 1 724.1 -573.1L578.1 -474.7M578.1 -474.7A198 198 0 1 0 578.1 -253.3L724.1 -154.9ZM535.6 -121.5a30 30 0 1 0 60 0a30 30 0 1 0-60 0ZM301.3 -90.2a30 30 0 1 0 60 0a30 30 0 1 0-60 0ZM123.5 -245.9a30 30 0 1 0 60 0a30 30 0 1 0-60 0ZM123.5 -482.1a30 30 0 1 0 60 0a30 30 0 1 0-60 0ZM301.3 -637.8a30 30 0 1 0 60 0a30 30 0 1 0-60 0ZM535.6 -606.5a30 30 0 1 0 60 0a30 30 0 1 0-60 0Z';
 
 export function BrandLogo({ size = 18 }: { size?: number }) {
-  const gap = `openfilm-gap-${React.useId().replace(/:/g, '')}`;
   return (
     <svg width={size} height={size} viewBox={VIEWBOX} fill="currentColor" className="block shrink-0" role="img" aria-label="CapyCut">
-      <mask id={gap} maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100">
-        <rect width="100" height="100" fill="#fff" />
-        <path d={PLAYHEAD} stroke="#000" strokeWidth="7" strokeLinejoin="round" />
-      </mask>
-      <g mask={`url(#${gap})`}>
-        <rect x="22" y="12" width="64" height="20" rx="5" />
-        <rect x="25" y="44" width="47" height="19" rx="5" />
-      </g>
-      <path d={PLAYHEAD} />
+      <path fillRule="evenodd" d={REEL} />
     </svg>
   );
 }
