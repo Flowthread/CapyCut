@@ -42,6 +42,7 @@ jobs:
       # trusted publishing needs npm 11.5.1 or later; pnpm publish hands its tarball to this npm
       - run: npm install -g npm@^11.5.1
       - run: pnpm install --frozen-lockfile
+        working-directory: Capycut-Code
       - run: pnpm typecheck
       # Ubuntu's packages through apt as ci.yml gets them: from the cache its runs keep, a stalled mirror left after 30 s,
       # a slow step ending the release there rather than hours on

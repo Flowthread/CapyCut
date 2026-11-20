@@ -27,7 +27,7 @@ jobs:
         run: |
           if [ "$EVENT" != pull_request ]; then echo code=true >> "$GITHUB_OUTPUT"; exit 0; fi
           git diff --name-only "$BASE" HEAD | tee "$RUNNER_TEMP/changed"
-          if grep -qvE '^(docs/|\.changeset/|[^/]+\.md$|LICENSE$|\.github/ISSUE_TEMPLATE/|\.github/[^/]+\.md$)' "$RUNNER_TEMP/changed"; then
+          if grep -qvE '^(Capycut-Code/docs/|Capycut-Code/\.changeset/|[^/]+\.md$|Capycut-Code/[^/]+\.md$|LICENSE$|\.github/ISSUE_TEMPLATE/|\.github/[^/]+\.md$)' "$RUNNER_TEMP/changed"; then
             echo code=true >> "$GITHUB_OUTPUT"
           else
             echo "words only: no tests needed"
@@ -48,7 +48,9 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+        working-directory: Capycut-Code
       - run: pnpm typecheck
+        working-directory: Capycut-Code
 
   # each system's tests in three shards at once (test-os.yml)
   ubuntu:
@@ -105,7 +107,9 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+        working-directory: Capycut-Code
       - run: pnpm check:pack
+        working-directory: Capycut-Code
 
   audit:
     runs-on: ubuntu-latest
@@ -124,6 +128,6 @@ jobs:
           curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" | tar -xz -C "$RUNNER_TEMP" gitleaks
           echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
       - name: Secrets in the history
-        run: gitleaks git --config .gitleaks.toml --redact --no-banner --verbose .
+        run: gitleaks git --config Capycut-Code/.gitleaks.toml --redact --no-banner --verbose .
       - name: The public audit (the files as they are)
-        run: node scripts/audit-public.mjs
+        run: node Capycut-Code/scripts/audit-public.mjs

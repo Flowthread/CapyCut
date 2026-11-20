@@ -33,6 +33,7 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+        working-directory: Capycut-Code
       # setup-node puts node and npm's global programs on the job's PATH only. A person who installs with npm has them
       # on their shell's PATH, and the app reads the login shell's: put them there, as nvm's installer does.
       - name: Node on the login shell's PATH
@@ -44,7 +45,7 @@ jobs:
       - name: The newest agents from npm
         run: npm install -g @openai/codex@latest @anthropic-ai/claude-code@latest @github/copilot@latest opencode-ai@latest @qwen-code/qwen-code@latest @tencent-ai/codebuddy-code@latest
       - name: Found, started and spoken to
-        working-directory: apps/desktop
+        working-directory: Capycut-Code/apps/desktop
         run: node scripts/agent-check.mjs codex claude copilot opencode qwen codebuddy
 
   report:

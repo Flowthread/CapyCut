@@ -1,8 +1,8 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/logo-dark.svg">
-    <source media="(prefers-color-scheme: light)" srcset="docs/logo-light.svg">
-    <img src="docs/logo-light.svg" alt="CapyCut" height="56">
+    <source media="(prefers-color-scheme: dark)" srcset="Capycut-Code/docs/logo-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="Capycut-Code/docs/logo-light.svg">
+    <img src="Capycut-Code/docs/logo-light.svg" alt="CapyCut" height="56">
   </picture>
 </p>
 
@@ -17,19 +17,21 @@
   <a href="#install"><img alt="Node" src="https://img.shields.io/badge/node-%E2%89%A522.2-339933?style=for-the-badge&logo=node.js&logoColor=white"></a>
   <a href="#how-it-works"><img alt="Films as code" src="https://img.shields.io/badge/films-as%20code-7C3AED?style=for-the-badge"></a>
   <a href="#editors"><img alt="Editors" src="https://img.shields.io/badge/editors-4-0EA5E9?style=for-the-badge"></a>
-  <a href="docs/RESEARCH.md"><img alt="Research" src="https://img.shields.io/badge/research-evidence%20cited-E11D48?style=for-the-badge"></a>
+  <a href="Capycut-Code/docs/RESEARCH.md"><img alt="Research" src="https://img.shields.io/badge/research-evidence%20cited-E11D48?style=for-the-badge"></a>
 </p>
 
 <p align="center">
   <a href="#install"><img alt="Install" src="https://img.shields.io/badge/Get%20started-npx%20skills%20add-111827?style=flat-square"></a>
-  <a href="docs/RESEARCH.md"><img alt="Docs" src="https://img.shields.io/badge/docs-RESEARCH.md-6B7280?style=flat-square"></a>
+  <a href="Capycut-Code/docs/RESEARCH.md"><img alt="Docs" src="https://img.shields.io/badge/docs-RESEARCH.md-6B7280?style=flat-square"></a>
   <a href="#contributing"><img alt="Issues" src="https://img.shields.io/badge/issues-welcome-6B7280?style=flat-square"></a>
   <a href="https://github.com/Flowthread/CapyCut"><img alt="Stars" src="https://img.shields.io/github/stars/Flowthread/CapyCut?style=flat-square&color=6B7280"></a>
 </p>
 
 <p align="center">
-  <img src="docs/openfilm.webp" alt="CapyCut: an agent makes a film while you watch, then you change it by hand">
+  <img src="Capycut-Code/docs/openfilm.webp" alt="CapyCut: an agent makes a film while you watch, then you change it by hand">
 </p>
+
+<p align="center"><sub>All source lives in <a href="Capycut-Code"><code>Capycut-Code/</code></a>.</sub></p>
 
 ---
 
@@ -105,7 +107,7 @@ flowchart LR
 Only the green box is the craft. Everything red is mechanical — and it is what CapyCut removes.
 
 > 📊 **Every figure above is cited, labelled by evidence strength, and where necessary corrected** in
-> **[docs/RESEARCH.md](docs/RESEARCH.md)** — including the three claims we could *not* verify and
+> **[docs/RESEARCH.md](Capycut-Code/docs/RESEARCH.md)** — including the three claims we could *not* verify and
 > recommend you don't repeat.
 
 ---
@@ -169,7 +171,7 @@ sequenceDiagram
 **Your changes stay yours.** When you change something inside a shot by hand — text, colour,
 position, size — CapyCut saves it in the clip's `overrides` rather than in the page's code. The agent
 can rewrite the page and your changes still apply. The full format is in
-[SPEC.md](packages/openfilm/SPEC.md).
+[SPEC.md](Capycut-Code/packages/openfilm/SPEC.md).
 
 ---
 
@@ -225,6 +227,7 @@ Everything you need comes with it, down to a built-in agent. Works with Claude C
 already use them.
 
 ```bash
+cd Capycut-Code
 pnpm install
 pnpm dev:desktop
 ```
@@ -257,7 +260,10 @@ openfilm doctor    # check what this machine has
 
 ### From source
 
+Everything lives in `Capycut-Code/`.
+
 ```bash
+cd Capycut-Code
 pnpm install          # installs deps and builds Studio's editor
 pnpm dev              # Studio, in the browser
 pnpm test             # unit tests
@@ -328,7 +334,7 @@ flowchart LR
 ```
 
 Each is a plain folder. Add one from the Community window, or build your own:
-[make a plugin](packages/openfilm/plugins/README.md),
+[make a plugin](Capycut-Code/packages/openfilm/plugins/README.md),
 [write a skill](https://github.com/openfilm/community/blob/main/SPEC.md),
 [share assets](https://github.com/openfilm/community/blob/main/assets/CONTRIBUTING.md), or share a
 finished film as an example.
@@ -377,7 +383,7 @@ tool.
 | 4:15 | **Canvas, colour, handoff** — plan, grade, export to Resolve | 🦫 on the board |
 | 5:10 | **Payoff** — ~80% of the grind gone, craft intact | Repo card, close |
 
-**Full evidence, per-claim citations, and the corrections list: [docs/RESEARCH.md](docs/RESEARCH.md).**
+**Full evidence, per-claim citations, and the corrections list: [docs/RESEARCH.md](Capycut-Code/docs/RESEARCH.md).**
 
 </details>
 
@@ -396,5 +402,5 @@ pnpm test && pnpm typecheck     # before you open a PR
 
 <p align="center">
   <sub><b>CapyCut</b> — a film is a folder, a shot is a web page, and the agent is the editor.</sub><br>
-  <sub>Third-party components and their licences: <a href="THIRD_PARTY_NOTICES.md">THIRD_PARTY_NOTICES.md</a></sub>
+  <sub>Third-party components and their licences: <a href="Capycut-Code/THIRD_PARTY_NOTICES.md">THIRD_PARTY_NOTICES.md</a></sub>
 </p>

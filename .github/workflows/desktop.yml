@@ -44,7 +44,7 @@ jobs:
           SIGN_IDENTITY: ${{ secrets.OPENFILM_SIGN_IDENTITY }}
         run: |
           VERSION="${TAG#v}"
-          PACKAGE="$(node -p "require('./apps/desktop/package.json').version")"
+          PACKAGE="$(node -p "require('./Capycut-Code/apps/desktop/package.json').version")"
           if [ "$VERSION" != "$PACKAGE" ]; then
             echo "::error::$TAG does not match apps/desktop/package.json ($PACKAGE)"
             exit 1
@@ -82,6 +82,7 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+        working-directory: Capycut-Code
 
       - name: Signing and notarization credentials, in a keychain of this run
         if: matrix.sign
@@ -114,7 +115,7 @@ jobs:
           echo "APPLE_KEYCHAIN=$KEYCHAIN" >> "$GITHUB_ENV"
 
       - name: Build (npm run release -- --official ${{ matrix.args }})
-        working-directory: apps/desktop
+        working-directory: Capycut-Code/apps/desktop
         env:
           OPENFILM_SIGN_IDENTITY: ${{ matrix.sign && secrets.OPENFILM_SIGN_IDENTITY || '' }}
           APPLE_TEAM_ID: ${{ matrix.sign && secrets.APPLE_TEAM_ID || '' }}
