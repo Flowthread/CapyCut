@@ -28,10 +28,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
+          cache-dependency-path: Capycut-Code/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
         working-directory: Capycut-Code
       # setup-node puts node and npm's global programs on the job's PATH only. A person who installs with npm has them

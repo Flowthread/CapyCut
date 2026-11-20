@@ -25,12 +25,15 @@ jobs:
       ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
     steps:
       - uses: actions/checkout@v4
-      # the pnpm version package.json names (packageManager)
+      # the pnpm version Capycut-Code/package.json names (packageManager)
       - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
+          cache-dependency-path: Capycut-Code/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
         working-directory: Capycut-Code
       # Ubuntu's packages (Playwright's system libraries and fonts, ffmpeg) come through apt, whose mirror at times took
