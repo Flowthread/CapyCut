@@ -28,7 +28,7 @@
 </p>
 
 <p align="center">
-  <img src="Capycut-Code/docs/openfilm.webp" alt="CapyCut: an agent makes a film while you watch, then you change it by hand">
+  <img src="Capycut-Code/docs/capycut.webp" alt="CapyCut: an agent makes a film while you watch, then you change it by hand">
 </p>
 
 <p align="center"><sub>All source lives in <a href="Capycut-Code"><code>Capycut-Code/</code></a>.</sub></p>
