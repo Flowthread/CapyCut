@@ -9,7 +9,7 @@ import { readVtt, writeVtt } from '../src/captions.mjs';
 import { openProject } from './server/projects.mjs';
 import { startStudio } from './server/server.mjs';
 
-test('unlocked caption tracks move with a mixed selection, with one undo for media and captions', { timeout: 90_000 }, async () => {
+test('unlocked caption tracks move with a mixed selection, with one undo for media and captions', { timeout: 180_000 }, async () => {
   const scratch = await mkdtemp(join(tmpdir(), 'of-caption-group-'));
   const names = ['HOME', 'SHARED_HOME', 'LIBRARY', 'SAVED', 'EXPORTS'];
   const saved = new Map(names.map(n => [`OPENFILM_${n}`, process.env[`OPENFILM_${n}`]]));
@@ -48,8 +48,9 @@ test('unlocked caption tracks move with a mixed selection, with one undo for med
     const shots = async () => (await film()).tracks.find(t => t.clips.some(c => c.id === 'one')).clips;
     const cues = async () => readVtt(await readFile(join(root, 'captions.vtt'), 'utf8')).cues;
     const until = async (check, why) => {
-      /* a move of 183 cues and their media is saved in one write, which a slow machine takes seconds over */
-      for (let i = 0; i < 300; i++) { if (await check()) return; await page.waitForTimeout(50); }
+      /* a move of 183 cues and their media is saved in one write, and selecting them redraws 185 blocks: both take
+         seconds on a loaded CI machine, and a 15 s budget has timed out on macOS */
+      for (let i = 0; i < 600; i++) { if (await check()) return; await page.waitForTimeout(100); }
       assert.fail(why);
     };
     await page.goto(`${studio.origin}/projects/${project.id}?key=${studio.key}`);
@@ -59,6 +60,8 @@ test('unlocked caption tracks move with a mixed selection, with one undo for med
     /* The two VTT files load independently. Wait for the row that participates in the drag. */
     await lockedCue.waitFor();
     await until(async () => await unlockedCues.count() === 183, 'the unlocked caption cues are ready to select');
+    /* both media clips are in the timeline before ⌘A, so the selection cannot be built from a half-loaded track */
+    await until(async () => await page.locator('[data-block-kind="mg"]').count() === 2, 'both media clips are ready to select');
     const body = await clip.boundingBox();
     assert.ok(body, 'the movable clip is drawn');
     await clip.click({ position: { x: body.width / 4, y: 10 } });

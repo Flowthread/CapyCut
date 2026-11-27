@@ -728,8 +728,12 @@ async function encode({ film, a, b, file }, { fps, rate, samples, shutter, alpha
   /* a 4:2:0 picture wants even dimensions. A --scale between two pixels (1920 x .667) makes the browser's surface
      1281 wide: the file was written, and every strict H.264 encoder after it said `width not divisible by 2`.
      Crop the odd last column or row on the way in: scaling 1281 to 1280 would resample the whole frame, a crop keeps
-     every pixel as drawn. An even size is left alone. */
-  const even = 'crop=trunc(iw/2)*2:trunc(ih/2)*2:0:0,';
+     every pixel as drawn. An even size is left alone.
+     Chromium leaves PNG's alpha plane out of an entirely opaque frame, so a page that turns opaque mid-render sends
+     rgb24 after rgba. With `-reinit_filter 0` (below, to keep tmix) ffmpeg 9.1's crop refuses a format change without
+     a graph reinitialization; a 1:1 scale to rgba converts every frame to one format first, resampling nothing
+     (nearest at the same size), so the crop still sees every pixel as drawn before the final conversion. */
+  const even = `${still === 'png' ? 'scale=iw:ih:flags=neighbor,format=rgba,' : ''}crop=trunc(iw/2)*2:trunc(ih/2)*2:0:0,`;
   const blur = samples > 1 ? `tmix=frames=${samples},select='eq(mod(n\\,${samples})\\,${samples - 1})',setpts=N/((${ffmpegRate(rate)})*TB),` : '';
   /* Chromium omits PNG's alpha plane for an entirely opaque frame. Reinitializing on that format change resets
      tmix and select's frame index, losing samples or even every frame of a short transparent export. */

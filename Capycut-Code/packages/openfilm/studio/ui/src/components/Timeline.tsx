@@ -2433,8 +2433,8 @@ export const Timeline = React.memo(function Timeline({
       /* A popover can unmount during capture. Its consumed Escape still belongs to it after its DOM is gone. */
       if (e.defaultPrevented || isTypingTarget(e.target)) return;
       if ((e.target as Element | null)?.closest?.('[role="dialog"]')) return;
-      const picked = tracks.flatMap((tr) => tr.blocks).filter((b) => selected.includes(b.id) && b.loc);
-      if (e.key === 'Escape' && (selected.length || gap || pickedTransition || range) && !e.metaKey && !e.ctrlKey && !e.altKey
+      const picked = tracks.flatMap((tr) => tr.blocks).filter((b) => selectedRef.current.includes(b.id) && b.loc);
+      if (e.key === 'Escape' && (selectedRef.current.length || gap || pickedTransition || range) && !e.metaKey && !e.ctrlKey && !e.altKey
         && !document.querySelector('[role="menu"], [role="listbox"], [data-popover-panel]')) {
         e.preventDefault();
         setSelected([]);
@@ -2501,7 +2501,7 @@ export const Timeline = React.memo(function Timeline({
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
     /* the playhead is read from a ref: as a dependency the listener would be swapped twenty times a second */
-  }, [onRemove, onRemoveMany, onEditOps, onCopy, onPaste, hasClipboard, removeMany, rippleRemove, magnetRemove, selected, tracks, setSelected, playable, zoomByStable, zoomToStable, gap, closeGap, pickedTransition, onTransition, onPickTransition, range, onRangeChange, t]);
+  }, [onRemove, onRemoveMany, onEditOps, onCopy, onPaste, hasClipboard, removeMany, rippleRemove, magnetRemove, tracks, setSelected, playable, zoomByStable, zoomToStable, gap, closeGap, pickedTransition, onTransition, onPickTransition, range, onRangeChange, t]);
 
   /* whether the last press was on the timeline (for ⌘A); capture phase, since presses here are often stopped */
   React.useEffect(() => {
